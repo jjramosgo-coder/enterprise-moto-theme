@@ -1,0 +1,136 @@
+/* ═══════════════════════════════════════════════════════════════
+   ENTERPRISE MOTO — markdown.css
+   Estilos base para enterprise/markdown y enterprise/markdown-styled
+   ═══════════════════════════════════════════════════════════════ */
+
+.ent-markdown { margin: 24px 0; }
+
+/* Tipografía base */
+.ent-markdown p  { margin: 0 0 1em; line-height: 1.7; }
+.ent-markdown p:last-child { margin-bottom: 0; }
+
+.ent-markdown h1,
+.ent-markdown h2,
+.ent-markdown h3,
+.ent-markdown h4 {
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  letter-spacing: .05em;
+  color: var(--gold, #f2c118);
+  margin: 1.4em 0 .5em;
+  line-height: 1.2;
+}
+.ent-markdown h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); }
+.ent-markdown h2 { font-size: clamp(1.3rem, 3vw, 1.9rem); }
+.ent-markdown h3 { font-size: clamp(1.1rem, 2.5vw, 1.5rem); }
+.ent-markdown h4 { font-size: 1.1rem; }
+
+/* Listas */
+.ent-markdown ul,
+.ent-markdown ol {
+  padding-left: 1.6em;
+  margin: 0 0 1em;
+}
+.ent-markdown li { margin-bottom: .35em; line-height: 1.6; }
+.ent-markdown li > ul,
+.ent-markdown li > ol { margin-top: .25em; margin-bottom: 0; }
+
+/* Énfasis */
+.ent-markdown strong { font-weight: 700; }
+.ent-markdown em     { font-style: italic; }
+
+/* Código inline */
+.ent-markdown code {
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+  font-size: .88em;
+  background: rgba(242, 193, 24, .1);
+  color: var(--gold, #f2c118);
+  padding: .15em .4em;
+  border-radius: 3px;
+}
+
+/* Bloque de código */
+.ent-markdown pre {
+  background: #0e0e0e;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 0 0 1em;
+}
+.ent-markdown pre code {
+  background: none;
+  color: #e0e0e0;
+  padding: 0;
+  font-size: .85em;
+  border-radius: 0;
+}
+
+/* Citas */
+.ent-markdown blockquote {
+  border-left: 4px solid var(--gold, #f2c118);
+  margin: 1em 0;
+  padding: .5em 1em;
+  color: var(--mid, #888);
+  font-style: italic;
+}
+.ent-markdown blockquote p { margin-bottom: 0; }
+
+/* Separador horizontal */
+.ent-markdown hr {
+  border: none;
+  border-top: 1px solid var(--border, #2a2a2a);
+  margin: 2em 0;
+}
+
+/* Tablas */
+.ent-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .9em;
+  margin: 0 0 1em;
+}
+.ent-markdown th {
+  background: var(--surface, #1a1a1a);
+  color: var(--gold, #f2c118);
+  font-family: var(--font-display, 'Bebas Neue', sans-serif);
+  letter-spacing: .06em;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--gold, #f2c118);
+}
+.ent-markdown td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border, #2a2a2a);
+  vertical-align: top;
+}
+.ent-markdown tr:last-child td { border-bottom: none; }
+
+/* Enlaces */
+.ent-markdown a {
+  color: var(--gold, #f2c118);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ent-markdown a:hover { opacity: .8; }
+
+/* Imágenes */
+.ent-markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 3px;
+  display: block;
+  margin: 1em auto;
+}
+
+/* ── Variante styled: ajustes adicionales ── */
+.ent-markdown--styled {
+  border-radius: 0;
+}
+.ent-markdown--styled h1,
+.ent-markdown--styled h2,
+.ent-markdown--styled h3,
+.ent-markdown--styled h4 {
+  /* hereda el color del contenedor si se ha definido uno */
+  color: inherit;
+  opacity: .85;
+}

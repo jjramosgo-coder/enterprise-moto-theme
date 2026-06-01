@@ -1,0 +1,13 @@
+README: SCREENSHOT
+=================
+
+WordPress muestra esta imagen en el panel de Apariencia > Temas.
+Tamaño recomendado: 1200 × 900 px en formato PNG.
+
+Para generarla:
+1. Activa el tema
+2. Abre la web en el navegador a 1200px de ancho
+3. Haz una captura de pantalla completa
+4. Guárdala como screenshot.png en la raíz del tema
+
+Mientras tanto, WordPress mostrará un placeholder genérico.

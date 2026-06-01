@@ -1,0 +1,84 @@
+/**
+ * Enterprise Moto — editor-style.css
+ * Estilos del editor de bloques (backend Gutenberg).
+ * Hace que lo que ves en el editor se parezca al frontend.
+ */
+
+:root {
+  --black:   #0e0e0e;
+  --mid:     #5a5a5a;
+  --border:  #e2e2de;
+  --surface: #f5f5f2;
+  --gold:    #f2c118;
+  --gold-dk: #c9a010;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+  --font-serif:   'DM Serif Display', serif;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--black);
+  font-size: 17px;
+  line-height: 1.85;
+}
+
+/* Ancho del editor */
+.editor-styles-wrapper .wp-block { max-width: 760px; }
+.editor-styles-wrapper .wp-block[data-align="wide"]  { max-width: 1100px; }
+.editor-styles-wrapper .wp-block[data-align="full"]  { max-width: none; }
+
+/* Título del post */
+.editor-styles-wrapper .editor-post-title__input {
+  font-family: var(--font-display) !important;
+  font-size: 52px !important;
+  letter-spacing: .03em !important;
+  line-height: .95 !important;
+  color: var(--black) !important;
+  text-transform: uppercase !important;
+}
+
+/* Headings */
+.editor-styles-wrapper h1,
+.editor-styles-wrapper h2,
+.editor-styles-wrapper h3,
+.editor-styles-wrapper h4 {
+  font-family: var(--font-display);
+  letter-spacing: .05em;
+  color: var(--black);
+  text-transform: uppercase;
+  line-height: 1;
+}
+.editor-styles-wrapper h2 { font-size: 28px; margin-top: 40px; margin-bottom: 12px; }
+.editor-styles-wrapper h3 { font-size: 22px; margin-top: 32px; margin-bottom: 10px; }
+.editor-styles-wrapper h4 { font-family: var(--font-body); font-size: 18px; font-weight: 700; text-transform: none; letter-spacing: normal; }
+
+/* Párrafo */
+.editor-styles-wrapper p {
+  font-size: 17px;
+  line-height: 1.85;
+  color: #3a3a3a;
+  font-weight: 300;
+  margin-bottom: 20px;
+}
+
+/* Blockquote */
+.editor-styles-wrapper blockquote {
+  border-left: 3px solid var(--gold) !important;
+  padding: 14px 24px !important;
+  background: var(--surface) !important;
+  margin: 36px 0 !important;
+}
+.editor-styles-wrapper blockquote p {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-style: italic;
+  color: var(--black);
+  margin: 0;
+}
+
+/* Links */
+.editor-styles-wrapper a { color: var(--gold-dk); }
+
+/* Separador */
+.editor-styles-wrapper hr { border-color: var(--border); margin: 40px 0; }

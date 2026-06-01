@@ -1,0 +1,137 @@
+/**
+ * Enterprise Moto — blocks.css
+ * Overrides de bloques Gutenberg en el frontend.
+ */
+
+/* ── Alineaciones ── */
+.entry-content .alignwide  { margin-left: -64px; margin-right: -64px; max-width: calc(100% + 128px); }
+.entry-content .alignfull  { margin-left: -40px; margin-right: -40px; max-width: calc(100% + 80px); width: calc(100% + 80px); }
+.entry-content .alignleft  { float: left; margin-right: 28px; margin-bottom: 16px; }
+.entry-content .alignright { float: right; margin-left: 28px; margin-bottom: 16px; }
+.entry-content .aligncenter{ margin-left: auto; margin-right: auto; text-align: center; }
+
+/* ── Galería de bloques ── */
+.wp-block-gallery {
+  display: grid !important;
+  gap: 4px !important;
+  margin: 32px 0 !important;
+}
+.wp-block-gallery.columns-2 { grid-template-columns: repeat(2, 1fr) !important; }
+.wp-block-gallery.columns-3 { grid-template-columns: repeat(3, 1fr) !important; }
+.wp-block-gallery .wp-block-image { margin: 0 !important; }
+.wp-block-gallery .wp-block-image img { width: 100%; height: 100%; object-fit: cover; display: block; aspect-ratio: 4/3; }
+.wp-block-gallery figcaption { text-align: center; }
+
+/* ── Imagen ── */
+.wp-block-image { margin: 32px 0; }
+.wp-block-image img { max-width: 100%; height: auto; }
+.wp-block-image figcaption { font-size: 12px; color: var(--mid); font-style: italic; padding: 8px 0 0; }
+.wp-block-image.is-style-rounded img { border-radius: 8px; }
+
+/* ── Cover ── */
+.wp-block-cover { min-height: 400px; margin: 32px 0; }
+.wp-block-cover__inner-container { padding: 40px; }
+
+/* ── Columns ── */
+.wp-block-columns { gap: 32px; margin: 28px 0; }
+.wp-block-column { min-width: 0; }
+
+/* ── Quote / Pullquote ── */
+.wp-block-quote {
+  border-left: 3px solid var(--gold) !important;
+  padding: 14px 24px !important;
+  background: var(--surface) !important;
+  margin: 36px 0 !important;
+}
+.wp-block-quote p {
+  font-family: var(--font-serif) !important;
+  font-size: 19px !important;
+  font-style: italic !important;
+  color: var(--black) !important;
+  line-height: 1.55 !important;
+  margin: 0 !important;
+}
+.wp-block-quote cite { font-size: 12px !important; color: var(--mid) !important; font-style: normal !important; margin-top: 10px !important; display: block !important; }
+.wp-block-pullquote {
+  border-top: 3px solid var(--gold) !important;
+  border-bottom: 3px solid var(--gold) !important;
+  border-left: none !important;
+  padding: 32px 24px !important;
+  background: transparent !important;
+  text-align: center !important;
+  margin: 40px 0 !important;
+}
+.wp-block-pullquote blockquote { border-left: none !important; background: transparent !important; padding: 0 !important; margin: 0 !important; }
+.wp-block-pullquote p { font-size: 22px !important; text-align: center !important; }
+
+/* ── Separador ── */
+.wp-block-separator { border: none !important; border-top: 1px solid var(--border) !important; margin: 40px 0 !important; }
+.wp-block-separator.is-style-wide { border-top-width: 3px !important; border-color: var(--gold) !important; }
+.wp-block-separator.is-style-dots { border: none !important; text-align: center !important; }
+.wp-block-separator.is-style-dots::before { content: '· · ·'; color: var(--mid); font-size: 18px; letter-spacing: 8px; }
+
+/* ── Table ── */
+.wp-block-table { margin: 28px 0; overflow-x: auto; }
+.wp-block-table table { font-size: 14px; }
+.wp-block-table.is-style-stripes tbody tr:nth-child(odd) td { background: var(--surface); }
+
+/* ── Code / Preformatted ── */
+.wp-block-code { background: var(--surface) !important; border: 1px solid var(--border) !important; padding: 20px !important; font-size: 14px !important; overflow-x: auto !important; }
+.wp-block-preformatted { background: var(--surface); border: 1px solid var(--border); padding: 20px; font-size: 14px; overflow-x: auto; white-space: pre; }
+
+/* ── Buttons ── */
+.wp-block-buttons { gap: 12px; margin: 24px 0; }
+.wp-block-button__link {
+  background: var(--black) !important;
+  color: var(--white) !important;
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  padding: 13px 24px !important;
+  border-radius: 0 !important;
+  transition: background .2s, color .2s !important;
+}
+.wp-block-button__link:hover { background: var(--gold) !important; color: var(--black) !important; }
+.wp-block-button.is-style-outline .wp-block-button__link {
+  background: transparent !important;
+  color: var(--black) !important;
+  border: 2px solid var(--black) !important;
+}
+.wp-block-button.is-style-outline .wp-block-button__link:hover {
+  background: var(--black) !important;
+  color: var(--white) !important;
+}
+
+/* ── Embed / Video ── */
+.wp-block-embed { margin: 32px 0; }
+.wp-block-embed__wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; }
+.wp-block-embed__wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+/* ── Group / Container ── */
+.wp-block-group.has-background { padding: 32px; margin: 32px 0; }
+
+/* ── Social links ── */
+.wp-block-social-links { gap: 8px; }
+.wp-block-social-link { background: var(--surface) !important; border-radius: 2px !important; transition: background .2s !important; }
+.wp-block-social-link:hover { background: var(--black) !important; }
+.wp-block-social-link-anchor { color: var(--black) !important; }
+.wp-block-social-link:hover .wp-block-social-link-anchor { color: var(--white) !important; }
+
+/* ── Colores custom palette ── */
+.has-negro-color  { color: #0e0e0e !important; }
+.has-dorado-color { color: #f2c118 !important; }
+.has-blanco-color { color: #ffffff !important; }
+.has-gris-color   { color: #5a5a5a !important; }
+.has-negro-background-color  { background-color: #0e0e0e !important; }
+.has-dorado-background-color { background-color: #f2c118 !important; }
+.has-crema-background-color  { background-color: #f5f5f2 !important; }
+
+/* ── Responsive blocks ── */
+@media (max-width: 640px) {
+  .entry-content .alignwide  { margin-left: 0; margin-right: 0; max-width: 100%; }
+  .entry-content .alignfull  { margin-left: -20px; margin-right: -20px; max-width: calc(100% + 40px); width: calc(100% + 40px); }
+  .wp-block-gallery.columns-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .wp-block-columns { flex-direction: column !important; }
+}

@@ -1,0 +1,94 @@
+/* ═══════════════════════════════════════════════════════════════
+   ENTERPRISE MOTO — tip-box.css
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Carga Tabler Icons si no la carga ya otro bloque */
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css');
+
+.ent-tip {
+  border-left: 4px solid;
+  padding: 16px 20px;
+  margin: 28px 0;
+  border-radius: 0;
+}
+
+.ent-tip__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.ent-tip__icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ent-tip__body {
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.ent-tip__body p {
+  margin: 0 0 8px;
+}
+
+.ent-tip__body p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Variantes de color ── */
+
+.ent-tip--consejo {
+  background: #E1F5EE;
+  border-color: #1D9E75;
+}
+.ent-tip--consejo .ent-tip__label,
+.ent-tip--consejo .ent-tip__icon {
+  color: #0F6E56;
+}
+.ent-tip--consejo .ent-tip__body {
+  color: #085041;
+}
+
+.ent-tip--nota {
+  background: #E6F1FB;
+  border-color: #378ADD;
+}
+.ent-tip--nota .ent-tip__label,
+.ent-tip--nota .ent-tip__icon {
+  color: #185FA5;
+}
+.ent-tip--nota .ent-tip__body {
+  color: #0C447C;
+}
+
+.ent-tip--atencion {
+  background: #FAEEDA;
+  border-color: #BA7517;
+}
+.ent-tip--atencion .ent-tip__label,
+.ent-tip--atencion .ent-tip__icon {
+  color: #854F0B;
+}
+.ent-tip--atencion .ent-tip__body {
+  color: #633806;
+}
+
+.ent-tip--peligro {
+  background: #FCEBEB;
+  border-color: #E24B4A;
+}
+.ent-tip--peligro .ent-tip__label,
+.ent-tip--peligro .ent-tip__icon {
+  color: #A32D2D;
+}
+.ent-tip--peligro .ent-tip__body {
+  color: #791F1F;
+}
