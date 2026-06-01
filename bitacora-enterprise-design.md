@@ -23,7 +23,7 @@
 
 ---
 
-## 1. Principios de diseño integral
+## 1. Principios de diseño
 
 ### Separación entre dimensiones de contenido
 
