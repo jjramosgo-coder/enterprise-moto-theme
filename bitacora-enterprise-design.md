@@ -1,7 +1,7 @@
 # Bitácora Enterprise — Diseño conceptual e implementación
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.4.6  
+**Tema WordPress:** Enterprise Moto v2.4.6b  
 **Última revisión:** Mayo 2026
 
 ---
