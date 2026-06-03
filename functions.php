@@ -6,7 +6,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'ENTERPRISE_VERSION', '2.4.6' );
+define( 'ENTERPRISE_VERSION', '2.4.7' );
 
 /* ─────────────────────────────────────────
    SETUP DEL TEMA
@@ -241,6 +241,27 @@ function enterprise_save_route_meta( $post_id ) {
     }
 }
 add_action( 'save_post', 'enterprise_save_route_meta' );
+
+/* ─────────────────────────────────────────
+   HELPER: buscar el primer bloque por nombre
+   dentro de un árbol de bloques (recursivo).
+   Devuelve el array del bloque (con 'attrs') o null.
+───────────────────────────────────────── */
+if ( ! function_exists( 'enterprise_find_first_block' ) ) {
+    function enterprise_find_first_block( $blocks, $block_name ) {
+        if ( ! is_array( $blocks ) ) return null;
+        foreach ( $blocks as $block ) {
+            if ( isset( $block['blockName'] ) && $block['blockName'] === $block_name ) {
+                return $block;
+            }
+            if ( ! empty( $block['innerBlocks'] ) ) {
+                $found = enterprise_find_first_block( $block['innerBlocks'], $block_name );
+                if ( $found ) return $found;
+            }
+        }
+        return null;
+    }
+}
 
 /* ─────────────────────────────────────────
    HELPER: datos de ruta de un post
@@ -1474,7 +1495,7 @@ function enterprise_home_post_card( $post_id, $num, $section_cat_name = '' ) {
             <div class="post-card-footer">
                 <div class="post-card-km">
                     <?php if ( $route['km'] ) : echo esc_html( $route['km'] );
-                    else : ?><span><?php esc_html_e( 'Ruta', 'enterprise-moto' ); ?></span><?php endif; ?>
+                    else : ?><span><?php esc_html_e( 'Detalles', 'enterprise-moto' ); ?></span><?php endif; ?>
                 </div>
                 <a href="<?php echo esc_url( $card_permalink ); ?>"
                    class="post-card-arrow"

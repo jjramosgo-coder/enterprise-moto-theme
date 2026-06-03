@@ -17,13 +17,21 @@ $cat_name = enterprise_first_category();
        o el referer si viene de un archivo, o la página de rutas como fallback. */
     $from_cat_slug = isset( $_GET['from_cat'] )  ? sanitize_key( $_GET['from_cat'] )  : '';
     $from_post_id  = isset( $_GET['from_post'] ) ? intval( $_GET['from_post'] )        : 0;
+    $from_cuaderno_id = isset( $_GET['from_cuaderno'] ) ? intval( $_GET['from_cuaderno'] ) : 0;
     // Validar que from_post es realmente un post tipo D
     if ( $from_post_id && get_post_meta( $from_post_id, '_post_tipo', true ) !== 'viaje' ) {
         $from_post_id = 0;
     }
+    // Validar que from_cuaderno es realmente una página de cuaderno (tiene _exp_estado)
+    if ( $from_cuaderno_id && ! get_post_meta( $from_cuaderno_id, '_exp_estado', true ) ) {
+        $from_cuaderno_id = 0;
+    }
     if ( $from_post_id ) {
         $back_url   = get_permalink( $from_post_id );
         $back_label = esc_html__( '← Volver al viaje', 'enterprise-moto' );
+    } elseif ( $from_cuaderno_id ) {
+        $back_url   = get_permalink( $from_cuaderno_id );
+        $back_label = esc_html__( '← Volver al cuaderno', 'enterprise-moto' );
     } elseif ( $from_cat_slug ) {
         $from_cat_obj  = get_category_by_slug( $from_cat_slug );
         $back_url      = $from_cat_obj ? get_term_link( $from_cat_obj ) : home_url( '/las-rutas/' );
@@ -253,48 +261,157 @@ if ( $has_data ) : ?>
 
   if ( $from_post_id ) {
       /* ── Contexto: venimos de un post tipo D ──────────────────────────
-         Construir la misma query que usa enterprise_calculate_viaje_stats()
-         para obtener la lista ordenada de etapas del viaje padre. */
-      $nav_suffix  = array( 'from_post' => $from_post_id );
-      $cat_ids     = get_post_meta( $from_post_id, '_post_viaje_cat_ids',  true ) ?: array();
-      $tag_ids     = get_post_meta( $from_post_id, '_post_viaje_tag_ids',  true ) ?: array();
-      $tag_rel     = get_post_meta( $from_post_id, '_post_viaje_tag_rel',  true ) ?: 'OR';
-      $fecha_ini   = get_post_meta( $from_post_id, '_post_fecha_inicio',   true );
-      $fecha_fin   = get_post_meta( $from_post_id, '_post_fecha_fin',      true );
+         CONTRATO DE NAVEGACIÓN (ver documento de diseño): «anterior/
+         siguiente» recorren la secuencia en el MISMO orden que produce el
+         listado mostrado; anterior = índice−1, siguiente = índice+1.
+         En tipo D el listado lo genera el bloque «Etapas de ruta», cuyo
+         criterio de orden y filtros viven en sus ATRIBUTOS (no en meta).
+         Por eso la navegación lee ese bloque del contenido del post padre
+         y replica su query exacta, garantizando que coincida con lo que se
+         ve. Si no se encontrara el bloque (no debería: el enlace from_post
+         lo genera el propio bloque), se usa un fallback por metadatos. */
+      $nav_suffix = array( 'from_post' => $from_post_id );
 
-      $cat_ids = is_array( $cat_ids ) ? array_map( 'intval', $cat_ids ) : array();
-      $tag_ids = is_array( $tag_ids ) ? array_map( 'intval', $tag_ids ) : array();
+      $vd_blocks = parse_blocks( get_post_field( 'post_content', $from_post_id ) );
+      $vd_stages = function_exists( 'enterprise_find_first_block' )
+                   ? enterprise_find_first_block( $vd_blocks, 'enterprise/post-stages' )
+                   : null;
+
+      if ( $vd_stages && ! empty( $vd_stages['attrs'] ) ) {
+          /* Replica EXACTA de la query de blocks/post-stages/render.php
+             (mismos atributos y mismos valores por defecto). */
+          $a       = $vd_stages['attrs'];
+          $b_cat   = ( isset( $a['categoryIds'] ) && is_array( $a['categoryIds'] ) ) ? array_map( 'intval', $a['categoryIds'] ) : array();
+          $b_tag   = ( isset( $a['tagIds'] )      && is_array( $a['tagIds'] ) )      ? array_map( 'intval', $a['tagIds'] )      : array();
+          $b_trel  = ( isset( $a['tagRelation'] ) && $a['tagRelation'] === 'AND' ) ? 'AND' : 'IN';
+          $b_dfrom = isset( $a['filterDateFrom'] ) ? sanitize_text_field( $a['filterDateFrom'] ) : '';
+          $b_dto   = isset( $a['filterDateTo'] )   ? sanitize_text_field( $a['filterDateTo'] )   : '';
+          $b_ppp   = isset( $a['postsPerPage'] )   ? intval( $a['postsPerPage'] )                : 6;
+          $b_obw   = isset( $a['orderBy'] )        ? sanitize_key( $a['orderBy'] )               : 'date';
+          $b_ord   = isset( $a['order'] )          ? sanitize_key( $a['order'] )                 : 'DESC';
+
+          $nav_args = array(
+              'post_type'      => 'post',
+              'post_status'    => 'publish',
+              'posts_per_page' => $b_ppp,
+              'orderby'        => $b_obw,
+              'order'          => strtoupper( $b_ord ),
+              'fields'         => 'ids',
+          );
+          $tax_q = array();
+          if ( ! empty( $b_cat ) ) {
+              $tax_q[] = array( 'taxonomy' => 'category', 'field' => 'term_id', 'terms' => $b_cat, 'operator' => 'IN' );
+          }
+          if ( ! empty( $b_tag ) ) {
+              $tax_q[] = array( 'taxonomy' => 'post_tag', 'field' => 'term_id', 'terms' => $b_tag, 'operator' => $b_trel );
+          }
+          if ( ! empty( $tax_q ) ) {
+              $tax_q['relation'] = 'AND';
+              $nav_args['tax_query'] = $tax_q;
+          }
+          if ( $b_dfrom || $b_dto ) {
+              $dq = array( 'relation' => 'AND' );
+              if ( $b_dfrom ) $dq[] = array( 'after'  => $b_dfrom . ' 00:00:00', 'inclusive' => true );
+              if ( $b_dto )   $dq[] = array( 'before' => $b_dto   . ' 23:59:59', 'inclusive' => true );
+              $nav_args['date_query'] = $dq;
+          }
+          $etapa_ids = get_posts( $nav_args );
+
+      } else {
+          /* Fallback por metadatos del viaje (orden cronológico ascendente). */
+          $cat_ids   = get_post_meta( $from_post_id, '_post_viaje_cat_ids', true ) ?: array();
+          $tag_ids   = get_post_meta( $from_post_id, '_post_viaje_tag_ids', true ) ?: array();
+          $tag_rel   = get_post_meta( $from_post_id, '_post_viaje_tag_rel', true ) ?: 'OR';
+          $fecha_ini = get_post_meta( $from_post_id, '_post_fecha_inicio',  true );
+          $fecha_fin = get_post_meta( $from_post_id, '_post_fecha_fin',     true );
+          $cat_ids   = is_array( $cat_ids ) ? array_map( 'intval', $cat_ids ) : array();
+          $tag_ids   = is_array( $tag_ids ) ? array_map( 'intval', $tag_ids ) : array();
+
+          $nav_args = array(
+              'post_type'      => 'post',
+              'post_status'    => 'publish',
+              'posts_per_page' => -1,
+              'orderby'        => 'date',
+              'order'          => 'ASC',
+              'fields'         => 'ids',
+          );
+          $tax_q = array();
+          if ( ! empty( $cat_ids ) ) {
+              $tax_q[] = array( 'taxonomy' => 'category', 'field' => 'term_id', 'terms' => $cat_ids, 'operator' => 'IN' );
+          }
+          if ( ! empty( $tag_ids ) ) {
+              $tax_q[] = array( 'taxonomy' => 'post_tag', 'field' => 'term_id', 'terms' => $tag_ids, 'operator' => ( $tag_rel === 'AND' ? 'AND' : 'IN' ) );
+          }
+          if ( ! empty( $tax_q ) ) {
+              $tax_q['relation'] = 'AND';
+              $nav_args['tax_query'] = $tax_q;
+          }
+          if ( $fecha_ini ) {
+              $dq = array( 'relation' => 'AND', array( 'after' => $fecha_ini . ' 00:00:00', 'inclusive' => true ) );
+              if ( $fecha_fin ) $dq[] = array( 'before' => $fecha_fin . ' 23:59:59', 'inclusive' => true );
+              $nav_args['date_query'] = $dq;
+          }
+          $etapa_ids = get_posts( $nav_args );
+      }
+
+      $current_pos = array_search( get_the_ID(), $etapa_ids, true );
+      if ( $current_pos !== false ) {
+          $prev_id = $current_pos > 0                       ? $etapa_ids[ $current_pos - 1 ] : null;
+          $next_id = $current_pos < count( $etapa_ids ) - 1 ? $etapa_ids[ $current_pos + 1 ] : null;
+          $prev    = $prev_id ? get_post( $prev_id ) : null;
+          $next    = $next_id ? get_post( $next_id ) : null;
+      }
+
+  } elseif ( $from_cuaderno_id ) {
+      /* ── Contexto: venimos de la página del cuaderno de bitácora ───────
+         Replica la query de page-cuaderno-de-bitacora.php (mismos filtros
+         _filt_* y mismo orden) para que «anterior/siguiente» recorran todo
+         el conjunto del cuaderno (etapas y jornadas) en el orden mostrado. */
+      $nav_suffix = array( 'from_cuaderno' => $from_cuaderno_id );
+
+      $c_cat_ids   = get_post_meta( $from_cuaderno_id, '_filt_category_ids', true ) ?: array();
+      $c_tag_ids   = get_post_meta( $from_cuaderno_id, '_filt_tag_ids',      true ) ?: array();
+      $c_tag_rel   = get_post_meta( $from_cuaderno_id, '_filt_tag_relation', true ) ?: 'OR';
+      $c_date_from = get_post_meta( $from_cuaderno_id, '_filt_date_from',    true ) ?: '';
+      $c_date_to   = get_post_meta( $from_cuaderno_id, '_filt_date_to',      true ) ?: '';
+      $c_limit     = get_post_meta( $from_cuaderno_id, '_filt_limit',        true );
+      $c_orderby   = get_post_meta( $from_cuaderno_id, '_filt_orderby',      true ) ?: 'date';
+      $c_order     = get_post_meta( $from_cuaderno_id, '_filt_order',        true ) ?: 'DESC';
+
+      $c_cat_ids = is_array( $c_cat_ids ) ? array_map( 'intval', $c_cat_ids ) : array();
+      $c_tag_ids = is_array( $c_tag_ids ) ? array_map( 'intval', $c_tag_ids ) : array();
 
       $nav_args = array(
           'post_type'      => 'post',
           'post_status'    => 'publish',
-          'posts_per_page' => -1,
-          'orderby'        => 'date',
-          'order'          => 'ASC',
+          'posts_per_page' => ( $c_limit !== '' && intval( $c_limit ) > 0 ) ? intval( $c_limit ) : -1,
+          'orderby'        => $c_orderby,
+          'order'          => strtoupper( $c_order ),
           'fields'         => 'ids',
       );
       $tax_q = array();
-      if ( ! empty( $cat_ids ) ) {
-          $tax_q[] = array( 'taxonomy' => 'category', 'field' => 'term_id', 'terms' => $cat_ids, 'operator' => 'IN' );
+      if ( ! empty( $c_cat_ids ) ) {
+          $tax_q[] = array( 'taxonomy' => 'category', 'field' => 'term_id', 'terms' => $c_cat_ids, 'operator' => 'IN' );
       }
-      if ( ! empty( $tag_ids ) ) {
-          $tax_q[] = array( 'taxonomy' => 'post_tag', 'field' => 'term_id', 'terms' => $tag_ids, 'operator' => ( $tag_rel === 'AND' ? 'AND' : 'IN' ) );
+      if ( ! empty( $c_tag_ids ) ) {
+          $tax_q[] = array( 'taxonomy' => 'post_tag', 'field' => 'term_id', 'terms' => $c_tag_ids, 'operator' => ( $c_tag_rel === 'AND' ? 'AND' : 'IN' ) );
       }
       if ( ! empty( $tax_q ) ) {
           $tax_q['relation'] = 'AND';
           $nav_args['tax_query'] = $tax_q;
       }
-      if ( $fecha_ini ) {
-          $dq = array( 'relation' => 'AND', array( 'after' => $fecha_ini . ' 00:00:00', 'inclusive' => true ) );
-          if ( $fecha_fin ) $dq[] = array( 'before' => $fecha_fin . ' 23:59:59', 'inclusive' => true );
+      if ( $c_date_from || $c_date_to ) {
+          $dq = array( 'relation' => 'AND' );
+          if ( $c_date_from ) $dq[] = array( 'after'  => $c_date_from . ' 00:00:00', 'inclusive' => true );
+          if ( $c_date_to )   $dq[] = array( 'before' => $c_date_to   . ' 23:59:59', 'inclusive' => true );
           $nav_args['date_query'] = $dq;
       }
 
-      $etapa_ids  = get_posts( $nav_args );
-      $current_pos = array_search( get_the_ID(), $etapa_ids, true );
+      $cuaderno_ids = get_posts( $nav_args );
+      $current_pos  = array_search( get_the_ID(), $cuaderno_ids, true );
       if ( $current_pos !== false ) {
-          $prev_id = $current_pos > 0                       ? $etapa_ids[ $current_pos - 1 ] : null;
-          $next_id = $current_pos < count( $etapa_ids ) - 1 ? $etapa_ids[ $current_pos + 1 ] : null;
+          $prev_id = $current_pos > 0                          ? $cuaderno_ids[ $current_pos - 1 ] : null;
+          $next_id = $current_pos < count( $cuaderno_ids ) - 1 ? $cuaderno_ids[ $current_pos + 1 ] : null;
           $prev    = $prev_id ? get_post( $prev_id ) : null;
           $next    = $next_id ? get_post( $next_id ) : null;
       }

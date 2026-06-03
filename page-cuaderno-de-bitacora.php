@@ -448,7 +448,7 @@ if ( $has_gutenberg ) :
         <?php while ( $etapas_query->have_posts() ) : $etapas_query->the_post();
           $route_e  = enterprise_get_route_data();
           $excerpt  = get_the_excerpt();
-          $permalink = get_permalink();
+          $permalink = add_query_arg( 'from_cuaderno', $page_id, get_permalink() );
         ?>
         <div class="ps-card <?php echo $is_large ? 'ps-card--large' : ''; ?>">
           <a href="<?php echo esc_url( $permalink ); ?>" class="ps-card-link">
@@ -498,7 +498,7 @@ if ( $has_gutenberg ) :
           </div>
           <div class="exp-tl-connector <?php echo $etapa_num > 1 ? 'is-done' : ''; ?>"></div>
         </div>
-        <a href="<?php the_permalink(); ?>" class="exp-tl-card <?php echo $is_latest ? 'is-latest' : ''; ?>">
+        <a href="<?php echo esc_url( add_query_arg( 'from_cuaderno', $page_id, get_permalink() ) ); ?>" class="exp-tl-card <?php echo $is_latest ? 'is-latest' : ''; ?>">
           <div class="exp-tl-thumb">
             <?php if ( has_post_thumbnail() ) :
               the_post_thumbnail( 'enterprise-thumb' );
