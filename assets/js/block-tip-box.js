@@ -12,6 +12,7 @@
     var PanelBody         = components.PanelBody;
     var SelectControl     = components.SelectControl;
     var TextControl       = components.TextControl;
+    var RangeControl      = components.RangeControl;
 
     var TYPE_CONFIG = {
         consejo:  { label: 'Consejo',  icon: 'ti-bulb',          color: '#0F6E56', bg: '#E1F5EE', border: '#1D9E75' },
@@ -54,6 +55,7 @@
             tipText:  { type: 'string', default: ''        },
             tipTitle: { type: 'string', default: ''        },
             tipIcon:  { type: 'string', default: 'auto'    },
+            tipBorderWidth: { type: 'number', default: 4   },
         },
 
         edit: function ( props ) {
@@ -69,7 +71,7 @@
 
             var blockProps = useBlockProps( {
                 style: {
-                    borderLeft: '4px solid ' + cfg.border,
+                    borderLeft: ( attrs.tipBorderWidth === undefined ? 4 : attrs.tipBorderWidth ) + 'px solid ' + cfg.border,
                     background: cfg.bg,
                     padding: '16px 20px',
                     borderRadius: '0',
@@ -105,6 +107,16 @@
                             value: attrs.tipTitle,
                             placeholder: cfg.label,
                             onChange: function ( v ) { setAttrs( { tipTitle: v } ); },
+                        } ),
+                        el( RangeControl, {
+                            label: 'Grosor de la línea lateral (px)',
+                            value: ( attrs.tipBorderWidth === undefined ? 4 : attrs.tipBorderWidth ),
+                            min: 0,
+                            max: 16,
+                            step: 1,
+                            onChange: function ( v ) {
+                                setAttrs( { tipBorderWidth: ( v === undefined ? 4 : v ) } );
+                            },
                         } )
                     )
                 ),

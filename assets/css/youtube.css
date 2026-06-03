@@ -215,12 +215,13 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(255,255,255,.25);
+  background: rgba(0,0,0,.25);
   transition: background .2s, transform .2s;
   cursor: pointer;
   border: none;
   padding: 0;
 }
+.ent-reels-dot:hover { background: rgba(0,0,0,.45); }
 .ent-reels-dot.is-active {
   background: var(--gold, #f2c118);
   transform: scale(1.4);

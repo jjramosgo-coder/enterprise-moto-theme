@@ -10,6 +10,8 @@ function enterprise_render_tip_box_block( $attributes, $content ) {
     $text    = isset( $attributes['tipText'] )  ? $attributes['tipText']  : '';
     $icon    = isset( $attributes['tipIcon'] )  ? $attributes['tipIcon']  : 'auto';
     $title   = isset( $attributes['tipTitle'] ) ? $attributes['tipTitle'] : '';
+    $border  = isset( $attributes['tipBorderWidth'] ) ? intval( $attributes['tipBorderWidth'] ) : 4;
+    $border  = max( 0, min( 16, $border ) ); // clamp 0-16 px
 
     $valid_types = array( 'consejo', 'nota', 'atencion', 'peligro' );
     if ( ! in_array( $type, $valid_types, true ) ) $type = 'consejo';
@@ -38,7 +40,7 @@ function enterprise_render_tip_box_block( $attributes, $content ) {
 
     $display_title = ! empty( $title ) ? $title : $default_titles[ $type ];
 
-    $out  = '<div class="ent-tip ent-tip--' . esc_attr( $type ) . '" role="note">';
+    $out  = '<div class="ent-tip ent-tip--' . esc_attr( $type ) . '" role="note" style="border-left-width:' . $border . 'px;">';
     $out .= '<div class="ent-tip__label">';
     $out .= '<i class="ti ' . esc_attr( $icon_class ) . ' ent-tip__icon" aria-hidden="true"></i>';
     $out .= '<span>' . esc_html( $display_title ) . '</span>';
