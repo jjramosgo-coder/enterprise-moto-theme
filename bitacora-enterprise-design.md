@@ -1,7 +1,7 @@
 # Bitácora Enterprise — Diseño conceptual e implementación
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.4.6  
+**Tema WordPress:** Enterprise Moto v2.4.7  
 **Última revisión:** Mayo 2026
 
 ---
@@ -382,6 +382,40 @@ SI NO es_individual (= es el portal):
 SI es_individual (= cuaderno concreto):
   mostrar el cuaderno (timeline de etapas)
 ```
+
+### Contrato de navegación entre entradas
+
+Los botones **«ruta anterior» / «ruta siguiente»** de una entrada (`single.php`) recorren la secuencia de entradas en el **mismo orden con el que la produjo el listado de origen** desde el que se llegó a ella. No imponen ninguna lectura cronológica.
+
+Definición rigurosa:
+
+- **anterior** = elemento de índice−1 en la secuencia (hacia la cabeza).
+- **siguiente** = elemento de índice+1 en la secuencia (hacia la cola).
+- El criterio de orden (fecha ASC/DESC, título A-Z/Z-A, modificación…) lo fija el origen; «anterior/siguiente» solo se mueven por el índice, sea cual sea ese criterio. Por tanto **no** equivalen a «más antiguo / más reciente».
+
+El orden se toma siempre de **la misma fuente que generó el listado mostrado**, según el contexto (parámetro de la URL):
+
+| Contexto | Parámetro | Fuente del orden y los filtros | «Volver» |
+|---|---|---|---|
+| Cuaderno de bitácora | `from_cuaderno=ID_página` | Metadatos `_filt_orderby` / `_filt_order` (+ `_filt_*`) de la página del cuaderno | A la página del cuaderno |
+| Viaje tipo D | `from_post=ID_post` | **Atributos del bloque «Etapas de ruta»** (`orderBy` / `order` + filtros) leídos del contenido del post | Al post del viaje |
+| Archivo de categoría | `from_cat=slug` | Orden del propio archivo | Al archivo de la categoría |
+| Sin contexto | — | Adyacentes dentro de la misma categoría (fallback de WordPress) | Referer / página de entradas |
+
+**Regla para funcionalidades análogas:** cualquier listado nuevo que enlace a entradas con navegación anterior/siguiente debe (a) propagar su parámetro de contexto en los enlaces, y (b) reconstruir la secuencia leyendo **la misma fuente** que genera el listado visible (nunca un orden fijado a fuego), de modo que navegación y presentación coincidan siempre.
+
+### Robustez del contenido Gutenberg
+
+Un bloque del contenido Gutenberg de la página (introducción editorial sobre el timeline) alineado con `alignleft` / `alignright` recibe `float` de WordPress. Si el contenedor del contenido no contiene ese float, se desborda por debajo e invade la rejilla `.exp-layout`, comprimiéndola y mandando el timeline/carrusel a la columna lateral.
+
+Para evitarlo, el contenedor del contenido encierra sus propios floats y la rejilla se protege como refuerzo:
+
+```css
+.exp-gutenberg-content { display: flow-root; } /* contiene el float en origen */
+.exp-layout            { clear: both; }        /* refuerzo defensivo */
+```
+
+Con esto la alineación de bloques (cita o imagen flotada) sigue funcionando dentro del propio contenido, pero no puede afectar al timeline. El fallo no era HTML mal formado, sino un float sin contener.
 
 ---
 
