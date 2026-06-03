@@ -329,6 +329,12 @@
 /* ─────────────────────────────────────────
    LAYOUT TIMELINE + SUMMARY
 ───────────────────────────────────────── */
+/* Contiene los floats del contenido Gutenberg (p. ej. una cita o imagen
+   con alignleft/alignright) para que no se desborden e invadan la rejilla
+   .exp-layout de abajo. flow-root encierra el float dentro del contenedor;
+   la alineación sigue funcionando con normalidad dentro del propio contenido. */
+.exp-gutenberg-content { display: flow-root; }
+
 .exp-layout {
   display: grid;
   grid-template-columns: 1fr 288px;
@@ -336,6 +342,7 @@
   align-items: start;
   padding-top: 64px;
   padding-bottom: 72px;
+  clear: both; /* refuerzo: nunca quedar afectada por un float anterior */
 }
 
 /* ─────────────────────────────────────────
