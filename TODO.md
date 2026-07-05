@@ -12,7 +12,7 @@ Los que aún no tienen propósito decidido quedan como `(sin clasificar)`.
 
 | # | Tipo | Descripción | Estado |
 |---|------|-------------|--------|
-| 1 | documentación | Crear la sección **"Decisiones de arquitectura"** en `bitacora-enterprise-design.md` y sembrarla con las tres decisiones ya tomadas: contrato de navegación (§6), contención de floats del cuaderno (§6) y estructura de permalinks (§6). | pendiente |
+| 1 | doc | Crear la sección **"Decisiones de arquitectura"** en `bitacora-enterprise-design.md` y sembrarla con las tres decisiones ya tomadas: contrato de navegación (§6), contención de floats del cuaderno (§6) y estructura de permalinks (§6). | pendiente |
 
 ## Resueltas
 
