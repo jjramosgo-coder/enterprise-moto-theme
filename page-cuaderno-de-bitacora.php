@@ -466,7 +466,7 @@ if ( $has_gutenberg ) :
                 <div class="ps-card-excerpt"><?php echo esc_html( $excerpt ); ?></div>
               <?php endif; ?>
               <?php if ( $pres_km && $route_e['km'] ) : ?>
-                <div class="ps-card-km"><?php echo esc_html( $route_e['km'] ); ?></div>
+                <div class="ps-card-km"><?php echo esc_html( enterprise_km_display( $route_e['km'] ) ); ?></div>
               <?php endif; ?>
             </div>
           </a>
@@ -519,7 +519,7 @@ if ( $has_gutenberg ) :
             <?php endif; endif; ?>
             <div class="exp-tl-footer">
               <?php if ( $pres_km && $route_e['km'] ) : ?>
-                <span class="exp-tl-km"><?php echo esc_html( $route_e['km'] ); ?></span>
+                <span class="exp-tl-km"><?php echo esc_html( enterprise_km_display( $route_e['km'] ) ); ?></span>
               <?php endif; ?>
               <span class="exp-tl-arrow" aria-hidden="true">→</span>
             </div>

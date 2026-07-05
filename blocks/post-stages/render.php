@@ -157,16 +157,6 @@ function enterprise_render_post_stages_block( $attributes ) {
             $date_str = get_the_date( 'd M Y' );
             $excerpt  = get_the_excerpt();
 
-            // #2 (mejora): unidad «km» defensiva, solo en presentación.
-            // El dato guardado (_route_km) puede venir sin unidad (viaje: número
-            // formateado por enterprise_calculate_viaje_stats) o ya con ella
-            // (etapa: _post_km, placeholder «Ej: 280 km»). Se añade al pintar,
-            // como en las estadísticas del metabox; no se toca el dato ni el contrato.
-            $km_display = $route['km'];
-            if ( $km_display && ! preg_match( '/km\s*$/i', (string) $km_display ) ) {
-                $km_display .= ' km';
-            }
-
             if ( $is_carousel ) : ?>
             <div class="ent-stages__slide" role="listitem" data-index="<?php echo intval( $n - 1 ); ?>">
                 <a href="<?php echo esc_url( $nav_suffix ? add_query_arg( $nav_suffix, get_permalink() ) : get_permalink() ); ?>" class="ent-card ent-card--<?php echo $is_large ? 'large' : 'normal'; ?>">
@@ -191,7 +181,7 @@ function enterprise_render_post_stages_block( $attributes ) {
                         <?php endif; ?>
                         <div class="ent-card__footer">
                             <?php if ( $show_km && $route['km'] ) : ?>
-                                <span class="ent-card__km"><?php echo esc_html( $km_display ); ?></span>
+                                <span class="ent-card__km"><?php echo esc_html( enterprise_km_display( $route['km'] ) ); ?></span>
                             <?php else : ?>
                                 <span></span>
                             <?php endif; ?>
@@ -228,7 +218,7 @@ function enterprise_render_post_stages_block( $attributes ) {
                         <?php endif; ?>
                         <div class="ent-tl-footer">
                             <?php if ( $show_km && $route['km'] ) : ?>
-                                <span class="ent-tl-km"><?php echo esc_html( $km_display ); ?></span>
+                                <span class="ent-tl-km"><?php echo esc_html( enterprise_km_display( $route['km'] ) ); ?></span>
                             <?php else : ?>
                                 <span></span>
                             <?php endif; ?>

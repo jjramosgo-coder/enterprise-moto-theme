@@ -340,6 +340,27 @@ function enterprise_get_stats() {
 }
 
 /* ─────────────────────────────────────────
+   KM PARA PRESENTACIÓN (unidad defensiva)
+───────────────────────────────────────── */
+/**
+ * Devuelve el valor de km listo para pintar, añadiendo la unidad «km»
+ * de forma defensiva. Solo presentación: no lee metas ni toca datos.
+ *
+ * @param string $km Valor crudo (_route_km / _exp_km), con o sin unidad.
+ * @return string   Cadena para mostrar; '' si la entrada está vacía.
+ */
+function enterprise_km_display( $km ) {
+    $km = (string) $km;
+    if ( $km === '' ) {
+        return '';
+    }
+    if ( ! preg_match( '/km\s*$/i', $km ) ) {
+        $km .= ' km';
+    }
+    return $km;
+}
+
+/* ─────────────────────────────────────────
    PAGINACIÓN PERSONALIZADA
 ───────────────────────────────────────── */
 function enterprise_pagination() {
