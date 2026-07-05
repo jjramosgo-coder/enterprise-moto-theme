@@ -31,3 +31,8 @@ Desktop.ini
 *.log
 *.tmp
 *.bak
+
+# ─────────────────────────────────────────
+#  Documentación local (no versionar)
+# ─────────────────────────────────────────
+GIT-WORKFLOW.md
