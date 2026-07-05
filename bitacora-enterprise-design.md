@@ -1,8 +1,8 @@
 # Bitácora Enterprise — Diseño conceptual e implementación
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.4.7  
-**Última revisión:** Mayo 2026
+**Tema WordPress:** Enterprise Moto v2.4.8  
+**Última revisión:** Julio 2026
 
 ---
 
@@ -358,6 +358,19 @@ Nota: los filtros del metabox y del bloque "Etapas de ruta" son idénticos
 /cuaderno-de-bitacora/sicilia-2026/  → Cuaderno individual (página hija)
 /cuaderno-de-bitacora/norte-italia-2025/ → Cuaderno finalizado (URL permanente)
 ```
+
+### Estructura de permalinks (ajuste de WordPress)
+
+Los enlaces permanentes del sitio están configurados como **«Nombre de la entrada»** (`%postname%`) en *Ajustes → Enlaces permanentes*. **No** debe usarse la opción «Simple» (`?p=123`).
+
+**Motivo:** con permalinks «Simple», la REST API de WordPress solo queda expuesta en su forma de consulta (`?rest_route=/wp/v2/...`) y la app móvil (Jetpack / app de WordPress) no lograba conectar. Al pasar a una estructura de enlaces amigables se activan los endpoints REST en su forma de ruta (`/wp-json/wp/v2/...`), que es la que la app espera. La conectividad de la app móvil depende, por tanto, de mantener este ajuste.
+
+**Implicaciones al tocar permalinks:**
+
+- Cualquier cambio en *Ajustes → Enlaces permanentes* debe ir seguido de volver a guardar la configuración para regenerar las reglas de reescritura (`flush_rewrite_rules`). Si tras un cambio las URLs de los cuadernos o la app dejan de funcionar, ese suele ser el motivo.
+- Las URLs de los cuadernos finalizados son permanentes; cambiar el slug de una página rompería sus enlaces entrantes.
+
+**Contexto de dominio:** el sitio sirve desde `bitacoraenterprise.com`. El dominio antiguo `jjramosgo.blog` sigue vivo y **redirige con 301** al nuevo, de modo que los enlaces previos no se pierden. La cabecera del tema (`style.css`: `Theme URI` / `Author URI`) apunta al dominio nuevo.
 
 ### Plantillas de página
 
