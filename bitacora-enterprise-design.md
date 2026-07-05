@@ -20,6 +20,7 @@
 10. [Página fuera de ruta](#10-página-fuera-de-ruta)
 11. [Referencia de campos personalizados](#11-referencia-de-campos-personalizados)
 12. [Referencia de categorías](#12-referencia-de-categorías)
+13. [Decisiones de arquitectura](#13-decisiones-de-arquitectura)
 
 ---
 
@@ -639,6 +640,36 @@ Un post tiene tipo-de-salida/*
 ```
 
 Los descriptores `etapa` y `jornada` son compartidos pero no colisionan porque identifican el tipo de día, no la pertenencia a un sistema u otro. El contador de portada solo suma `etapa`, nunca `cuaderno-etapa`.
+
+---
+
+## 13. Decisiones de arquitectura
+
+Registro de decisiones de arquitectura del tema. Cada entrada es **autocontenida** (contexto, decisión, consecuencias); el **mecanismo concreto** vive en la sección de referencia que se cita, y no se duplica aquí. Este registro recoge el *porqué* de una decisión, para que sea extrapolable y no se reabra sin motivo.
+
+### 13.1 Contrato de navegación entre entradas
+
+**Contexto.** Una misma entrada se alcanza desde listados distintos (la página de un cuaderno, un post de viaje tipo D, el archivo de una categoría), y cada listado tiene su propio criterio de orden. Se produjeron dos errores que motivaron fijar el contrato: (1) describir la navegación en términos cronológicos («anterior = más antiguo») en lugar de por índice de secuencia, y (2) un bug en `single.php` donde `order=ASC` estaba fijado a fuego, que invertía anterior/siguiente cuando el bloque «Etapas de ruta» usaba orden descendente.
+
+**Decisión.** «Anterior» = índice−1 y «siguiente» = índice+1 dentro de la secuencia del listado de origen. El criterio de orden lo fija **la misma fuente que genera el listado visible** (los metadatos `_filt_*` de la página del cuaderno; los atributos del bloque «Etapas de ruta» para el viaje tipo D, leídos con `parse_blocks()`; el orden del propio archivo para una categoría), nunca un orden fijado a fuego. La definición rigurosa y la tabla por contexto están en §6 «Contrato de navegación entre entradas».
+
+**Consecuencias.** «Anterior/siguiente» **no** equivalen a «más antiguo/más reciente». Cualquier listado nuevo que enlace a entradas con navegación anterior/siguiente debe (a) propagar su parámetro de contexto (`from_*`) en los enlaces y (b) reconstruir la secuencia leyendo la misma fuente que produce el listado, de modo que navegación y presentación coincidan siempre.
+
+### 13.2 Contención de floats del contenido Gutenberg del cuaderno
+
+**Contexto.** El timeline/carrusel del cuaderno se colapsaba dentro de la columna lateral. El primer diagnóstico —HTML mal formado— era erróneo: el HTML renderizado estaba bien formado. La causa real era un `float` de WordPress (un bloque de la introducción editorial alineado con `alignleft`/`alignright`) que su contenedor no contenía, y que se desbordaba e invadía la rejilla `.exp-layout`, comprimiéndola.
+
+**Decisión.** Contener el float **en origen** con `.exp-gutenberg-content { display: flow-root }`, y proteger la rejilla con `.exp-layout { clear: both }` como refuerzo defensivo. Se evaluó y descartó `force_balance_tags()` por inaplicable (no había HTML mal formado que reparar). El detalle está en §6 «Robustez del contenido Gutenberg».
+
+**Consecuencias.** La alineación de bloques (citas o imágenes flotadas) sigue funcionando dentro del propio contenido, pero ya no puede afectar al timeline. Principio de método que deja esta decisión: diagnosticar sobre el HTML renderizado real y por comparación, distinguiendo «HTML mal formado» de «float sin contener», en lugar de teorizar la causa.
+
+### 13.3 Estructura de permalinks («Nombre de la entrada»)
+
+**Contexto.** Con los enlaces permanentes en «Simple» (`?p=123`), la app móvil (Jetpack / app de WordPress) no lograba conectar: la REST API solo quedaba expuesta en su forma de consulta (`?rest_route=/wp/v2/...`) y no en la forma de ruta (`/wp-json/wp/v2/...`) que la app espera.
+
+**Decisión.** Fijar los enlaces permanentes como **«Nombre de la entrada»** (`%postname%`) en *Ajustes → Enlaces permanentes*; no usar «Simple». El detalle está en §6 «Estructura de permalinks».
+
+**Consecuencias.** La conectividad de la app móvil depende de mantener este ajuste. Todo cambio en *Ajustes → Enlaces permanentes* debe ir seguido de volver a guardar la configuración para regenerar las reglas de reescritura (`flush_rewrite_rules`). Los slugs de los cuadernos finalizados son URLs permanentes: cambiarlos rompe sus enlaces entrantes. El sitio sirve desde `bitacoraenterprise.com`, con el dominio antiguo `jjramosgo.blog` redirigiendo con 301.
 
 ---
 
