@@ -652,13 +652,6 @@ Los descriptores `etapa` y `jornada` son compartidos pero no colisionan porque i
 |---|---|---|
 | Patrón "Timeline de etapas de ruta" | El bloque 'Etapas de ruta' ya cubre esta función con modos carrusel y timeline. | ✅ Eliminado en v2.3.1 |
 
-## Mejoras pendientes
-
-*(ninguna pendiente actualmente)*
-
-
-
-
 ## Notas de uso
 
 | Nota | Detalle |
