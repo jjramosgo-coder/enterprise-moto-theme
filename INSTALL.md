@@ -2,10 +2,19 @@
 
 ## Instalación en WordPress
 
+### Preparar el paquete del tema
+El código del tema vive en la carpeta **`enterprise-moto/`** del repositorio; el resto de la raíz son documentos del proyecto y no forman parte del tema. Según cómo instales:
+
+- **Por FTP (Opción A):** no necesitas comprimir nada; sube directamente la carpeta `enterprise-moto/` del repositorio.
+- **Por el panel de WordPress (Opción B):** genera el `.zip` comprimiendo esa carpeta desde la raíz del repositorio, de modo que el archivo contenga la carpeta `enterprise-moto/` en su interior:
+
+  ```
+  zip -r enterprise-moto.zip enterprise-moto
+  ```
+
 ### Opción A — Subir por FTP (recomendada)
-1. Descomprime `enterprise-moto.zip`
-2. Sube la carpeta `enterprise-moto/` a `wp-content/themes/`
-3. Ve a **Apariencia → Temas** y activa **Enterprise Moto**
+1. Sube la carpeta `enterprise-moto/` (del repositorio) a `wp-content/themes/`
+2. Ve a **Apariencia → Temas** y activa **Enterprise Moto**
 
 ### Opción B — Panel de WordPress
 1. Ve a **Apariencia → Temas → Añadir nuevo → Subir tema**
