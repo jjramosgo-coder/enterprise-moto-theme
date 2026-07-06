@@ -470,3 +470,50 @@ pendiente**: estas notas no son cierre, solo material para documentar y validar.
 **Observación al margen (posible TO-DO nuevo, fuera de #5):** en `enterprise_post_stage_save` hay
 **dos `update_post_meta` idénticos de `_post_paises`** seguidos; redundante e inocuo, candidato a
 limpieza trivial aparte.
+
+### Notas para documentación — #11 · [doc] (para el arquitecto)
+
+Apuntes surgidos al **implementar** #11 (Fases 1–2), para que la documentación refleje lo realmente
+construido. Insumo para la Fase 3 (design doc **§7**; revisar **§13.7**; + bump 2.5.0 → 2.6.0; mover
+#11 a «Resueltas»). **#11 sigue pendiente**: estas notas no son cierre, solo material para documentar.
+
+1. **La celda de `enterprise/trip-collection` en §7 queda desfasada.** Hoy dice «Rejilla de tarjetas de
+   viaje… el render diverge (tarjetas vs. timeline)». Tras #11 el bloque **ya no es una rejilla fija**:
+   presentación **configurable** carrusel horizontal | timeline vertical (atributo `layout`, def.
+   `carousel`), como `post-stages`. Además, toggle **«sin límite»** (`showAll`). Conviene reescribir esa
+   celda: reutiliza el scaffolding y los assets de `post-stages` conservando la `.trip-card`; sigue con
+   enlaces planos (sin `from_*`; navegación entre viajes = #8). Capacidad añadida en #11 (v2.6.0).
+
+2. **Reutilización del layout, no reimplementación (§7).** El render emite el contenedor con **ambas**
+   clases: `.ent-stages .ent-stages--{layout}` (el layout lo gobierna `carousel.css`) **y**
+   `.ent-trip-collection` (mantiene el estilado de la `.trip-card` en `coleccion.css`). La `.trip-card`
+   se compone **una vez** y se envuelve en `.ent-stages__slide` (carrusel: cabecera con nav prev/next +
+   contador y `.ent-stages__dots`, solo si hay más de una entrada) o en `.ent-tl-item` / `.ent-tl-dot-col`
+   numerado (timeline). `carousel.js` autoinicializa `.ent-stages--carousel` **sin cableado nuevo**.
+
+3. **Encolado (§7).** La condición de `enterprise_carousel_assets()` se extendió para disparar también con
+   `has_block('enterprise/trip-collection')` (antes solo `post-stages`), de modo que `carousel.css` /
+   `carousel.js` se cargan también en páginas con el bloque de colección.
+
+4. **Puente CSS mínimo (§7).** En `coleccion.css`, solo el **encaje** de la tarjeta, escopado a
+   `.ent-trip-collection.ent-stages--{layout}`: `height:100%` en carrusel (slide) y `margin-bottom:12px`
+   en timeline (fila). La lógica de layout **no** se duplica: vive en `carousel.css`.
+
+5. **«Sin límite» y su efecto en las cifras (§13.7).** El toggle `showAll` fuerza `postsPerPage = -1` **a
+   nivel de bloque**, antes de la query compartida (que ya mapea `-1` nativamente); **no** se tocó
+   `enterprise_stage_query()`. Punto fino para §13.7: el mismo ajuste `showAll → -1` se aplica **también**
+   en `enterprise_collection_post_ids()` (**segundo punto de resolución**), así el hero y el ticker de la
+   colección cuentan **todas** las entradas cuando el toggle está activo (conducta correcta, no un fallo).
+   La guarda solo actúa con `!empty($attrs['showAll'])`, atributo que solo emite `trip-collection`; los
+   bloques `post-stages` que pasan por esa función quedan **intactos**.
+
+6. **`post-stages` byte-idéntico.** No se tocó ningún fichero de `post-stages` ni `enterprise_stage_query()`;
+   su render sigue idéntico (validado por Juanjo comparando el HTML antes/después).
+
+7. **Resto sin uso (posible TO-DO trivial aparte, fuera de #11).** Al retirar la rejilla fija, las reglas
+   `.ent-trip-collection .trip-grid` (el `grid` y sus media queries) de `coleccion.css` quedan **muertas**
+   (ya no se emite ningún `.trip-grid`). Se dejaron en su sitio para acotar el cambio a lo pedido (R8); su
+   limpieza sería un TO-DO trivial independiente.
+
+8. **La Fase 3** definida en el documento de requerimientos (doc §7 / revisar §13.7 + bump 2.5.0 → 2.6.0 +
+   mover #11 a «Resueltas») **no** la ejecuta el Desarrollador, a petición de Juanjo. La completa el Arquitecto.
