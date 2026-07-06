@@ -6,7 +6,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'ENTERPRISE_VERSION', '2.4.8' );
+define( 'ENTERPRISE_VERSION', '2.4.9' );
 
 /* ─────────────────────────────────────────
    SETUP DEL TEMA
