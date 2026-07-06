@@ -2292,6 +2292,7 @@ function enterprise_post_stage_render( $post ) {
 
     /* Leer todos los campos — new _post_* con fallback a _route_* */
     $tipo          = get_post_meta( $post->ID, '_post_tipo',           true ) ?: 'etapa';
+    $ticker_name   = get_post_meta( $post->ID, '_post_ticker_name',    true );
     $tramo         = get_post_meta( $post->ID, '_post_tramo',          true )
                   ?: get_post_meta( $post->ID, '_route_etapa',         true );
     $km            = get_post_meta( $post->ID, '_post_km',             true )
@@ -2344,6 +2345,14 @@ function enterprise_post_stage_render( $post ) {
             <option value="jornada" <?php selected( $tipo, 'jornada' ); ?>><?php esc_html_e( '🚶 Jornada (sin moto)', 'enterprise-moto' ); ?></option>
             <option value="generica"<?php selected( $tipo, 'generica'); ?>><?php esc_html_e( '📝 Entrada genérica', 'enterprise-moto' ); ?></option>
         </select>
+    </div>
+
+    <!-- Nombre en el ticker (colecciones, #5 R4). Común a viaje/etapa/jornada; oculto en genérica -->
+    <div class="ent-mb-ticker" style="margin-bottom:16px;<?php echo $tipo === 'generica' ? 'display:none;' : ''; ?>">
+        <label for="ent_post_ticker_name" style="<?php echo $s; ?>"><?php esc_html_e( 'Nombre en el ticker', 'enterprise-moto' ); ?></label>
+        <input type="text" id="ent_post_ticker_name" name="_post_ticker_name" value="<?php echo esc_attr( $ticker_name ); ?>"
+               placeholder="<?php esc_attr_e( 'Ej: SICILIA 2026', 'enterprise-moto' ); ?>" style="<?php echo $i; ?>">
+        <p class="ent-mb-note"><?php esc_html_e( 'Texto que aparece en el ticker de las páginas de colección de viajes. Si se deja vacío, se usa el título de la entrada.', 'enterprise-moto' ); ?></p>
     </div>
 
     <!-- ══ TIPO B/C: ETAPA / SALIDA DE UN DÍA ══ -->
@@ -2697,6 +2706,9 @@ function enterprise_post_stage_save( $post_id ) {
     /* Sync _route_custom1_* */
     update_post_meta( $post_id, '_route_custom1_label', sanitize_text_field( $_POST['_post_custom_label'] ?? '' ) );
     update_post_meta( $post_id, '_route_custom1_value', sanitize_text_field( $_POST['_post_custom_value'] ?? '' ) );
+
+    /* Nombre en el ticker de colecciones (#5 R4) — solo presentación, sin transformación */
+    update_post_meta( $post_id, '_post_ticker_name', sanitize_text_field( $_POST['_post_ticker_name'] ?? '' ) );
 
     /* Campos de viaje (D) */
     update_post_meta( $post_id, '_post_paises',           sanitize_text_field( $_POST['_post_paises']           ?? '' ) );

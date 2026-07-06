@@ -15,6 +15,8 @@
   function switchTipo(tipo) {
     $('.ent-mb-group').removeClass('active');
     $('.ent-mb-group[data-tipo="' + tipo + '"]').addClass('active');
+    /* Campo «Nombre en el ticker»: común a viaje/etapa/jornada, oculto en genérica */
+    $('.ent-mb-ticker').toggle(tipo !== 'generica');
   }
 
   /* ── Chips de etapas seleccionadas ── */
