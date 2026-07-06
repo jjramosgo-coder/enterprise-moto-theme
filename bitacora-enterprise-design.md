@@ -1,7 +1,7 @@
 # Bitácora Enterprise — Diseño conceptual e implementación
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.4.9  
+**Tema WordPress:** Enterprise Moto v2.5.0  
 **Última revisión:** Julio 2026
 
 ---
@@ -25,6 +25,19 @@
 ---
 
 ## 1. Principios de diseño
+
+### Vocabulario base: viaje, ruta, etapa, jornada
+
+Antes de entrar en las dimensiones de contenido conviene fijar cuatro términos que el resto del documento usa como base, porque se confunden con facilidad.
+
+- **Viaje ≡ ruta en moto.** En este blog no hay viaje sin ruta: todo viaje es un recorrido en moto. «Viaje» y «ruta» nombran la misma cosa; no son dos categorías distintas.
+- **La variable que distingue los casos es la duración**, no «viaje vs. ruta». Una ruta se hace en un día o en varios:
+  - Ruta de **varios días** → se compone de **varias etapas** (y quizá alguna jornada).
+  - Ruta de **un día** → es **una sola etapa** (una salida de un día).
+- **Etapa.** Un día de conducción: el tramo recorrido en moto en una jornada de ruta. Es la unidad mínima de un recorrido, ya sea un día dentro de una ruta larga o una salida de un día completa (misma naturaleza; ver §3).
+- **Jornada.** Un día **sin desplazamiento en moto** dentro de un viaje: visita a una ciudad, descanso, actividad cultural. No aporta kilómetros.
+
+**Matiz — «viaje» (concepto) vs. `viaje` (valor de campo).** El valor `_post_tipo = viaje` no designa el concepto general de «viaje» de este vocabulario, sino específicamente la **ruta de varios días descrita a posteriori** (el **Tipo D** de §3). Una salida de un día, aunque también sea un «viaje» en sentido conceptual, no usa el valor `viaje` sino `etapa` (Tipo B/C). El sistema de valores de `_post_tipo` y su mapa a los tipos A–E vive en §3.
 
 ### Separación entre dimensiones de contenido
 
@@ -413,7 +426,7 @@ Los enlaces permanentes del sitio están configurados como **«Nombre de la entr
 | Plantilla | Archivo | Uso |
 |---|---|---|
 | Cuaderno de bitácora | `page-cuaderno-de-bitacora.php` | Portal Y cuadernos individuales |
-| Bitácora con bloques | `page-bitacora-bloques.php` | Cuaderno con bloques Gutenberg |
+| Colección de viajes | `page-templates/template-trip-coleccion.php` | Página curada que publica colecciones de viajes/rutas ya cerrados (p. ej. «De vacaciones»), compuesta con bloques Gutenberg. Alta en #5 (v2.5.0); procede de renombrar la antigua «Bitácora con bloques» (`page-bitacora-bloques.php`) conservando su historia. Ver §7 y §13.7. |
 | Por defecto | `page.php` | Páginas genéricas |
 
 La plantilla "Cuaderno de bitácora" detecta automáticamente si la página actual es el portal (sin `_exp_estado` ni página padre) o un cuaderno individual, y se comporta de manera diferente en cada caso.
@@ -477,6 +490,7 @@ Todos los bloques están en la categoría **Enterprise Moto** del insertor de Gu
 | Bloque | Identificador | Descripción |
 |---|---|---|
 | Etapas de ruta | `enterprise/post-stages` | Timeline vertical o carrusel horizontal de entradas filtradas. Filtros: categorías (OR), etiquetas (AND/OR), fechas absolutas desde/hasta. Campos visibles, ordenación y cantidad configurables. |
+| Colección de viajes | `enterprise/trip-collection` | Rejilla de **tarjetas de viaje** (una por entrada de salida completa) para la plantilla «Colección de viajes». Mismos atributos de filtro que «Etapas de ruta» y **query compartida** con él; el render diverge (tarjetas vs. timeline). Enlaces planos, sin contexto `from_*`. Alta en #5 (v2.5.0). |
 | Mapa de localizaciones | `enterprise/location-map` | Marcadores numerados en mapa OpenLayers con popup de información. |
 | Mapa de ruta | `enterprise/route-map` | Trazado GPX con perfil de elevación. Soporta dos ficheros GPX simultáneos. |
 | Mapa de ruta animado | `enterprise/animated-route-map` | Trazado GPX con sincronización animada elevación ↔ marcador. |
@@ -500,6 +514,8 @@ Los tres puntos donde se filtran entradas usan exactamente el mismo sistema:
 | Plantilla Cuaderno de Bitácora | `_filt_category_ids`, `_filt_tag_ids`, `_filt_tag_relation`, `_filt_date_from`, `_filt_date_to` |
 
 La lógica de `tax_query` es idéntica en los tres: categorías con `operator IN` (OR entre ellas), etiquetas con `IN` u `AND` según `tagRelation`, relación entre categorías y etiquetas siempre `AND`.
+
+**Query compartida `post-stages` ↔ `trip-collection`.** La construcción de la query por filtros (atributos → `WP_Query`) vive en una función única, `enterprise_stage_query( $attributes )` (`functions.php`), que usan **ambos** bloques; «Colección de viajes» reutiliza los mismos atributos de filtro que «Etapas de ruta». Lo compartido es la resolución de entradas (filtros → IDs); el **render** puede divergir. El helper `enterprise_collect_stage_blocks()` reconoce los dos identificadores como «bloques de filtrado» de una página. Es la base del cálculo de cifras de la colección (§13.7).
 
 ### Mapas — comportamiento en scroll
 
@@ -617,6 +633,7 @@ Se muestra en `/cuaderno-de-bitacora/` cuando no hay ningún cuaderno activo.
 | `_post_km_incompleto` | D | `1` si alguna etapa no tiene km |
 | `_post_ferry_count` | D | Nº de etapas con ferry |
 | `_post_etapas_count` | D | Nº total de etapas encontradas |
+| `_post_ticker_name` | A/B/C/D | Nombre corto de la entrada en el ticker de una «Colección de viajes». Texto libre, sin unidad ni transformación; oculto en el tipo E. Si está vacío, el ticker usa el título. Alta en #5 (v2.5.0). |
 
 ### Posts — campos legacy (`_route_*`, backward compatible)
 
@@ -635,6 +652,17 @@ Los campos `_route_*` son los originales del tema y siguen siendo leídos. Al gu
 ### Páginas de cuaderno (`_exp_*`)
 
 Ver sección 4 — Metadatos de un cuaderno.
+
+### Páginas de colección (`_col_*`)
+
+Metadatos **de página** de la plantilla «Colección de viajes». No los edita nadie a mano: se **calculan y cachean al guardar** (§13.7), nunca en caliente. Alta en #5 (v2.5.0).
+
+| Campo | Descripción |
+|---|---|
+| `_col_stats` | Array serializado con las cifras del hero, computadas sobre el conjunto único deduplicado de entradas de la página. Claves: `viajes` (int), `km` (int), `km_incompleto` (bool), `etapas` (int), `paises` (int — conteo de la unión de países), `ferrys` (int). |
+| `_col_stats_updated` | Texto de fecha ya formateado del último recálculo (alimenta la línea «actualizadas …» del hero). |
+
+El contrato de `_col_stats` está sembrado también en la cabecera de `page-templates/template-trip-coleccion.php`.
 
 ---
 
@@ -726,9 +754,19 @@ Registro de decisiones de arquitectura del tema. Cada entrada es **autocontenida
 
 **Contexto.** Las plantillas «Cuaderno de bitácora» y «Bitácora con bloques» compartían el mismo metabox y guardado. Al calcularse duración y progreso en caliente (§13.5), sus campos manuales (`_exp_duracion`, `_exp_progreso`) sobraban en el cuaderno, pero **no** podían eliminarse en bloque: «Bitácora con bloques» los lee como datos estáticos y no tiene filtros `_filt_*` de los que derivarlos.
 
-**Decisión.** El conjunto de campos del metabox y su guardado son **conscientes de la plantilla**. En «Cuaderno de bitácora» se retiran `_exp_duracion` y `_exp_progreso` (se calculan) y `_exp_fecha_inicio`/`_exp_fecha_fin` quedan **opcionales**, sin la semántica «vacío = en curso». En «Bitácora con bloques» el conjunto de campos queda **congelado** tal como estaba, hasta que esa plantilla reciba su propio propósito (colecciones de etapas no ligadas a un viaje; ver `TODO.md` #5). El dato antiguo de los campos retirados no se borra de la base de datos: solo deja de editarse y leerse en el cuaderno.
+**Decisión.** El conjunto de campos del metabox y su guardado son **conscientes de la plantilla**. En «Cuaderno de bitácora» se retiran `_exp_duracion` y `_exp_progreso` (se calculan) y `_exp_fecha_inicio`/`_exp_fecha_fin` quedan **opcionales**, sin la semántica «vacío = en curso». En «Bitácora con bloques» el conjunto de campos queda **congelado** tal como estaba, hasta que esa plantilla reciba su propio propósito (ver `TODO.md` #5). El dato antiguo de los campos retirados no se borra de la base de datos: solo deja de editarse y leerse en el cuaderno.
+
+**[Actualización v2.5.0 — #5]** Esa espera terminó: la plantilla se renombró a «Colección de viajes» (`page-templates/template-trip-coleccion.php`) con un propósito distinto del que se anticipó aquí (colecciones de **viajes** cerrados, no «etapas no ligadas a un viaje»), y en su desacople se retiró el conjunto de campos `_exp_*` congelado — la colección **no** usa el metabox de expedición. Ver §13.7.
 
 **Consecuencias.** Cada plantilla evoluciona con su propio conjunto de campos; el rediseño del metabox del cuaderno no rompe «Bitácora con bloques». Invariante para cambios futuros del metabox: no eliminar campos de forma global.
+
+### 13.7 Cifras de la colección de viajes cacheadas al guardar
+
+**Contexto.** La plantilla «Colección de viajes» (§6, #5) muestra en su hero cifras agregadas (viajes, km, etapas, países, ferrys) de un conjunto de entradas curado con **varios bloques de filtrado** por página (`enterprise/post-stages` y/o `enterprise/trip-collection`, con la query compartida de §7). El dominio es de **viajes ya cerrados**: a diferencia de un cuaderno `activo`, una colección no gana entradas sin que se re-guarde algo. Calcular en caliente (como §13.5) sería trabajo repetido en cada visita sin ganancia de frescura.
+
+**Decisión.** Cifras **cacheadas al guardar, nunca en caliente** — la política **opuesta** a §13.5, y correcta aquí por el dominio cerrado. La **fuente** de las cifras es la **unión deduplicada** de las entradas de **todos** los bloques de filtrado de la página (`enterprise_collection_post_ids()`): se construye el conjunto de IDs únicos y **todas** las cifras se derivan de ese mismo conjunto (un post presente en dos bloques cuenta una sola vez en todas ellas). Por entrada se leen las cachés ya frescas del tipo D (`_post_km_calculado` / `_post_etapas_count` / `_post_ferry_count`) o, para una salida de un día, `_post_km` y 1 etapa; los países por unión de `_post_paises`. El resultado se persiste en `_col_stats` (+ `_col_stats_updated`, §11). El recálculo se dispara en la **escritura del post**: al guardar la página de esta plantilla, y al guardar cualquier entrada relevante, sendos hooks `save_post` recomputan las páginas afectadas (sigue siendo cacheado, no en render). El mecanismo (`enterprise_compute_collection_stats()`) vive en `functions.php`.
+
+**Consecuencias.** El hero no queda obsoleto pese a no calcularse en render: publicar o editar una entrada que casa un bloque refresca las páginas de colección sin re-guardarlas. La deduplicación es **única y global** a todas las cifras. Edge conocido: enviar una entrada a la papelera no dispara `save_post`, así que la cifra se corrige al re-guardar la página (volumen bajo, coste trivial). **Presentación del hero** (decisiones de Juanjo, validadas al implementar y registradas aquí): (a) los km del hero se pintan **sin unidad** —número, con prefijo `≈` si hay km incompletos— porque la etiqueta ya dice «Kilómetros»; las **tarjetas** de viaje sí usan `enterprise_km_display()` (§13.4); (b) una cifra cuyo valor sea **0 no se pinta** (p. ej. «Ferrys» si no hay ninguno), y la fila de cifras es `flex` para repartirse según cuántas queden visibles. Principio general: cada dominio elige su política de frescura según si su fuente cambia sin re-guardado (cuaderno activo → en caliente; colección cerrada → cacheo al guardar).
 
 ---
 
