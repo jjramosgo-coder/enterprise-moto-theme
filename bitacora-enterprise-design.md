@@ -1,7 +1,7 @@
 # Bitácora Enterprise — Diseño conceptual e implementación
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.4.8  
+**Tema WordPress:** Enterprise Moto v2.4.9  
 **Última revisión:** Julio 2026
 
 ---
@@ -205,24 +205,58 @@ El portal redirige silenciosamente. El visitante ve la URL del cuaderno activo, 
 | `_exp_nombre` | Nombre del viaje (ej: "Sicilia & Cerdeña 2026") |
 | `_exp_subtitulo` | Descripción breve de la ruta |
 | `_exp_fecha_inicio` | Fecha de salida (AAAA-MM-DD) |
-| `_exp_fecha_fin` | Fecha de vuelta (AAAA-MM-DD) — vacío si activo |
+| `_exp_fecha_fin` | Fecha de vuelta (AAAA-MM-DD). **Opcional**: puede quedar vacía si el regreso aún no se conoce. Ya **no** significa «en curso» — el estado lo da `_exp_estado`. |
 | `_exp_salida` | Texto de display de la fecha de salida (auto-calculado si hay fechas) |
-| `_exp_duracion` | Duración (auto-calculada si hay fechas) |
-| `_exp_km` | Kilómetros del viaje |
+| `_exp_km` | Kilómetros del viaje. **Override manual opcional**: si tiene valor (incluido uno curado como «~3.200 km») se muestra tal cual; si está vacío, se **calcula en caliente** sumando los km de las etapas. |
 | `_exp_paises` | Países recorridos |
-| `_exp_progreso` | 0-100, para la barra de progreso |
-| `_exp_categoria` | Slug de la categoría que agrupa las etapas |
-| `_exp_etiquetas` | Etiquetas adicionales para filtrar etapas (nombres, separados por coma) |
+| `_exp_categoria` | *(legacy)* Ya **no** filtra el cuaderno; el filtro real usa `_filt_*` (ver §7 y «Filtro de etapas en el cuaderno»). Se conserva solo para el ticker de «Bitácora con bloques». |
+| `_exp_etiquetas` | *(legacy)* Ídem — sin uso en el cuaderno; solo ticker de «Bitácora con bloques». |
+
+> **Duración y progreso ya no son campos del cuaderno.** Se calculan en caliente (ver «Estadísticas en caliente del cuaderno», más abajo). Los antiguos campos `_exp_duracion` y `_exp_progreso` solo persisten en la plantilla «Bitácora con bloques», que conserva su propio metabox; en un cuaderno ni se editan ni se leen (el dato antiguo no se borra de la base de datos).
 
 ### Filtro de etapas en el cuaderno
 
-El cuaderno muestra los posts que cumplen TODOS los criterios:
+El cuaderno selecciona sus etapas mediante el **sistema de filtros unificado** (§7), con los campos `_filt_*` de la página. Muestra los posts **publicados** que cumplen TODOS los criterios definidos:
 
-1. Categoría = `_exp_categoria`
-2. Etiquetas = cualquiera de `_exp_etiquetas` (operador AND con la categoría)
-3. Fecha publicación entre `_exp_fecha_inicio` y `_exp_fecha_fin` (si ambas están definidas)
+1. Categorías = `_filt_category_ids` (array de IDs; operador `IN`, es decir OR entre ellas).
+2. Etiquetas = `_filt_tag_ids` con relación `_filt_tag_relation` (`IN`/OR o `AND`); la relación entre categorías y etiquetas es siempre `AND`.
+3. Fecha de publicación entre `_filt_date_from` y `_filt_date_to` (cada límite es opcional; si faltan ambos, no se filtra por fecha).
 
-Este filtro es idéntico al que usan los bloques Timeline y Carrusel de etapas.
+El orden y el límite los fijan `_filt_orderby` / `_filt_order` / `_filt_limit`. Ese orden es la fuente del contrato de navegación del cuaderno (§6, §13.1) y de las estadísticas en caliente (`enterprise_cuaderno_stats()`, más abajo): el listado, la navegación anterior/siguiente y el conteo de etapas salen todos de la misma consulta.
+
+Este filtro es idéntico al que usan los bloques Timeline y Carrusel de etapas y el post tipo D (§7).
+
+> **Campos legacy.** Los antiguos `_exp_categoria` / `_exp_etiquetas` **ya no** definen el filtro del cuaderno; se conservan únicamente para el ticker de la plantilla «Bitácora con bloques» (backward compat) y no deben usarse en lógica nueva.
+
+### Estadísticas en caliente del cuaderno
+
+Las estadísticas de un cuaderno (km, nº de etapas, duración, progreso) **se calculan en caliente**, en cada render, a partir de las etapas que casan sus filtros. **No** se cachean al guardar (a diferencia del post tipo D «Viaje de varios días», ver §3): las etapas de un cuaderno cambian a lo largo del tiempo sin re-guardar la página, y cachear al guardar quedaría obsoleto en un cuaderno `activo`.
+
+**Fuente única.** La función `enterprise_cuaderno_stats( $page_id )` (`functions.php`) es el único origen de estas cifras, y la usan **todos** los consumidores (barra lateral y hero del cuaderno, tarjeta del grid de «Viajes completados», cabecera agregada de la página «fuera de ruta» y listas de «otras» expediciones). Devuelve un array con:
+
+| Clave | Contenido |
+|---|---|
+| `estado` | `_exp_estado` canónico; si está vacío, se deriva del legacy `_exp_en_ruta` **solo** como respaldo. |
+| `km` | Valor **sin unidad** (se pinta con `enterprise_km_display()`). Override `_exp_km` si tiene valor; si no, suma en caliente de `_route_km` de las etapas. |
+| `etapas` | Nº de etapas (`found_posts` de la query por filtros `_filt_*`, ver §7). |
+| `dias_totales` | Días de `_exp_fecha_inicio` a `_exp_fecha_fin`; `0` si no hay fin resoluble. |
+| `dias_transcurridos` | Días de `_exp_fecha_inicio` a hoy; `0` si aún no ha empezado o no hay inicio. |
+| `fecha_inicio` / `fecha_fin` | Fechas resueltas (`fecha_fin` puede provenir de la última etapa; ver fallback). |
+| `fin_heredada` | `true` si la fin se dedujo de la última etapa en lugar de `_exp_fecha_fin`. |
+
+El conteo de etapas sale de esa misma query `_filt_*` (la que genera el listado), nunca del campo `_exp_categoria`, coherente con el contrato de navegación (§6, §13.1). Rendimiento: la query ceba la meta cache en bloque, de modo que la suma de km es de coste ~constante respecto al número de etapas.
+
+**Duración y progreso** se derivan de `estado` + fechas. El estado manda en los extremos; las fechas solo interpolan en `activo` con fin definida:
+
+| Estado | Fecha de fin | Progreso | Duración mostrada |
+|---|---|---|---|
+| `preparando` | — | No se muestra | No se muestra |
+| `activo` | con fin | Barra de %: `clamp( dias_transcurridos / dias_totales × 100, 0, 100 )` | Días totales (inicio→fin) |
+| `activo` | sin fin | Sin %: indicador «día N en ruta» (N = `dias_transcurridos`) | «N días, en curso» |
+| `finalizado` | con fin | 100 % (fijo por estado) | Días totales (inicio→fin) |
+| `finalizado` | sin fin (heredado) | 100 % (fijo por estado) | Días inicio→(fecha de la última etapa) |
+
+**Fallbacks defensivos.** Un cuaderno `finalizado` sin `_exp_fecha_fin` (dato heredado de la antigua semántica «vacío = en curso») usa como fin la **fecha de la etapa más reciente**. Caso límite: un `finalizado` sin fin **y sin etapas** muestra el progreso al **100 %** (por estado) y **omite** la duración. El disparador de la barra de progreso es `_exp_estado` (no el legacy `_exp_en_ruta`); toda división comprueba `dias_totales > 0`.
 
 ---
 
@@ -670,6 +704,30 @@ Registro de decisiones de arquitectura del tema. Cada entrada es **autocontenida
 **Decisión.** Fijar los enlaces permanentes como **«Nombre de la entrada»** (`%postname%`) en *Ajustes → Enlaces permanentes*; no usar «Simple». El detalle está en §6 «Estructura de permalinks».
 
 **Consecuencias.** La conectividad de la app móvil depende de mantener este ajuste. Todo cambio en *Ajustes → Enlaces permanentes* debe ir seguido de volver a guardar la configuración para regenerar las reglas de reescritura (`flush_rewrite_rules`). Los slugs de los cuadernos finalizados son URLs permanentes: cambiarlos rompe sus enlaces entrantes. El sitio sirve desde `bitacoraenterprise.com`, con el dominio antiguo `jjramosgo.blog` redirigiendo con 301.
+
+### 13.4 Formato de presentación de km centralizado
+
+**Contexto.** El valor `_route_km` de una entrada puede venir **sin unidad** (en un post tipo D «viaje», es un número formateado por `enterprise_calculate_viaje_stats()`, p. ej. `1.448`) o **ya con ella** (en una etapa, `_post_km` admite «280 km»). Se pintaba en crudo en varios sitios, de modo que unas veces salía «1.448» y otras «280 km». El primer arreglo (bloque «Etapas de ruta») añadía la unidad de forma inline, duplicando la regla.
+
+**Decisión.** La regla de formato de km vive en un **único** helper de presentación, `enterprise_km_display( $km )` (`functions.php`), que añade « km» de forma **defensiva** (no duplica si ya termina en «km») y no toca datos. Lo usan los cuatro puntos donde se pinta el km de una entrada (las dos vistas de «Etapas de ruta» y las dos del cuaderno). Se retiró el añadido inline anterior.
+
+**Consecuencias.** «Cómo se muestra un km» se cambia en un solo lugar. Es formato de presentación: nunca se persiste la unidad ni se normaliza `_route_km`.
+
+### 13.5 Estadísticas del cuaderno en caliente y fuente única
+
+**Contexto.** Las cifras de un cuaderno (km, etapas, duración, progreso) se resolvían de forma dispersa e incoherente: la barra lateral las calculaba en el template, mientras que la tarjeta del grid leía `_exp_km` en crudo (sin fallback → «—» si estaba vacío) y contaba etapas por el campo **deprecado** `_exp_categoria` (→ «0» o un conteo que no coincidía con el listado real). Además la barra de progreso era un campo manual (`_exp_progreso`) disparado por el legacy `_exp_en_ruta`.
+
+**Decisión.** Cálculo **en caliente** (no cacheado al guardar, a diferencia del post tipo D, cuyo dominio asume finalización; un cuaderno `activo` publica etapas sin re-guardarse), centralizado en una **fuente única** `enterprise_cuaderno_stats()` que usan todos los consumidores. El conteo de etapas sale de los filtros `_filt_*` (la misma fuente que genera el listado), retirando `_exp_categoria` de esa ruta. El progreso y la duración se derivan de `_exp_estado` + fechas (tabla en §4). Se retira `_exp_en_ruta` **como criterio de lógica** en todo el template (badge, eyebrow, punto de estado y barra pasan a `_exp_estado`); `_exp_en_ruta` se sigue **escribiendo** al guardar (backward compat) y solo se lee como respaldo del estado cuando `_exp_estado` está vacío. El mecanismo y el contrato de retorno están en §4 «Estadísticas en caliente del cuaderno».
+
+**Consecuencias.** Todos los consumidores muestran las mismas cifras y siempre al día. Un `_exp_km` curado sigue ganando como override. Se descartó explícitamente cachear al guardar (imitar al viaje tipo D), porque introduciría obsolescencia en cuadernos activos. Coste en caliente asumible por el cebado de meta en bloque y el volumen real (pocos cuadernos).
+
+### 13.6 Metabox del cuaderno consciente de la plantilla
+
+**Contexto.** Las plantillas «Cuaderno de bitácora» y «Bitácora con bloques» compartían el mismo metabox y guardado. Al calcularse duración y progreso en caliente (§13.5), sus campos manuales (`_exp_duracion`, `_exp_progreso`) sobraban en el cuaderno, pero **no** podían eliminarse en bloque: «Bitácora con bloques» los lee como datos estáticos y no tiene filtros `_filt_*` de los que derivarlos.
+
+**Decisión.** El conjunto de campos del metabox y su guardado son **conscientes de la plantilla**. En «Cuaderno de bitácora» se retiran `_exp_duracion` y `_exp_progreso` (se calculan) y `_exp_fecha_inicio`/`_exp_fecha_fin` quedan **opcionales**, sin la semántica «vacío = en curso». En «Bitácora con bloques» el conjunto de campos queda **congelado** tal como estaba, hasta que esa plantilla reciba su propio propósito (colecciones de etapas no ligadas a un viaje; ver `TODO.md` #5). El dato antiguo de los campos retirados no se borra de la base de datos: solo deja de editarse y leerse en el cuaderno.
+
+**Consecuencias.** Cada plantilla evoluciona con su propio conjunto de campos; el rediseño del metabox del cuaderno no rompe «Bitácora con bloques». Invariante para cambios futuros del metabox: no eliminar campos de forma global.
 
 ---
 
