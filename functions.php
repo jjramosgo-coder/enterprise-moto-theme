@@ -8,6 +8,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'ENTERPRISE_VERSION', '2.4.9' );
 
+/* Tope de nombres distintos en el ticker de la plantilla «Colección de viajes» (#5). */
+if ( ! defined( 'ENTERPRISE_COLECCION_TICKER_MAX' ) ) {
+    define( 'ENTERPRISE_COLECCION_TICKER_MAX', 16 );
+}
+
 /* ─────────────────────────────────────────
    SETUP DEL TEMA
 ───────────────────────────────────────── */
@@ -522,6 +527,61 @@ function enterprise_trip_card_data( $post_id ) {
         'year'       => $year,
     );
 }
+
+/* ─────────────────────────────────────────
+   CONJUNTO ÚNICO DE ENTRADAS DE UNA PÁGINA DE COLECCIÓN
+───────────────────────────────────────── */
+/**
+ * Dada una página de la plantilla «Colección de viajes», recolecta sus bloques
+ * de filtrado (enterprise_collect_stage_blocks), resuelve cada uno con la query
+ * compartida (enterprise_stage_query) y devuelve la UNIÓN DEDUPLICADA de IDs de
+ * entrada en orden de aparición. Fuente única para el ticker (Fase 3) y para el
+ * cálculo de estadísticas de la colección (Fase 4). Un post presente en dos
+ * bloques cuenta una sola vez.
+ *
+ * @param int $page_id
+ * @return int[] IDs de entrada, deduplicados, en orden de aparición.
+ */
+function enterprise_collection_post_ids( $page_id ) {
+    $content = get_post_field( 'post_content', $page_id );
+    if ( ! $content ) {
+        return array();
+    }
+    $blocks        = parse_blocks( $content );
+    $filter_blocks = enterprise_collect_stage_blocks( $blocks );
+
+    $ids = array();
+    foreach ( $filter_blocks as $b ) {
+        $attrs = ( isset( $b['attrs'] ) && is_array( $b['attrs'] ) ) ? $b['attrs'] : array();
+        $query = enterprise_stage_query( $attrs );
+        foreach ( $query->posts as $p ) {
+            $pid = is_object( $p ) ? (int) $p->ID : (int) $p;
+            if ( $pid && ! in_array( $pid, $ids, true ) ) {
+                $ids[] = $pid;
+            }
+        }
+    }
+    return $ids;
+}
+
+/* ─────────────────────────────────────────
+   ENCOLADO CSS: plantilla «Colección de viajes»
+───────────────────────────────────────── */
+/**
+ * Carga coleccion.css cuando la plantilla activa es la nueva. El handle
+ * «enterprise-coleccion» se registra en enterprise_register_blocks(). El
+ * carrusel (si se inserta un bloque post-stages) se auto-encola por has_block.
+ */
+function enterprise_coleccion_assets() {
+    if ( ! is_page() ) {
+        return;
+    }
+    if ( 'page-templates/template-trip-coleccion.php' !== get_page_template_slug( get_queried_object_id() ) ) {
+        return;
+    }
+    wp_enqueue_style( 'enterprise-coleccion' );
+}
+add_action( 'wp_enqueue_scripts', 'enterprise_coleccion_assets' );
 
 /* ─────────────────────────────────────────
    PAGINACIÓN PERSONALIZADA

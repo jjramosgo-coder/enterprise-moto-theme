@@ -54,7 +54,7 @@
   left: 0;
   background: var(--black);
   color: var(--white);
-  font-family: var(--display);
+  font-family: var(--font-display);
   font-size: 11px;
   letter-spacing: .08em;
   padding: 5px 12px;
@@ -65,7 +65,7 @@
   right: 0;
   background: var(--gold);
   color: var(--black);
-  font-family: var(--display);
+  font-family: var(--font-display);
   font-size: 11px;
   letter-spacing: .08em;
   padding: 5px 12px;
@@ -80,7 +80,7 @@
   flex: 1;
 }
 .ent-trip-collection .trip-title {
-  font-family: var(--display);
+  font-family: var(--font-display);
   font-size: 22px;
   letter-spacing: .03em;
   text-transform: uppercase;
@@ -109,7 +109,7 @@
 }
 .ent-trip-collection .trip-meta-i:last-child { border-right: none; }
 .ent-trip-collection .trip-meta-n {
-  font-family: var(--display);
+  font-family: var(--font-display);
   font-size: 18px;
   letter-spacing: .03em;
   color: var(--black);
@@ -136,4 +136,76 @@
 }
 @media (max-width: 640px) {
   .ent-trip-collection .trip-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   HERO + TICKER + CUERPO de la plantilla «Colección de viajes» (#5, Fase 3)
+   El hero NO re-padea el nav: .site-main ya lleva padding-top:var(--nav-h).
+   Ticker escopado bajo .col-hero con keyframe propio para no chocar con el
+   ticker global (.ticker-track/.ticker-item de style.css).
+   ============================================================ */
+
+/* ── Hero ── */
+.col-hero { background: var(--black); position: relative; overflow: hidden; }
+.col-hero-watermark {
+  position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
+  font-family: var(--font-display); font-size: clamp(100px, 14vw, 180px);
+  letter-spacing: .06em; color: rgba(255,255,255,.025);
+  pointer-events: none; user-select: none; white-space: nowrap; line-height: 1; z-index: 0;
+}
+.col-hero-inner { max-width: 1240px; margin: 0 auto; padding: 56px 40px 0; position: relative; z-index: 1; }
+
+.col-breadcrumb {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(255,255,255,.35); margin-bottom: 20px;
+}
+.col-breadcrumb a { color: rgba(255,255,255,.35); text-decoration: none; }
+.col-breadcrumb span:last-child { color: var(--gold); }
+
+.col-badge {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(242,193,24,.12); border: 1px solid rgba(242,193,24,.35);
+  color: var(--gold); font-size: 11px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; padding: 5px 12px; border-radius: 2px; margin-bottom: 20px;
+}
+.col-badge b { color: var(--white); font-weight: 700; }
+
+.col-title {
+  font-family: var(--font-display); font-size: clamp(56px, 7vw, 96px);
+  letter-spacing: .03em; line-height: .9; color: var(--white);
+  margin-bottom: 14px; text-transform: uppercase;
+}
+.col-title em { color: var(--gold); font-style: normal; }
+.col-subtitle { font-size: 15px; font-weight: 300; color: rgba(255,255,255,.5); line-height: 1.7; max-width: 520px; }
+
+.col-stats {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
+  margin-top: 48px; border-top: 1px solid rgba(255,255,255,.08);
+}
+.col-stat { padding: 20px 0 20px 24px; border-right: 1px solid rgba(255,255,255,.08); }
+.col-stat:first-child { padding-left: 0; }
+.col-stat:last-child { border-right: none; }
+.col-stat-n { font-family: var(--font-display); font-size: 34px; letter-spacing: .04em; color: var(--gold); line-height: 1; }
+.col-stat-l { font-size: 11px; color: rgba(255,255,255,.35); letter-spacing: .08em; text-transform: uppercase; margin-top: 4px; }
+.col-updated { margin-top: 14px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.28); padding-bottom: 8px; }
+
+/* ── Ticker (escopado; no hereda ni pisa el global) ── */
+.col-hero .ticker { background: var(--gold); overflow: hidden; padding: 8px 0; margin-top: 40px; }
+.col-hero .ticker-track { display: flex; width: max-content; animation: col-ticker-scroll 30s linear infinite; }
+.col-hero .ticker-item { font-family: var(--font-display); font-size: 13px; letter-spacing: .12em; color: var(--black); padding: 0 26px; white-space: nowrap; }
+.col-hero .ticker-item::after { content: '✦'; margin-left: 26px; opacity: .45; }
+@keyframes col-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ── Cuerpo editorial (bloques curados) ── */
+.col-body { max-width: 1240px; margin: 0 auto; padding: 64px 40px 24px; }
+.col-content { display: flow-root; }            /* contención de floats (§13.2) */
+.col-content > * + * { margin-top: 32px; }
+
+@media (max-width: 1000px) {
+  .col-stats { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 640px) {
+  .col-stats { grid-template-columns: repeat(2, 1fr); }
+  .col-hero-inner, .col-body { padding-left: 20px; padding-right: 20px; }
 }
