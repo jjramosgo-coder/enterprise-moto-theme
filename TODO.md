@@ -5,7 +5,7 @@ repositorio (se consolida en git como el resto). La lista de trabajo en memoria 
 cada sesión se sincroniza con este fichero mediante los comandos `create` / `add` /
 `list` / `export` / `clear TO-DOs`.
 
-Cada pendiente lleva un **tipo** que indica su propósito: `mejora`, `fix`, `doc` u `otro`.
+Cada pendiente lleva un **tipo** que indica su propósito: `mejora`, `fix`, `limpieza`, `doc` u `otro` (`limpieza` = retirar código obsoleto o muerto sin cambiar el comportamiento; se distingue de `fix`, que corrige un fallo observable).
 Los que aún no tienen propósito decidido quedan como `(sin clasificar)`.
 
 Cada TO-DO lleva además un **número (`#`)** que es su identificador **permanente y
@@ -30,9 +30,10 @@ numerado nuevo.
 
 | # | Tipo | Descripción | Estado |
 |---|------|-------------|--------|
-| 8 | (sin clasificar) | Navegación anterior/siguiente entre los viajes de una «Colección de viajes». Hoy las tarjetas de `enterprise/trip-collection` son **enlaces planos** (sin contexto `from_*`). Si se aborda, debe cumplir el **contrato de navegación** (§13.1/§6): propagar el parámetro de contexto en los enlaces y reconstruir la secuencia leyendo **el mismo bloque** que genera el listado, con **desambiguación por bloque** al poder haber varios bloques de filtrado en una misma página. Surgido al cerrar #5 (fuera de su alcance). | pendiente |
-| 9 | (sin clasificar) | Retirada del campo legacy `_exp_categoria`. Quedó **desbloqueada** al eliminar #5 el ticker antiguo que lo consumía. Limpieza de código (dejar de escribirlo y de leerlo); **no borrar el dato de la BD**. Verificar antes que ningún otro consumidor lo use. | pendiente |
-| 10 | (sin clasificar) | Limpieza trivial: en `enterprise_post_stage_save()` hay **dos `update_post_meta( _post_paises )` idénticos seguidos**; redundante e inocuo. Eliminar la duplicación. | pendiente |
+| 8 | mejora | Navegación anterior/siguiente entre los viajes de una «Colección de viajes». Hoy las tarjetas de `enterprise/trip-collection` son **enlaces planos** (sin contexto `from_*`). Si se aborda, debe cumplir el **contrato de navegación** (§13.1/§6): propagar el parámetro de contexto en los enlaces y reconstruir la secuencia leyendo **el mismo bloque** que genera el listado, con **desambiguación por bloque** al poder haber varios bloques de filtrado en una misma página. Surgido al cerrar #5 (fuera de su alcance). | pendiente |
+| 9 | limpieza | Retirada del campo legacy `_exp_categoria`. Quedó **desbloqueada** al eliminar #5 el ticker antiguo que lo consumía. Limpieza de código (dejar de escribirlo y de leerlo); **no borrar el dato de la BD**. Verificar antes que ningún otro consumidor lo use. | pendiente |
+| 10 | limpieza | Limpieza trivial: en `enterprise_post_stage_save()` hay **dos `update_post_meta( _post_paises )` idénticos seguidos**; redundante e inocuo. Eliminar la duplicación. | pendiente |
+| 12 | limpieza | CSS muerto en `assets/css/coleccion.css`: las reglas `.ent-trip-collection .trip-grid` (el `grid` y sus media queries) ya no aplican tras #11, porque el bloque dejó de emitir `.trip-grid`. Retirarlas; inocuo, no cambia comportamiento. Surgido al cerrar #11. | pendiente |
 
 ## Resueltas
 
