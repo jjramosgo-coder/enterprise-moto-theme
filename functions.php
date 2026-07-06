@@ -2551,7 +2551,7 @@ function enterprise_render_off_route( $page_id, $exp_nombre ) {
     $total_km   = 0;
     $all_paises = array();
     foreach ( $exp_pages as $eid ) {
-        $km = get_post_meta( $eid, '_exp_km', true );
+        $km = enterprise_cuaderno_stats( $eid )['km']; // #4 R2: coherente con las tarjetas (override manual o suma en caliente)
         if ( $km ) $total_km += intval( preg_replace( '/[^0-9]/', '', $km ) );
         $p = get_post_meta( $eid, '_exp_paises', true );
         if ( $p ) foreach ( explode( '·', $p ) as $pa ) $all_paises[] = trim( $pa );
@@ -2836,25 +2836,21 @@ function enterprise_render_off_route( $page_id, $exp_nombre ) {
   </h2>
   <div class="past-grid">
     <?php foreach ( $past_exps as $n => $pe ) :
-      $p_nombre  = get_post_meta( $pe->ID, '_exp_nombre',   true ) ?: get_the_title( $pe->ID );
-      $p_km      = get_post_meta( $pe->ID, '_exp_km',       true );
-      $p_paises  = get_post_meta( $pe->ID, '_exp_paises',   true );
-      $p_cat     = get_post_meta( $pe->ID, '_exp_categoria', true );
-      $p_etapas  = 0;
-      if ( $p_cat ) {
-        $p_q = new WP_Query( array( 'post_type'=>'post','post_status'=>'publish','posts_per_page'=>-1,'fields'=>'ids','tax_query'=>array(array('taxonomy'=>'category','field'=>'slug','terms'=>$p_cat))) );
-        $p_etapas = $p_q->found_posts;
-        wp_reset_postdata();
-      }
-      $p_year = get_the_date( 'Y', $pe->ID );
+      // #4 R2: km y etapas desde la fuente única (resuelve el «punto A»:
+      // km calculado si _exp_km está vacío; etapas por _filt_* en vez del
+      // deprecado _exp_categoria, que solía dar 0).
+      $p_stats  = enterprise_cuaderno_stats( $pe->ID );
+      $p_nombre = get_post_meta( $pe->ID, '_exp_nombre', true ) ?: get_the_title( $pe->ID );
+      $p_paises = get_post_meta( $pe->ID, '_exp_paises', true );
+      $p_year   = get_the_date( 'Y', $pe->ID );
     ?>
     <a class="past-card" href="<?php echo esc_url( get_permalink( $pe->ID ) ); ?>">
       <div class="past-year"><?php echo esc_html( $p_year ); ?> · <?php esc_html_e( 'Completada', 'enterprise-moto' ); ?></div>
       <h3 class="past-name"><?php echo esc_html( strtoupper( $p_nombre ) ); ?></h3>
       <p class="past-route"><?php echo esc_html( get_the_excerpt( $pe->ID ) ?: ( $p_paises ?: '—' ) ); ?></p>
       <div class="past-stats">
-        <div><div class="ps-n"><?php echo esc_html( $p_km ?: '—' ); ?></div><div class="ps-l"><?php esc_html_e( 'Kilómetros', 'enterprise-moto' ); ?></div></div>
-        <div><div class="ps-n"><?php echo intval( $p_etapas ); ?></div><div class="ps-l"><?php esc_html_e( 'Etapas', 'enterprise-moto' ); ?></div></div>
+        <div><div class="ps-n"><?php echo esc_html( enterprise_km_display( $p_stats['km'] ) ?: '—' ); ?></div><div class="ps-l"><?php esc_html_e( 'Kilómetros', 'enterprise-moto' ); ?></div></div>
+        <div><div class="ps-n"><?php echo intval( $p_stats['etapas'] ); ?></div><div class="ps-l"><?php esc_html_e( 'Etapas', 'enterprise-moto' ); ?></div></div>
       </div>
       <div class="past-decnum"><?php echo str_pad( $n+1, 2, '0', STR_PAD_LEFT ); ?></div>
     </a>

@@ -195,30 +195,6 @@ if ( $exp_estado === 'activo' ) {
 
 ?>
 
-<?php
-/* ── VALIDACIÓN TEMPORAL — #4 commit 1 (enterprise_cuaderno_stats aislada).
-   Solo administradores y solo si la URL lleva ?ent_stats_debug=1.
-   Muestra lado a lado los valores EMBEBIDOS actuales (los que pinta la barra
-   lateral) y los de la nueva función, para poder compararlos sin cambiar
-   ninguna salida existente. SE RETIRA en el commit 2 al migrar consumidores. */
-if ( current_user_can( 'manage_options' ) && isset( $_GET['ent_stats_debug'] ) ) :
-    $ent_dbg = enterprise_cuaderno_stats( $page_id );
-    ?>
-    <div style="max-width:900px;margin:16px auto;padding:14px 18px;border:2px dashed #f2c118;background:#1a1a1a;color:#eee;font-family:monospace;font-size:13px;line-height:1.6;">
-      <strong style="color:#f2c118;">DEBUG #4 · enterprise_cuaderno_stats() — TEMPORAL (se retira en commit 2)</strong>
-      <table style="width:100%;border-collapse:collapse;margin-top:8px;">
-        <tr style="color:#f2c118;text-align:left;"><th>Dato</th><th>Embebido (barra lateral)</th><th>Función</th></tr>
-        <tr><td>estado</td><td><?php echo esc_html( $exp_estado ); ?></td><td><?php echo esc_html( $ent_dbg['estado'] ); ?></td></tr>
-        <tr><td>km</td><td><?php echo esc_html( $exp_km ?: '—' ); ?></td><td><?php echo esc_html( enterprise_km_display( $ent_dbg['km'] ) ?: '—' ); ?></td></tr>
-        <tr><td>etapas</td><td><?php echo esc_html( $total_etapas ); ?></td><td><?php echo esc_html( $ent_dbg['etapas'] ); ?></td></tr>
-        <tr><td>días totales</td><td><?php echo esc_html( $dias_totales ); ?></td><td><?php echo esc_html( $ent_dbg['dias_totales'] ); ?></td></tr>
-      </table>
-      <div style="margin-top:8px;color:#aaa;">Solo función (nuevos): días transcurridos = <?php echo esc_html( $ent_dbg['dias_transcurridos'] ); ?> · fecha_inicio = <?php echo esc_html( $ent_dbg['fecha_inicio'] ?: '—' ); ?> · fecha_fin = <?php echo esc_html( $ent_dbg['fecha_fin'] ?: '—' ); ?> · fin heredada de última etapa = <?php echo $ent_dbg['fin_heredada'] ? 'sí' : 'no'; ?></div>
-    </div>
-    <?php
-endif;
-?>
-
 <!-- ════════════════════════════════════════════
      HERO DE EXPEDICIÓN
 ════════════════════════════════════════════ -->
