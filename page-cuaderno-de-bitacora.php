@@ -64,25 +64,21 @@ $exp_paises    = get_post_meta( $page_id, '_exp_paises',    true ) ?: '';
 $exp_en_ruta   = get_post_meta( $page_id, '_exp_en_ruta',   true ); // backward compat
 $exp_estado    = get_post_meta( $page_id, '_exp_estado',    true ) ?:
                  ( $exp_en_ruta === '1' ? 'activo' : 'finalizado' );
-$exp_progreso  = intval( get_post_meta( $page_id, '_exp_progreso', true ) ?: 0 );
+// #4 R3/R4: el progreso ya NO se lee del meta manual _exp_progreso; se computa
+// más abajo por estado + fechas (el campo del metabox se retira en el commit 4).
 
 /* Fechas → calcular salida y duración automáticamente */
 $exp_fecha_inicio = get_post_meta( $page_id, '_exp_fecha_inicio', true ) ?: '';
 $exp_fecha_fin    = get_post_meta( $page_id, '_exp_fecha_fin',    true ) ?: '';
 $exp_salida       = get_post_meta( $page_id, '_exp_salida',       true ) ?: '';
-$exp_duracion     = get_post_meta( $page_id, '_exp_duracion',     true ) ?: '';
 
 if ( ! $exp_salida && $exp_fecha_inicio ) {
     $exp_salida = date_i18n( 'j M Y', strtotime( $exp_fecha_inicio ) );
 }
-$dias_totales = 0;
-if ( $exp_fecha_inicio ) {
-    $ts_fin_dt    = $exp_fecha_fin ? strtotime( $exp_fecha_fin ) : time();
-    $dias_totales = max( 1, round( ( $ts_fin_dt - strtotime( $exp_fecha_inicio ) ) / DAY_IN_SECONDS ) + 1 );
-}
-if ( ! $exp_duracion && $dias_totales ) {
-    $exp_duracion = $dias_totales . ' ' . _n( 'día', 'días', $dias_totales, 'enterprise-moto' );
-}
+// #4 R3/R4: la duración ya NO se lee del meta manual _exp_duracion ni se calcula
+// aquí con time() (esa semántica «vacío = en curso» se retira). Se computa más
+// abajo desde enterprise_cuaderno_stats(), por estado y fechas. Se define ahí.
+$exp_duracion = '';
 
 // Slug de la categoría y etiquetas que agrupan las etapas
 // DEPRECATED — sustituidos por _filt_* ; se mantienen solo para backward compat del ticker de page-bitacora-bloques
@@ -164,20 +160,54 @@ $etapas       = $etapas_query->posts;
 // La primera es la más reciente (la "activa")
 $ultima_etapa = ! empty( $etapas ) ? $etapas[0] : null;
 
-// Calcular km totales sumando meta _route_km de cada post
-$km_total = 0;
-foreach ( $etapas as $etapa ) {
-    $km_raw = get_post_meta( $etapa->ID, '_route_km', true );
-    // Extraer sólo el número (eliminar " km", puntos de miles, etc.)
-    $km_num = preg_replace( '/[^0-9]/', '', $km_raw );
-    if ( is_numeric( $km_num ) ) {
-        $km_total += intval( $km_num );
-    }
-}
+/* #4 R2/R3: estadísticas en caliente desde la fuente única enterprise_cuaderno_stats().
+   La query de arriba se CONSERVA porque el listado (carrusel/timeline) necesita los
+   objetos post; de ella sale el conteo de etapas ($total_etapas). El km, la duración y
+   el progreso salen de la función, que resuelve la fin heredada (R5) y las fechas. */
+$c_stats              = enterprise_cuaderno_stats( $page_id );
+$exp_km               = enterprise_km_display( $c_stats['km'] ); // '' si no hay km
+$c_dias_totales       = (int) $c_stats['dias_totales'];
+$c_dias_transcurridos = (int) $c_stats['dias_transcurridos'];
 
-// Si el meta _exp_km no está relleno, calcularlo
-if ( ! $exp_km && $km_total > 0 ) {
-    $exp_km = number_format( $km_total, 0, ',', '.' ) . ' km';
+/* Duración mostrada y modo de progreso, según estado (tabla R3 del análisis).
+   El estado manda en los extremos; las fechas solo interpolan en 'activo' con fin. */
+$exp_duracion = '';    // se rellena si procede
+$prog_show    = false; // ¿mostrar widget de progreso?
+$prog_bar     = false; // true = barra %, false = «día N en ruta» (sin %)
+$prog_pct     = 0;     // % de la barra
+$prog_dia_n   = 0;     // N para «día N en ruta»
+
+if ( $exp_estado === 'preparando' ) {
+    // Ni duración ni progreso.
+} elseif ( $exp_estado === 'activo' ) {
+    if ( $exp_fecha_inicio === '' ) {
+        // R5: 'activo' sin fecha de inicio → no se calcula progreso; widget oculto.
+    } elseif ( $c_dias_totales > 0 ) {
+        // 'activo' con fin: barra de % = transcurridos / totales (clamp 0-100).
+        $exp_duracion = $c_dias_totales . ' ' . _n( 'día', 'días', $c_dias_totales, 'enterprise-moto' );
+        $prog_show = true;
+        $prog_bar  = true;
+        $prog_pct  = max( 0, min( 100, (int) round( $c_dias_transcurridos / $c_dias_totales * 100 ) ) );
+    } else {
+        // 'activo' sin fin: sin %, indicador «día N en ruta».
+        $exp_duracion = sprintf(
+            _n( '%d día, en curso', '%d días, en curso', $c_dias_transcurridos, 'enterprise-moto' ),
+            $c_dias_transcurridos
+        );
+        $prog_show  = true;
+        $prog_bar   = false;
+        $prog_dia_n = $c_dias_transcurridos;
+    }
+} else {
+    // 'finalizado': progreso 100 % por definición del estado.
+    $prog_show = true;
+    $prog_bar  = true;
+    $prog_pct  = 100;
+    if ( $c_dias_totales > 0 ) {
+        // Con fin real o heredada de la última etapa (R5).
+        $exp_duracion = $c_dias_totales . ' ' . _n( 'día', 'días', $c_dias_totales, 'enterprise-moto' );
+    }
+    // 'finalizado' sin fin resoluble (sin etapas) → duración omitida (R5).
 }
 
 /* ── VARIABLES DE ESTADO ──────────────────────────────────────── */
@@ -245,8 +275,8 @@ if ( $exp_estado === 'activo' ) {
         <div class="exp-stat" role="listitem">
           <div class="exp-stat-n">
             <?php echo intval( $total_etapas ); ?>
-            <?php if ( $dias_totales > 0 ) : ?>
-              <span style="font-size:.45em;font-weight:300;color:var(--mid,#5a5a5a);letter-spacing:0;"> / <?php echo intval( $dias_totales ); ?> <?php esc_html_e('días','enterprise-moto'); ?></span>
+            <?php if ( $c_dias_totales > 0 ) : ?>
+              <span style="font-size:.45em;font-weight:300;color:var(--mid,#5a5a5a);letter-spacing:0;"> / <?php echo intval( $c_dias_totales ); ?> <?php esc_html_e('días','enterprise-moto'); ?></span>
             <?php endif; ?>
           </div>
           <div class="exp-stat-l"><?php esc_html_e( 'Etapas', 'enterprise-moto' ); ?></div>
@@ -267,24 +297,29 @@ if ( $exp_estado === 'activo' ) {
 
     </div><!-- /exp-hero-left -->
 
-    <!-- Barra de progreso (solo en ruta o con progreso definido) -->
-    <?php if ( $exp_en_ruta || $exp_progreso > 0 ) : ?>
+    <!-- Barra de progreso — se muestra según el estado (R3): activo y finalizado; nunca en preparando -->
+    <?php if ( $prog_show ) : ?>
       <div class="exp-hero-right">
         <div class="exp-progress-widget">
           <div class="exp-progress-label">
             <?php esc_html_e( 'Progreso del viaje', 'enterprise-moto' ); ?>
-            <span><?php echo intval( $exp_progreso ); ?>%</span>
+            <?php if ( $prog_bar ) : ?>
+              <span><?php echo intval( $prog_pct ); ?>%</span>
+            <?php else : ?>
+              <span><?php printf( esc_html__( 'Día %d en ruta', 'enterprise-moto' ), intval( $prog_dia_n ) ); ?></span>
+            <?php endif; ?>
           </div>
-          <div class="exp-progress-track" role="progressbar"
-               aria-valuenow="<?php echo intval( $exp_progreso ); ?>"
-               aria-valuemin="0" aria-valuemax="100">
-            <div class="exp-progress-fill" style="width:<?php echo intval( $exp_progreso ); ?>%"></div>
-          </div>
+          <?php if ( $prog_bar ) : ?>
+            <div class="exp-progress-track" role="progressbar"
+                 aria-valuenow="<?php echo intval( $prog_pct ); ?>"
+                 aria-valuemin="0" aria-valuemax="100">
+              <div class="exp-progress-fill" style="width:<?php echo intval( $prog_pct ); ?>%"></div>
+            </div>
+          <?php endif; ?>
           <p class="exp-progress-sub">
             <?php printf(
-              esc_html__( '%1$d de %2$s etapas publicadas', 'enterprise-moto' ),
-              intval( $total_etapas ),
-              esc_html( $exp_duracion ?: '?' )
+              esc_html( _n( '%d etapa publicada', '%d etapas publicadas', intval( $total_etapas ), 'enterprise-moto' ) ),
+              intval( $total_etapas )
             ); ?>
           </p>
         </div>
@@ -327,7 +362,7 @@ if ( $exp_estado === 'activo' ) {
 
     <div class="section-eyebrow">
       <?php esc_html_e( 'Última etapa publicada', 'enterprise-moto' ); ?>
-      <?php if ( $exp_en_ruta ) : ?>
+      <?php if ( $exp_estado === 'activo' ) : ?>
         <span class="eyebrow-live" style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0;">
           <span class="live-dot" style="background:#e03030;" aria-hidden="true"></span>
           <?php
@@ -350,7 +385,7 @@ if ( $exp_estado === 'activo' ) {
           <div class="exp-latest-img-fallback">🏍️</div>
         <?php endif; ?>
         <div class="exp-latest-img-overlay" aria-hidden="true"></div>
-        <?php if ( $exp_en_ruta ) : ?>
+        <?php if ( $exp_estado === 'activo' ) : ?>
           <div class="exp-latest-badge">
             <?php esc_html_e( 'Última etapa', 'enterprise-moto' ); ?>
           </div>
@@ -576,19 +611,19 @@ if ( $has_gutenberg ) :
         <div class="exp-summary-row">
           <dt><?php esc_html_e( 'Estado', 'enterprise-moto' ); ?></dt>
           <dd style="color:<?php echo esc_attr( $estado_color ); ?>;display:flex;align-items:center;gap:6px;">
-            <?php if ( $exp_en_ruta ) : ?><span class="live-dot" aria-hidden="true"></span><?php endif; ?>
+            <?php if ( $exp_estado === 'activo' ) : ?><span class="live-dot" aria-hidden="true"></span><?php endif; ?>
             <?php echo esc_html( $estado_label ); ?>
           </dd>
         </div>
       </dl>
-      <?php if ( $exp_progreso > 0 ) : ?>
+      <?php if ( $prog_show && $prog_bar ) : ?>
         <div class="exp-summary-progress">
           <div class="exp-summary-progress-label">
             <?php esc_html_e( 'Progreso', 'enterprise-moto' ); ?>
-            <span><?php echo intval( $exp_progreso ); ?>%</span>
+            <span><?php echo intval( $prog_pct ); ?>%</span>
           </div>
           <div class="exp-summary-track">
-            <div class="exp-summary-fill" style="width:<?php echo intval( $exp_progreso ); ?>%"></div>
+            <div class="exp-summary-fill" style="width:<?php echo intval( $prog_pct ); ?>%"></div>
           </div>
         </div>
       <?php endif; ?>
@@ -639,8 +674,8 @@ if ( $has_gutenberg ) :
       </div>
       <ul class="exp-other-list">
         <?php foreach ( $otras as $otra ) :
-          $otra_km     = get_post_meta( $otra->ID, '_exp_km', true );
-          $otra_live   = get_post_meta( $otra->ID, '_exp_en_ruta', true );
+          $otra_km   = enterprise_km_display( enterprise_cuaderno_stats( $otra->ID )['km'] );
+          $otra_live = ( get_post_meta( $otra->ID, '_exp_estado', true ) === 'activo' );
         ?>
           <li class="exp-other-item">
             <a href="<?php echo esc_url( get_permalink( $otra->ID ) ); ?>" class="exp-other-link">
