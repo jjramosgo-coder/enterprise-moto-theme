@@ -17,6 +17,15 @@ siguiente TO-DO toma *(el mayor `#` usado en cualquiera de las dos tablas) + 1*.
 referencia a `#N` nunca apunte a dos cosas distintas. (El `#0` de «Resueltas» es una
 asignación retroactiva a la entrada que ya existía antes de introducir la numeración.)
 
+La tabla **«Resueltas»** —con sus bloques «Análisis — #N» y «Notas para
+documentación — #N»— se conserva **solo como traza cerrada** de cómo se resolvió
+cada ítem: son las entradas que se usaron para cerrarlo, no trabajo pendiente. No es
+lista de tareas ni requiere re-verificación al abrir sesión o al releer el fichero,
+y la redacción cautelosa dentro de la nota de un ítem resuelto («a confirmar»,
+«conviene afinar», «por si…») **no lo reabre**. El backlog vivo es **exclusivamente
+la tabla «Pendientes»**; un ítem resuelto solo vuelve a él si se crea un TO-DO
+numerado nuevo.
+
 ## Pendientes
 
 | # | Tipo | Descripción | Estado |
