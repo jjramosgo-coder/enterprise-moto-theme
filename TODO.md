@@ -460,7 +460,8 @@ pendiente**: estas notas no son cierre, solo material para documentar y validar.
     bloque que la genera, con desambiguación por bloque al haber varios); (b) **retirada del legacy
     `_exp_categoria`** (TO-DO nuevo, ya desbloqueado); (c) **renombrar `page-cuaderno-de-bitacora.php`**;
     (d) **flag «incluir en cifras» por bloque**.
-15. **La Fase 5** definida en el documento de requerimientos no has sido ejecutada por el Desarrollador a petición de Juanjo. Deberá completarla por tanto el Arquitecto.
+15. **La Fase 5** definida en el documento de requerimientos no has sido ejecutada por el Desarrollador a petición de 
+    Juanjo. Deberá completarla por tanto el Arquitecto.
 
 **Observación al margen (posible TO-DO nuevo, fuera de #5):** en `enterprise_post_stage_save` hay
 **dos `update_post_meta` idénticos de `_post_paises`** seguidos; redundante e inocuo, candidato a
