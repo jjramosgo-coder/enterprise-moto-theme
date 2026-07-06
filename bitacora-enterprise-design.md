@@ -125,7 +125,8 @@ Día de conducción. Los tipos B (etapa dentro de un viaje largo) y C (salida au
 - Dato extra (etiqueta + valor)
 
 **Categoría tipo B:** `etapa` o `cuaderno-etapa`  
-**Categoría tipo C:** subcategoría de `tipo-de-salida` (desayuno-motero, fin-de-semana-motero, etc.)  
+**Categoría tipo C:** subcategoría de `tipo-de-salida` de **un solo día** (p. ej. `desayuno-motero`, una excursión de un día). Nunca `fin-de-semana-motero` ni `puente-motero`: al abarcar dos o más días no son salidas de un día.
+
 **Franja de datos:** muestra tramo, km, horas moto, horas ferry, duración
 
 ### Tipo D — Viaje de varios días (a posteriori)
