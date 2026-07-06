@@ -30,7 +30,7 @@ numerado nuevo.
 
 | # | Tipo | Descripción | Estado |
 |---|------|-------------|--------|
-| 5 | (sin clasificar) | **(futuro)** Reorientar `page-bitacora-bloques.php` a un propósito propio: publicar colecciones de etapas **no ligadas a un viaje** (p. ej. etapas por la provincia de Tarragona a lo largo de los años), compuestas con bloques Gutenberg. **Nunca** alternativa a `page-cuaderno-de-bitacora.php`. Su metabox/campos se diseñarán aparte y no condicionan el del cuaderno. Concepto y campos a definir cuando se aborde. | pendiente |
+| 5 | (sin clasificar) | **(futuro)** Reorientar `page-bitacora-bloques.php` a un propósito propio: publicar colecciones de etapas **no ligadas a un viaje** (p. ej. etapas por la provincia de Tarragona a lo largo de los años), compuestas con bloques Gutenberg. **Nunca** alternativa a `page-cuaderno-de-bitacora.php`. Su metabox/campos se diseñarán aparte y no condicionan el del cuaderno. Concepto y campos a definir cuando se aborde. Requerimientos de desarrollo: `docs/requerimientos-5-coleccion-viajes.md`. | pendiente |
 
 ## Resueltas
 
