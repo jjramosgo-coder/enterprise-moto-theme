@@ -21,13 +21,14 @@ asignación retroactiva a la entrada que ya existía antes de introducir la nume
 
 | # | Tipo | Descripción | Estado |
 |---|------|-------------|--------|
-| 4 | fix | Estadísticas del cuaderno **en caliente** y coherentes en todos los consumidores: función compartida `enterprise_cuaderno_stats()`, tarjeta del grid corregida (km sin fallback + etapas por `_exp_categoria` deprecado → bug del «punto A»), progreso recalculado por estado+fechas, y rediseño del metabox del cuaderno (retirar `_exp_duracion` y `_exp_progreso` manuales; `_exp_fecha_*` opcionales sin «vacío = en curso»). **Invariante: no romper `page-bitacora-bloques.php`** (metabox y guardado conscientes de la plantilla). Análisis y requerimientos más abajo. | pendiente |
 | 5 | (sin clasificar) | **(futuro)** Reorientar `page-bitacora-bloques.php` a un propósito propio: publicar colecciones de etapas **no ligadas a un viaje** (p. ej. etapas por la provincia de Tarragona a lo largo de los años), compuestas con bloques Gutenberg. **Nunca** alternativa a `page-cuaderno-de-bitacora.php`. Su metabox/campos se diseñarán aparte y no condicionan el del cuaderno. Concepto y campos a definir cuando se aborde. | pendiente |
+| 6 | doc | Notas de implementación de #2–#4 para el **arquitecto**, para documentar con precisión lo realmente construido (complementan el «Análisis — #4 §9»). Detalle en «Notas para documentación — #6», más abajo. | pendiente |
 
 ## Resueltas
 
 | # | Tipo | Descripción | Resuelto en |
 |---|------|-------------|-------------|
+| 4 | fix | Estadísticas del cuaderno **en caliente** y coherentes en todos los consumidores mediante la fuente única `enterprise_cuaderno_stats()`: grid y cabecera agregada corregidos (resuelto el «punto A» del conteo por `_exp_categoria`), duración/progreso recalculados por `_exp_estado` + fechas (tabla R3, fallbacks R5), subtexto corregido, lista «otras» migrada, y metabox/guardado **conscientes de la plantilla** (cuaderno sin `_exp_duracion`/`_exp_progreso` y fecha de fin sin «en curso»; «Bitácora con bloques» congelada). Implementado en 4 commits troceados. Análisis conservado como referencia más abajo. | commits `6a8045c`, `4355135`, `ed946c0`, `a530b62` (jul 2026) |
 | 3 | fix | Helper de presentación compartido `enterprise_km_display()` en `functions.php`, usado en los **cuatro** puntos de pintado de km de una entrada (las dos vistas de «Etapas de ruta» y las dos del cuaderno, `.ps-card-km` / `.exp-tl-km`); retirado el bloque inline de #2 (la regla de formato queda en un único sitio). Solo presentación; no toca datos ni contrato del campo. Análisis conservado como referencia más abajo. | commit `52df77b` (jul 2026) |
 | 1 | doc | Sección **«Decisiones de arquitectura»** creada en `bitacora-enterprise-design.md` (§13) y sembrada con las tres decisiones ya validadas: contrato de navegación, contención de floats del cuaderno y estructura de permalinks (cada una autocontenida, con referencia a §6). | Sección §13 del design doc (jul 2026) |
 | 2 | mejora | Unidad «km» defensiva al pintar los km en las **dos** vistas del bloque «Etapas de ruta» (`blocks/post-stages/render.php`): tarjeta `.ent-card__km` y timeline `.ent-tl-km`. Solo presentación; no toca datos ni contrato del campo. Análisis conservado como referencia más abajo. | commit `0fd7c1c` (jul 2026) |
@@ -327,3 +328,34 @@ Casos de validación a cubrir: cuaderno `activo` con fin / `activo` sin fin / `f
 - Registrar en «Decisiones de arquitectura» (que crea el #1): cuaderno calcula en caliente; metabox
   por plantilla; progreso por estado + fechas.
 - Subir versión en los **tres** sitios (`style.css`, `ENTERPRISE_VERSION`, header del design doc).
+
+### Notas para documentación — #6 · [doc] (para el arquitecto)
+
+Apuntes surgidos al **implementar** #2–#4, para que la documentación refleje lo realmente
+construido. Complementan el «Análisis — #4 §9» (centrado en el design doc de #4); no lo repiten.
+
+1. **Formato de km (de #3):** la regla de la unidad «km» vive ahora en un único sitio, el helper
+   `enterprise_km_display()` (`functions.php`). Es la **única fuente** de formato de km y la usan los
+   cuatro puntos de pintado. Candidata a entrada propia en «Decisiones de arquitectura» (a #3 no se le
+   documentó decisión).
+
+2. **Fuente única de estadísticas del cuaderno:** `enterprise_cuaderno_stats( $page_id )` devuelve
+   `estado`, `km` (SIN unidad — se pinta con el helper), `etapas`, `dias_totales`, `dias_transcurridos`,
+   `fecha_inicio`, `fecha_fin` (resuelta; puede venir de la última etapa por R5) y `fin_heredada`. La
+   calculan en caliente todos los consumidores (barra lateral, hero, grid, cabecera agregada, «otras»).
+   La query de etapas del template **no** se elimina: el listado necesita los objetos post y de ella
+   sale el conteo.
+
+3. **`_exp_en_ruta` retirado como criterio de lógica en TODO el template** (no solo la barra de
+   progreso): eyebrow «actualizado hace», badge de última etapa y punto del estado en la lateral pasan
+   a `_exp_estado === 'activo'`. `_exp_en_ruta` se sigue **escribiendo** en el guardado (backward
+   compat), pero ya no se lee para lógica.
+
+4. **`_exp_duracion` / `_exp_progreso`:** retirados del metabox y del render del cuaderno; se conservan
+   como campos SOLO en la plantilla «Bitácora con bloques» (congelada). El dato antiguo no se borra de
+   la BD: solo deja de leerse y de editarse en el cuaderno.
+
+5. **Comportamiento a CONFIRMAR y documentar:** un cuaderno `finalizado` sin fecha de fin y sin etapas
+   muestra la barra de progreso al **100 %** (R5: «progreso 100 por estado») y **omite** la duración.
+   Es el caso «Semana Santa 2025». Conforme al análisis, pero conviene dejarlo explícito por si el
+   arquitecto quiere afinar la UX.
