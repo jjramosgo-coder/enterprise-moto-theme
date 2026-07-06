@@ -529,17 +529,35 @@ function enterprise_expedition_metabox_cb( $post ) {
     echo '<div style="' . $s_sbody . '">';
     echo '<div style="' . $s_grid2 . '">';
 
-    $exp_fields = array(
-        '_exp_nombre'      => array( 'label' => __( 'Nombre del viaje',          'enterprise-moto' ), 'placeholder' => 'Ej: Sicilia 2026' ),
-        '_exp_subtitulo'   => array( 'label' => __( 'Descripción / ruta',        'enterprise-moto' ), 'placeholder' => 'Ej: BCN → Palermo → Cerdeña → BCN' ),
-        '_exp_fecha_inicio' => array( 'label' => __( 'Fecha de inicio',          'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
-        '_exp_fecha_fin'   => array( 'label' => __( 'Fecha de fin (vacío = en curso)', 'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
-        '_exp_salida'      => array( 'label' => __( 'Texto salida (auto si hay fechas)', 'enterprise-moto' ), 'placeholder' => 'Ej: 23 Mar 2026' ),
-        '_exp_duracion'    => array( 'label' => __( 'Duración (auto si hay fechas)', 'enterprise-moto' ), 'placeholder' => 'Ej: 18 días' ),
-        '_exp_km'          => array( 'label' => __( 'Kilómetros totales',        'enterprise-moto' ), 'placeholder' => 'Ej: ~3.200 km (vacío = auto)' ),
-        '_exp_paises'      => array( 'label' => __( 'Países recorridos',         'enterprise-moto' ), 'placeholder' => 'Ej: España · Francia · Italia' ),
-        '_exp_progreso'    => array( 'label' => __( 'Progreso (0–100)',           'enterprise-moto' ), 'placeholder' => 'Ej: 75' ),
-    );
+    if ( $is_bloques ) {
+        // Plantilla «Bitácora con bloques» CONGELADA (R4): conjunto de campos y
+        // labels EXACTAMENTE como estaban, incluidos _exp_duracion y _exp_progreso
+        // y la semántica «(vacío = en curso)» de la fecha de fin.
+        $exp_fields = array(
+            '_exp_nombre'      => array( 'label' => __( 'Nombre del viaje',          'enterprise-moto' ), 'placeholder' => 'Ej: Sicilia 2026' ),
+            '_exp_subtitulo'   => array( 'label' => __( 'Descripción / ruta',        'enterprise-moto' ), 'placeholder' => 'Ej: BCN → Palermo → Cerdeña → BCN' ),
+            '_exp_fecha_inicio' => array( 'label' => __( 'Fecha de inicio',          'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
+            '_exp_fecha_fin'   => array( 'label' => __( 'Fecha de fin (vacío = en curso)', 'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
+            '_exp_salida'      => array( 'label' => __( 'Texto salida (auto si hay fechas)', 'enterprise-moto' ), 'placeholder' => 'Ej: 23 Mar 2026' ),
+            '_exp_duracion'    => array( 'label' => __( 'Duración (auto si hay fechas)', 'enterprise-moto' ), 'placeholder' => 'Ej: 18 días' ),
+            '_exp_km'          => array( 'label' => __( 'Kilómetros totales',        'enterprise-moto' ), 'placeholder' => 'Ej: ~3.200 km (vacío = auto)' ),
+            '_exp_paises'      => array( 'label' => __( 'Países recorridos',         'enterprise-moto' ), 'placeholder' => 'Ej: España · Francia · Italia' ),
+            '_exp_progreso'    => array( 'label' => __( 'Progreso (0–100)',           'enterprise-moto' ), 'placeholder' => 'Ej: 75' ),
+        );
+    } else {
+        // Plantilla «Cuaderno de bitácora» (R4): duración y progreso se CALCULAN en
+        // caliente, así que se retiran del metabox. _exp_fecha_fin es opcional y sin
+        // semántica «en curso» — el estado lo da _exp_estado.
+        $exp_fields = array(
+            '_exp_nombre'      => array( 'label' => __( 'Nombre del viaje',          'enterprise-moto' ), 'placeholder' => 'Ej: Sicilia 2026' ),
+            '_exp_subtitulo'   => array( 'label' => __( 'Descripción / ruta',        'enterprise-moto' ), 'placeholder' => 'Ej: BCN → Palermo → Cerdeña → BCN' ),
+            '_exp_fecha_inicio' => array( 'label' => __( 'Fecha de inicio',          'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
+            '_exp_fecha_fin'   => array( 'label' => __( 'Fecha de fin',              'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
+            '_exp_salida'      => array( 'label' => __( 'Texto salida (auto si hay fechas)', 'enterprise-moto' ), 'placeholder' => 'Ej: 23 Mar 2026' ),
+            '_exp_km'          => array( 'label' => __( 'Kilómetros totales',        'enterprise-moto' ), 'placeholder' => 'Ej: ~3.200 km (vacío = auto)' ),
+            '_exp_paises'      => array( 'label' => __( 'Países recorridos',         'enterprise-moto' ), 'placeholder' => 'Ej: España · Francia · Italia' ),
+        );
+    }
     foreach ( $exp_fields as $key => $f ) {
         $val  = get_post_meta( $post->ID, $key, true );
         $type = isset( $f['type'] ) ? $f['type'] : 'text';
@@ -739,12 +757,9 @@ function enterprise_save_expedition_meta( $post_id ) {
     if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
     if ( ! current_user_can( 'edit_page', $post_id ) ) return;
 
-    // ── Datos de expedición (texto) ────────────────────────────────────────
+    // ── Datos de expedición (texto) — comunes a ambas plantillas ───────────
     $text_fields = array(
-        '_exp_nombre', '_exp_subtitulo', '_exp_salida', '_exp_duracion',
-        '_exp_km', '_exp_paises',
-        // Solo para page-bitacora-bloques (ticker)
-        '_exp_categoria', '_exp_etiquetas',
+        '_exp_nombre', '_exp_subtitulo', '_exp_salida', '_exp_km', '_exp_paises',
     );
     foreach ( $text_fields as $field ) {
         if ( isset( $_POST[ $field ] ) ) {
@@ -752,9 +767,22 @@ function enterprise_save_expedition_meta( $post_id ) {
         }
     }
 
-    // Progreso: solo números 0-100
-    if ( isset( $_POST['_exp_progreso'] ) ) {
-        update_post_meta( $post_id, '_exp_progreso', min( 100, max( 0, intval( $_POST['_exp_progreso'] ) ) ) );
+    // Campos EXCLUSIVOS de la plantilla «Bitácora con bloques» (congelada, R4):
+    // duración manual, progreso manual y los slugs del ticker. En «Cuaderno de
+    // bitácora» NO se guardan (duración y progreso se calculan en caliente). Se
+    // gatea por plantilla además de por isset, para no tocar esas metas en el
+    // cuaderno aunque llegaran por POST.
+    $is_bloques = ( 'page-bitacora-bloques.php' === get_post_meta( $post_id, '_wp_page_template', true ) );
+    if ( $is_bloques ) {
+        foreach ( array( '_exp_duracion', '_exp_categoria', '_exp_etiquetas' ) as $field ) {
+            if ( isset( $_POST[ $field ] ) ) {
+                update_post_meta( $post_id, $field, sanitize_text_field( $_POST[ $field ] ) );
+            }
+        }
+        // Progreso: solo números 0-100
+        if ( isset( $_POST['_exp_progreso'] ) ) {
+            update_post_meta( $post_id, '_exp_progreso', min( 100, max( 0, intval( $_POST['_exp_progreso'] ) ) ) );
+        }
     }
 
     // Campos de fecha de expedición
