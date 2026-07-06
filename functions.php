@@ -2232,6 +2232,148 @@ function enterprise_post_stage_render( $post ) {
 }
 
 /* ─────────────────────────────────────────
+   ESTADÍSTICAS DEL CUADERNO (EN CALIENTE) — R1 de #4
+   Fuente única para todos los consumidores (barra lateral, hero,
+   tarjeta del grid, cabecera agregada, listas «otras»). Calcula en
+   caliente porque las etapas de un cuaderno cambian sin re-guardar la
+   página; por eso NO se cachea al guardar (a diferencia del viaje tipo D).
+   Replica la query _filt_* y el parseo entero de km ya usados en
+   page-cuaderno-de-bitacora.php. Devuelve el km SIN unidad forzada: el
+   pintado añade «km» con enterprise_km_display().
+───────────────────────────────────────── */
+function enterprise_cuaderno_stats( $page_id ) {
+    $page_id = intval( $page_id );
+
+    /* Estado canónico: _exp_estado; fallback al legacy _exp_en_ruta solo
+       si _exp_estado está vacío (mismo criterio que la plantilla). */
+    $en_ruta = get_post_meta( $page_id, '_exp_en_ruta', true );
+    $estado  = get_post_meta( $page_id, '_exp_estado', true );
+    if ( $estado === '' ) {
+        $estado = ( $en_ruta === '1' ) ? 'activo' : 'finalizado';
+    }
+
+    /* Query de etapas por filtros _filt_* — idéntica a la del template. */
+    $filt_cat_ids   = get_post_meta( $page_id, '_filt_category_ids', true ) ?: array();
+    $filt_tag_ids   = get_post_meta( $page_id, '_filt_tag_ids',      true ) ?: array();
+    $filt_tag_rel   = get_post_meta( $page_id, '_filt_tag_relation', true ) ?: 'OR';
+    $filt_date_from = get_post_meta( $page_id, '_filt_date_from',    true ) ?: '';
+    $filt_date_to   = get_post_meta( $page_id, '_filt_date_to',      true ) ?: '';
+    $filt_limit     = get_post_meta( $page_id, '_filt_limit',        true );
+    $filt_orderby   = get_post_meta( $page_id, '_filt_orderby',      true ) ?: 'date';
+    $filt_order     = get_post_meta( $page_id, '_filt_order',        true ) ?: 'DESC';
+
+    $filt_cat_ids = is_array( $filt_cat_ids ) ? array_map( 'intval', $filt_cat_ids ) : array();
+    $filt_tag_ids = is_array( $filt_tag_ids ) ? array_map( 'intval', $filt_tag_ids ) : array();
+
+    $query_args = array(
+        'post_type'              => 'post',
+        'posts_per_page'         => ( $filt_limit !== '' && intval( $filt_limit ) > 0 ) ? intval( $filt_limit ) : -1,
+        'orderby'                => $filt_orderby,
+        'order'                  => strtoupper( $filt_order ),
+        'post_status'            => 'publish',
+        // Rendimiento (obligatorio): cebar la meta cache en bloque para que la
+        // suma de _route_km NO dispare un get_post_meta por etapa. Con esto el
+        // coste es ~constante respecto al número de etapas.
+        'update_post_meta_cache' => true,
+    );
+
+    $tax_query = array();
+    if ( ! empty( $filt_cat_ids ) ) {
+        $tax_query[] = array(
+            'taxonomy' => 'category',
+            'field'    => 'term_id',
+            'terms'    => $filt_cat_ids,
+            'operator' => 'IN',
+        );
+    }
+    if ( ! empty( $filt_tag_ids ) ) {
+        $tag_operator = ( $filt_tag_rel === 'AND' ) ? 'AND' : 'IN';
+        $tax_query[] = array(
+            'taxonomy' => 'post_tag',
+            'field'    => 'term_id',
+            'terms'    => $filt_tag_ids,
+            'operator' => $tag_operator,
+        );
+    }
+    if ( ! empty( $tax_query ) ) {
+        $tax_query['relation'] = 'AND';
+        $query_args['tax_query'] = $tax_query;
+    }
+
+    if ( $filt_date_from || $filt_date_to ) {
+        $date_q = array( 'relation' => 'AND' );
+        if ( $filt_date_from ) {
+            $date_q[] = array( 'after' => $filt_date_from . ' 00:00:00', 'inclusive' => true );
+        }
+        if ( $filt_date_to ) {
+            $date_q[] = array( 'before' => $filt_date_to . ' 23:59:59', 'inclusive' => true );
+        }
+        $query_args['date_query'] = $date_q;
+    }
+
+    $q        = new WP_Query( $query_args );
+    $etapas   = $q->posts;
+    $n_etapas = (int) $q->found_posts;
+
+    /* km: el override manual _exp_km gana (tal cual, incluidos valores curados
+       como «~3.200 km»); si está vacío, suma en caliente de _route_km con el
+       mismo parseo entero del template. Sin forzar unidad. */
+    $exp_km = get_post_meta( $page_id, '_exp_km', true );
+    if ( $exp_km !== '' && $exp_km !== false ) {
+        $km = (string) $exp_km;
+    } else {
+        $km_total = 0;
+        foreach ( $etapas as $etapa ) {
+            $km_num = preg_replace( '/[^0-9]/', '', (string) get_post_meta( $etapa->ID, '_route_km', true ) );
+            if ( is_numeric( $km_num ) ) {
+                $km_total += intval( $km_num );
+            }
+        }
+        $km = ( $km_total > 0 ) ? number_format( $km_total, 0, ',', '.' ) : '';
+    }
+
+    /* Fechas resueltas. R5: cuaderno 'finalizado' heredado sin _exp_fecha_fin →
+       fin = fecha de la etapa más reciente (la primera de la query en el orden
+       actual). Nunca se usa time() como «fin en curso» (esa semántica se retira). */
+    $fecha_inicio = get_post_meta( $page_id, '_exp_fecha_inicio', true ) ?: '';
+    $fecha_fin    = get_post_meta( $page_id, '_exp_fecha_fin',    true ) ?: '';
+    $fin_heredada = false;
+    if ( $fecha_fin === '' && $estado === 'finalizado' && ! empty( $etapas ) ) {
+        $fecha_fin    = get_the_date( 'Y-m-d', $etapas[0] );
+        $fin_heredada = true;
+    }
+
+    /* Días. Guardas: sin inicio no se calcula nada; dias_totales solo si hay fin
+       resoluble; toda división aguas abajo debe comprobar dias_totales > 0. */
+    $dias_totales       = 0;
+    $dias_transcurridos = 0;
+    if ( $fecha_inicio ) {
+        $ts_inicio = strtotime( $fecha_inicio );
+        if ( $fecha_fin ) {
+            $ts_fin = strtotime( $fecha_fin );
+            if ( $ts_fin >= $ts_inicio ) {
+                $dias_totales = max( 1, (int) round( ( $ts_fin - $ts_inicio ) / DAY_IN_SECONDS ) + 1 );
+            }
+        }
+        $ts_hoy = current_time( 'timestamp' );
+        if ( $ts_hoy >= $ts_inicio ) {
+            $dias_transcurridos = max( 1, (int) round( ( $ts_hoy - $ts_inicio ) / DAY_IN_SECONDS ) + 1 );
+        }
+    }
+
+    return array(
+        'estado'             => $estado,
+        'km'                 => $km,                 // sin unidad; pintar con enterprise_km_display()
+        'etapas'             => $n_etapas,
+        'dias_totales'       => $dias_totales,       // 0 si no hay fin resoluble
+        'dias_transcurridos' => $dias_transcurridos, // 0 si aún no ha empezado o sin inicio
+        'fecha_inicio'       => $fecha_inicio,
+        'fecha_fin'          => $fecha_fin,          // resuelta (puede venir de R5)
+        'fin_heredada'       => $fin_heredada,       // true si la fin salió de la última etapa
+    );
+}
+
+/* ─────────────────────────────────────────
    CALCULAR ESTADÍSTICAS DEL VIAJE (TIPO D)
    Usa los mismos filtros que los bloques Timeline/Carrusel
 ───────────────────────────────────────── */
