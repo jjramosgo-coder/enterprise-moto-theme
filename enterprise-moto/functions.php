@@ -1454,6 +1454,7 @@ function enterprise_register_blocks() {
             'orderBy'        => array( 'type' => 'string',  'default' => 'date' ),
             'order'          => array( 'type' => 'string',  'default' => 'DESC' ),
             'showAll'        => array( 'type' => 'boolean', 'default' => false  ),
+            'layout'         => array( 'type' => 'string',  'default' => 'carousel' ),
         ),
         'supports' => array(
             'html'  => false,
@@ -1668,7 +1669,9 @@ function enterprise_carousel_assets() {
 
     $post = get_queried_object();
     if ( ! $post || ! isset( $post->post_content ) ) return;
-    if ( ! has_block( 'enterprise/post-stages', $post ) ) return;
+    // #11 R7: el carrusel/timeline lo usan tanto post-stages como trip-collection.
+    if ( ! has_block( 'enterprise/post-stages', $post )
+      && ! has_block( 'enterprise/trip-collection', $post ) ) return;
 
     wp_enqueue_style(
         'enterprise-carousel',

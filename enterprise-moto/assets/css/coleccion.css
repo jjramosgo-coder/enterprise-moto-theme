@@ -138,6 +138,14 @@
   .ent-trip-collection .trip-grid { grid-template-columns: 1fr; }
 }
 
+/* ── #11: encaje de la .trip-card en el scaffolding de post-stages ──
+   El layout (track, slides, timeline) lo gobierna carousel.css (.ent-stages*).
+   Aquí solo el encaje de la tarjeta dentro del slide/fila; sin duplicar layout.
+   Escopado a .ent-trip-collection (el contenedor lleva ambas clases), de modo
+   que post-stages no se ve afectado. */
+.ent-trip-collection.ent-stages--carousel .trip-card { height: 100%; }
+.ent-trip-collection.ent-stages--timeline .trip-card { margin-bottom: 12px; }
+
 /* ============================================================
    HERO + TICKER + CUERPO de la plantilla «Colección de viajes» (#5, Fase 3)
    El hero NO re-padea el nav: .site-main ya lleva padding-top:var(--nav-h).

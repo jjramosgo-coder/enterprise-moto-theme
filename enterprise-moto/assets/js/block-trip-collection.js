@@ -1,9 +1,9 @@
 /**
- * Enterprise Moto — block-trip-collection.js v1.0.0
- * «Colección de viajes» (#5). Reutiliza EXACTAMENTE los mismos controles de
- * filtro que enterprise/post-stages (categorías, etiquetas + relación, fechas,
- * orden y cantidad). Sin controles de presentación: el render son tarjetas de
- * viaje fijas. Preview con ServerSideRender. Vanilla JS, sin build.
+ * Enterprise Moto — block-trip-collection.js
+ * «Colección de viajes» (#5, #11). Reutiliza los mismos controles de filtro que
+ * enterprise/post-stages (categorías, etiquetas + relación, fechas, orden y
+ * cantidad), con «sin límite» (showAll) y presentación configurable
+ * (layout: carrusel | timeline). Preview con ServerSideRender. Vanilla JS, sin build.
  */
 (function () {
   'use strict';
@@ -92,6 +92,7 @@
       orderBy:        { type:'string',  default:'date' },
       order:          { type:'string',  default:'DESC' },
       showAll:        { type:'boolean', default:false  },
+      layout:         { type:'string',  default:'carousel' },
     },
 
     edit: function(props) {
@@ -220,6 +221,17 @@
               ],
               onChange:function(v){ set({ order:v }); },
             })
+          ),
+
+          el(PanelBody, { title:'Presentación', initialOpen:false },
+            el(SelectControl, {
+              label:'Diseño', value:attr.layout,
+              options:[
+                { label:'⟵  Carrusel horizontal', value:'carousel' },
+                { label:'↓  Timeline vertical',   value:'timeline'  },
+              ],
+              onChange:function(v){ set({ layout:v }); },
+            })
           )
         ),
 
@@ -229,7 +241,8 @@
             EmptyResponsePlaceholder:function() {
               return el('div', { className:'ent-block-placeholder' },
                 el('div', { className:'ent-block-placeholder__icon' }, '🗺️'),
-                el('p',   { className:'ent-block-placeholder__text' }, 'Colección de viajes'),
+                el('p',   { className:'ent-block-placeholder__text' },
+                  'Colección de viajes — ' + (attr.layout === 'carousel' ? 'Carrusel' : 'Timeline')),
                 el('p',   { className:'ent-block-placeholder__hint' }, filterSummary())
               );
             },

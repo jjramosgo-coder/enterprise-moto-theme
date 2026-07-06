@@ -2,12 +2,14 @@
 /**
  * Enterprise Moto — blocks/trip-collection/render.php
  *
- * Bloque «Colección de viajes» (#5). Pinta como tarjetas de viaje/ruta las
+ * Bloque «Colección de viajes» (#5, #11). Pinta como tarjetas de viaje/ruta las
  * entradas que resultan de los MISMOS filtros que enterprise/post-stages
- * (query compartida: enterprise_stage_query()). Cada tarjeta es un enlace
- * plano al relato; NO se inyecta contexto de navegación (from_*) — la
+ * (query compartida: enterprise_stage_query()). Presentación configurable
+ * (#11): carrusel horizontal o timeline vertical, reutilizando el scaffolding
+ * y los assets (carousel.js/carousel.css) de post-stages. Cada tarjeta es un
+ * enlace plano al relato; NO se inyecta contexto de navegación (from_*) — la
  * navegación anterior/siguiente entre viajes de la colección queda fuera de
- * alcance (spec #5, §5).
+ * alcance (navegación entre viajes = #8).
  *
  * Datos por entrada (badge de tipo, año, km/etapas/ferrys): enterprise_trip_card_data().
  */
@@ -61,9 +63,40 @@ function enterprise_render_trip_collection_block( $attributes ) {
     /* Gradientes de reserva rotativos cuando la entrada no tiene imagen destacada. */
     $bg = array( 'bg1', 'bg2', 'bg3', 'bg4', 'bg5' );
 
+    /* #11 R6: presentación configurable (carrusel | timeline). Se reutiliza el
+       scaffolding de enterprise/post-stages (.ent-stages--{layout}, track, slides,
+       nav/dots, .ent-tl-item) para aprovechar carousel.js/carousel.css SIN tocarlos.
+       El contenedor conserva además .ent-trip-collection para que coleccion.css siga
+       estilando la .trip-card, que se preserva intacta como contenido de cada
+       slide/fila. Sigue siendo enlace plano (sin from_*; navegación entre viajes = #8). */
+    $layout      = isset( $attributes['layout'] ) ? sanitize_key( $attributes['layout'] ) : 'carousel';
+    $is_carousel = ( 'carousel' === $layout );
+    $total       = $query->post_count;
+    $uid         = 'ent-trips-' . wp_rand( 1000, 9999 );
+
     ob_start(); ?>
-    <div class="ent-trip-collection">
-        <div class="trip-grid" role="list">
+    <div class="ent-stages ent-stages--<?php echo esc_attr( $layout ); ?> ent-trip-collection"
+         id="<?php echo esc_attr( $uid ); ?>" data-layout="<?php echo esc_attr( $layout ); ?>">
+
+        <?php if ( $is_carousel && $total > 1 ) : ?>
+        <div class="ent-stages__head">
+            <div class="ent-stages__nav">
+                <button class="ent-stages__nav-btn ent-stages__nav-btn--prev"
+                        data-target="<?php echo esc_attr( $uid ); ?>"
+                        aria-label="<?php esc_attr_e( 'Anterior', 'enterprise-moto' ); ?>"
+                        type="button">←</button>
+                <span class="ent-stages__nav-count">
+                    <span class="ent-stages__nav-current">1</span> / <?php echo intval( $total ); ?>
+                </span>
+                <button class="ent-stages__nav-btn ent-stages__nav-btn--next"
+                        data-target="<?php echo esc_attr( $uid ); ?>"
+                        aria-label="<?php esc_attr_e( 'Siguiente', 'enterprise-moto' ); ?>"
+                        type="button">→</button>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <div class="ent-stages__track" role="list">
         <?php
         $n = 0;
         while ( $query->have_posts() ) : $query->the_post();
@@ -78,8 +111,11 @@ function enterprise_render_trip_collection_block( $attributes ) {
             }
 
             $bg_class = $bg[ $n % count( $bg ) ];
-            ?>
-            <a href="<?php echo esc_url( get_permalink() ); ?>" class="trip-card" role="listitem">
+
+            /* Tarjeta de viaje: idéntica en ambos modos. Se compone una vez y se
+               envuelve según el layout (slide de carrusel o fila de timeline). */
+            ob_start(); ?>
+            <a href="<?php echo esc_url( get_permalink() ); ?>" class="trip-card">
                 <div class="trip-thumb <?php echo esc_attr( $bg_class ); ?>">
                     <?php if ( $thumb ) : ?>
                         <img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( get_the_title() ); ?>" loading="lazy">
@@ -113,9 +149,35 @@ function enterprise_render_trip_collection_block( $attributes ) {
                 </div>
             </a>
             <?php
+            $card = ob_get_clean();
+
+            if ( $is_carousel ) : ?>
+                <div class="ent-stages__slide" role="listitem" data-index="<?php echo intval( $n ); ?>"><?php echo $card; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+            <?php else : /* timeline */ ?>
+                <div class="ent-tl-item" role="listitem">
+                    <div class="ent-tl-dot-col" aria-hidden="true">
+                        <div class="ent-tl-dot is-done"><?php echo str_pad( $n + 1, 2, '0', STR_PAD_LEFT ); ?></div>
+                        <?php if ( $n + 1 < $total ) : ?><div class="ent-tl-connector is-done"></div><?php endif; ?>
+                    </div>
+                    <?php echo $card; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                </div>
+            <?php endif; ?>
+            <?php
             $n++;
         endwhile; wp_reset_postdata(); ?>
         </div>
+
+        <?php if ( $is_carousel && $total > 1 ) : ?>
+        <div class="ent-stages__dots" aria-hidden="true">
+            <?php for ( $i = 0; $i < $total; $i++ ) : ?>
+                <button class="ent-stages__dot <?php echo $i === 0 ? 'is-active' : ''; ?>"
+                        data-target="<?php echo esc_attr( $uid ); ?>"
+                        data-index="<?php echo intval( $i ); ?>"
+                        type="button"></button>
+            <?php endfor; ?>
+        </div>
+        <?php endif; ?>
+
     </div>
     <?php
     return ob_get_clean();
