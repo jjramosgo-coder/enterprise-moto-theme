@@ -21,6 +21,7 @@
   var PanelBody       = co.PanelBody;
   var SelectControl   = co.SelectControl;
   var RangeControl    = co.RangeControl;
+  var ToggleControl   = co.ToggleControl;
   var CheckboxControl = co.CheckboxControl;
   var Spinner         = co.Spinner;
   var SSR             = wp.serverSideRender;
@@ -90,6 +91,7 @@
       postsPerPage:   { type:'integer', default:6      },
       orderBy:        { type:'string',  default:'date' },
       order:          { type:'string',  default:'DESC' },
+      showAll:        { type:'boolean', default:false  },
     },
 
     edit: function(props) {
@@ -192,7 +194,12 @@
           ),
 
           el(PanelBody, { title:'Cantidad y orden', initialOpen:false },
-            el(RangeControl, {
+            el(ToggleControl, {
+              label:'Sin límite (mostrar todas)',
+              checked:!!attr.showAll,
+              onChange:function(v){ set({ showAll:v }); },
+            }),
+            !attr.showAll && el(RangeControl, {
               label:'Número de viajes', value:attr.postsPerPage, min:1, max:24, step:1,
               onChange:function(v){ set({ postsPerPage:v }); },
             }),

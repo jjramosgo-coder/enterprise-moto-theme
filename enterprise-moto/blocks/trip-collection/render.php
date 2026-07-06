@@ -21,6 +21,12 @@ function enterprise_render_trip_collection_block( $attributes ) {
     $tag_ids      = isset( $attributes['tagIds'] ) && is_array( $attributes['tagIds'] )
                         ? array_map( 'intval', $attributes['tagIds'] ) : array();
 
+    /* #11 R3: «sin límite» → traer todas las entradas del filtro. No se toca la
+       query compartida (ya mapea -1 nativamente); el ajuste es a nivel de bloque. */
+    if ( ! empty( $attributes['showAll'] ) ) {
+        $attributes['postsPerPage'] = -1;
+    }
+
     /* Query compartida con post-stages (misma resolución de filtros → entradas). */
     $query = enterprise_stage_query( $attributes );
 

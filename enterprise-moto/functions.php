@@ -553,6 +553,12 @@ function enterprise_collection_post_ids( $page_id ) {
     $ids = array();
     foreach ( $filter_blocks as $b ) {
         $attrs = ( isset( $b['attrs'] ) && is_array( $b['attrs'] ) ) ? $b['attrs'] : array();
+        // #11 R3: «sin límite» del bloque trip-collection, también en este punto de
+        // resolución (el hero/ticker cuentan todas). showAll solo lo emite
+        // trip-collection; post-stages no lo lleva, así que su resolución no cambia.
+        if ( ! empty( $attrs['showAll'] ) ) {
+            $attrs['postsPerPage'] = -1;
+        }
         $query = enterprise_stage_query( $attrs );
         foreach ( $query->posts as $p ) {
             $pid = is_object( $p ) ? (int) $p->ID : (int) $p;
@@ -1447,6 +1453,7 @@ function enterprise_register_blocks() {
             'postsPerPage'   => array( 'type' => 'integer', 'default' => 6      ),
             'orderBy'        => array( 'type' => 'string',  'default' => 'date' ),
             'order'          => array( 'type' => 'string',  'default' => 'DESC' ),
+            'showAll'        => array( 'type' => 'boolean', 'default' => false  ),
         ),
         'supports' => array(
             'html'  => false,
