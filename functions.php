@@ -361,6 +361,169 @@ function enterprise_km_display( $km ) {
 }
 
 /* ─────────────────────────────────────────
+   QUERY DE ETAPAS/ENTRADAS POR FILTROS (lógica compartida)
+───────────────────────────────────────── */
+/**
+ * Construye la WP_Query de entradas a partir de los atributos de filtro
+ * usados por el bloque «Etapas de ruta» (enterprise/post-stages) y, en
+ * adelante, por «Colección de viajes» (enterprise/trip-collection).
+ *
+ * Extraída sin cambios desde blocks/post-stages/render.php para poder
+ * reutilizar exactamente la misma resolución de filtros → entradas. El
+ * render de post-stages debe permanecer byte-idéntico.
+ *
+ * Atributos que consume: categoryIds (array), tagIds (array), tagRelation
+ * (AND|OR), filterDateFrom, filterDateTo, postsPerPage, orderBy, order.
+ * Los atributos de presentación (layout, cardSize, heading, showX…) no se
+ * usan aquí.
+ *
+ * @param array $attributes Atributos del bloque.
+ * @return WP_Query
+ */
+function enterprise_stage_query( $attributes ) {
+
+    $category_ids   = isset( $attributes['categoryIds'] )  && is_array( $attributes['categoryIds'] )
+                        ? array_map( 'intval', $attributes['categoryIds'] ) : array();
+    $tag_ids        = isset( $attributes['tagIds'] )       && is_array( $attributes['tagIds'] )
+                        ? array_map( 'intval', $attributes['tagIds'] ) : array();
+    $filter_date_from = isset( $attributes['filterDateFrom'] ) ? sanitize_text_field( $attributes['filterDateFrom'] ) : '';
+    $filter_date_to   = isset( $attributes['filterDateTo'] )   ? sanitize_text_field( $attributes['filterDateTo'] )   : '';
+    $tag_relation   = isset( $attributes['tagRelation'] ) && $attributes['tagRelation'] === 'AND' ? 'AND' : 'IN';
+    $posts_per_page = isset( $attributes['postsPerPage'] ) ? intval( $attributes['postsPerPage'] )        : 6;
+    $order_by       = isset( $attributes['orderBy'] )      ? sanitize_key( $attributes['orderBy'] )       : 'date';
+    $order          = isset( $attributes['order'] )        ? sanitize_key( $attributes['order'] )         : 'DESC';
+
+    $query_args = array(
+        'post_type'      => 'post',
+        'posts_per_page' => $posts_per_page,
+        'orderby'        => $order_by,
+        'order'          => strtoupper( $order ),
+        'post_status'    => 'publish',
+        'no_found_rows'  => true,
+    );
+
+    /*
+     * tax_query con relación AND entre categorías y etiquetas:
+     * - Si hay categorías Y etiquetas → post debe cumplir ambas condiciones
+     * - Si solo hay categorías → OR entre ellas (posts de cualquiera)
+     * - Si solo hay etiquetas  → OR entre ellas
+     */
+    $tax_query = array();
+
+    if ( ! empty( $category_ids ) ) {
+        $tax_query[] = array(
+            'taxonomy' => 'category',
+            'field'    => 'term_id',
+            'terms'    => $category_ids,
+            'operator' => 'IN',   // OR entre categorías seleccionadas
+        );
+    }
+
+    if ( ! empty( $tag_ids ) ) {
+        $tax_query[] = array(
+            'taxonomy' => 'post_tag',
+            'field'    => 'term_id',
+            'terms'    => $tag_ids,
+            'operator' => $tag_relation, // AND = todas las etiquetas | IN = cualquiera (OR)
+        );
+    }
+
+    if ( ! empty( $tax_query ) ) {
+        $tax_query['relation'] = count( $tax_query ) > 1 ? 'AND' : 'AND';
+        $query_args['tax_query'] = $tax_query;
+    }
+
+    // Filtro de fecha absoluta (desde / hasta)
+    if ( $filter_date_from || $filter_date_to ) {
+        $dq = array( 'relation' => 'AND' );
+        if ( $filter_date_from ) $dq[] = array( 'after'  => $filter_date_from . ' 00:00:00', 'inclusive' => true );
+        if ( $filter_date_to )   $dq[] = array( 'before' => $filter_date_to   . ' 23:59:59', 'inclusive' => true );
+        $query_args['date_query'] = $dq;
+    }
+
+    return new WP_Query( $query_args );
+}
+
+/* ─────────────────────────────────────────
+   BLOQUES DE FILTRADO EN UNA PÁGINA (recolección recursiva)
+───────────────────────────────────────── */
+/**
+ * Recorre recursivamente un árbol de bloques (parse_blocks) y devuelve los que
+ * actúan como «bloques de filtrado» de entradas: enterprise/post-stages y
+ * enterprise/trip-collection. Compartida por la plantilla «Colección de
+ * viajes» y por el cálculo de estadísticas de colección (#5, R3).
+ *
+ * Generaliza la versión que vivía dentro de page-bitacora-bloques.php (que solo
+ * reconocía post-stages); al estar definida aquí, la copia local de esa
+ * plantilla —guardada con function_exists— queda inerte hasta su reescritura.
+ */
+if ( ! function_exists( 'enterprise_collect_stage_blocks' ) ) {
+    function enterprise_collect_stage_blocks( $blocks ) {
+        $out = array();
+        if ( ! is_array( $blocks ) ) return $out;
+        foreach ( $blocks as $b ) {
+            $name = isset( $b['blockName'] ) ? $b['blockName'] : '';
+            if ( 'enterprise/post-stages' === $name || 'enterprise/trip-collection' === $name ) {
+                $out[] = $b;
+            }
+            if ( ! empty( $b['innerBlocks'] ) ) {
+                $out = array_merge( $out, enterprise_collect_stage_blocks( $b['innerBlocks'] ) );
+            }
+        }
+        return $out;
+    }
+}
+
+/* ─────────────────────────────────────────
+   DATOS DE TARJETA DE VIAJE (por entrada)
+───────────────────────────────────────── */
+/**
+ * Calcula, para una entrada, los datos que muestra una tarjeta de la
+ * «Colección de viajes» y que luego agregará el hero (#5, R2/R7). Mapea el
+ * modelo real de _post_tipo (NO existe un «tipo C» de campo: la opción 'etapa'
+ * cubre tanto etapa suelta como salida de un día):
+ *   - 'viaje' (tipo D): usa las cachés _post_km_calculado / _post_etapas_count
+ *     / _post_ferry_count / _post_km_incompleto. Badge «Viaje».
+ *   - cualquier otro (por defecto 'etapa'): salida única → km = _post_km,
+ *     1 etapa, 1 ferry si hay _post_horas_ferry. Badge «Salida».
+ * Año: _post_fecha_inicio (YYYY-MM-DD); si falta, año de publicación.
+ * El km se devuelve en crudo (pásalo por enterprise_km_display() al pintar).
+ *
+ * @param int $post_id
+ * @return array{tipo:string,tipo_label:string,km:string,km_inc:bool,etapas:int,ferrys:int,year:string}
+ */
+function enterprise_trip_card_data( $post_id ) {
+    $tipo = get_post_meta( $post_id, '_post_tipo', true ) ?: 'etapa';
+
+    if ( 'viaje' === $tipo ) {
+        $km     = get_post_meta( $post_id, '_post_km_calculado', true );
+        $km_inc = (bool) get_post_meta( $post_id, '_post_km_incompleto', true );
+        $etapas = (int) get_post_meta( $post_id, '_post_etapas_count', true );
+        $ferrys = (int) get_post_meta( $post_id, '_post_ferry_count', true );
+        $label  = __( 'Viaje', 'enterprise-moto' );
+    } else {
+        $km     = get_post_meta( $post_id, '_post_km', true );
+        $km_inc = false;
+        $etapas = 1;
+        $ferrys = get_post_meta( $post_id, '_post_horas_ferry', true ) ? 1 : 0;
+        $label  = __( 'Salida', 'enterprise-moto' );
+    }
+
+    $fecha_ini = get_post_meta( $post_id, '_post_fecha_inicio', true );
+    $year      = $fecha_ini ? substr( (string) $fecha_ini, 0, 4 ) : get_the_date( 'Y', $post_id );
+
+    return array(
+        'tipo'       => $tipo,
+        'tipo_label' => $label,
+        'km'         => $km,          // crudo; usar enterprise_km_display() al pintar
+        'km_inc'     => $km_inc,
+        'etapas'     => (int) $etapas,
+        'ferrys'     => (int) $ferrys,
+        'year'       => $year,
+    );
+}
+
+/* ─────────────────────────────────────────
    PAGINACIÓN PERSONALIZADA
 ───────────────────────────────────────── */
 function enterprise_pagination() {
@@ -1057,6 +1220,55 @@ function enterprise_register_blocks() {
             'showExcerpt'   => array( 'type' => 'boolean', 'default' => true       ),
             'showKm'        => array( 'type' => 'boolean', 'default' => true       ),
             'showDate'      => array( 'type' => 'boolean', 'default' => true       ),
+        ),
+        'supports' => array(
+            'html'  => false,
+            'align' => array( 'wide', 'full' ),
+        ),
+    ) );
+
+    /* ── Bloque: Colección de viajes (enterprise/trip-collection, #5) ─── */
+    require_once get_template_directory() . '/blocks/trip-collection/render.php';
+
+    $tc_js_path = get_template_directory() . '/assets/js/block-trip-collection.js';
+    wp_register_script(
+        'enterprise-block-trip-collection',
+        get_template_directory_uri() . '/assets/js/block-trip-collection.js',
+        array(
+            'wp-blocks', 'wp-element', 'wp-block-editor',
+            'wp-components', 'wp-data', 'wp-api-fetch',
+            'wp-server-side-render',
+        ),
+        file_exists( $tc_js_path ) ? filemtime( $tc_js_path ) : ENTERPRISE_VERSION,
+        true
+    );
+
+    // Estilo de la colección. Se registra aquí y se adjunta al bloque (style)
+    // para que las tarjetas se pinten estilizadas allí donde se inserte el
+    // bloque; la plantilla template-trip-coleccion.php reutilizará el mismo
+    // handle en la Fase 3 (WordPress deduplica el encolado).
+    $col_css_path = get_template_directory() . '/assets/css/coleccion.css';
+    wp_register_style(
+        'enterprise-coleccion',
+        get_template_directory_uri() . '/assets/css/coleccion.css',
+        array(),
+        file_exists( $col_css_path ) ? filemtime( $col_css_path ) : ENTERPRISE_VERSION
+    );
+
+    register_block_type( 'enterprise/trip-collection', array(
+        'api_version'     => 3,
+        'editor_script'   => 'enterprise-block-trip-collection',
+        'style'           => 'enterprise-coleccion',
+        'render_callback' => 'enterprise_render_trip_collection_block',
+        'attributes'      => array(
+            'categoryIds'    => array( 'type' => 'array',   'default' => array(), 'items' => array( 'type' => 'integer' ) ),
+            'tagIds'         => array( 'type' => 'array',   'default' => array(), 'items' => array( 'type' => 'integer' ) ),
+            'filterDateFrom' => array( 'type' => 'string',  'default' => ''     ),
+            'filterDateTo'   => array( 'type' => 'string',  'default' => ''     ),
+            'tagRelation'    => array( 'type' => 'string',  'default' => 'OR'   ),
+            'postsPerPage'   => array( 'type' => 'integer', 'default' => 6      ),
+            'orderBy'        => array( 'type' => 'string',  'default' => 'date' ),
+            'order'          => array( 'type' => 'string',  'default' => 'DESC' ),
         ),
         'supports' => array(
             'html'  => false,

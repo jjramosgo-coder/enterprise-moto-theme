@@ -1,0 +1,139 @@
+/* ============================================================
+   Enterprise Moto — coleccion.css
+   Plantilla/bloque «Colección de viajes» (#5).
+   Fase 1: tarjetas del bloque enterprise/trip-collection.
+   (El chrome del hero y el ticker — .col-*, .ticker — se añade en la Fase 3.)
+   Tokens (--gold, --border, …) definidos en style.css.
+   ============================================================ */
+
+/* ── Rejilla de tarjetas de viaje ── */
+.ent-trip-collection .trip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.ent-trip-collection .trip-card {
+  border: 1px solid var(--border);
+  background: var(--white);
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow .2s, transform .2s;
+}
+.ent-trip-collection .trip-card:hover {
+  box-shadow: 0 6px 24px rgba(0,0,0,.09);
+  transform: translateY(-3px);
+}
+
+/* ── Miniatura ── */
+.ent-trip-collection .trip-thumb {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  position: relative;
+  overflow: hidden;
+}
+.ent-trip-collection .trip-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ent-trip-collection .trip-thumb-fallback { line-height: 1; }
+
+.ent-trip-collection .trip-thumb .type-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--black);
+  color: var(--white);
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: .08em;
+  padding: 5px 12px;
+}
+.ent-trip-collection .trip-thumb .year-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--gold);
+  color: var(--black);
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: .08em;
+  padding: 5px 12px;
+}
+
+/* ── Cuerpo ── */
+.ent-trip-collection .trip-body {
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.ent-trip-collection .trip-title {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  line-height: 1.05;
+  color: var(--black);
+}
+.ent-trip-collection .trip-desc {
+  font-size: 13px;
+  color: var(--mid);
+  line-height: 1.6;
+  font-weight: 300;
+  flex: 1;
+}
+
+/* ── Pie de 3 datos ── */
+.ent-trip-collection .trip-meta {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+.ent-trip-collection .trip-meta-i {
+  flex: 1;
+  padding: 10px 0;
+  border-right: 1px solid var(--border);
+}
+.ent-trip-collection .trip-meta-i:last-child { border-right: none; }
+.ent-trip-collection .trip-meta-n {
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: .03em;
+  color: var(--black);
+  line-height: 1;
+}
+.ent-trip-collection .trip-meta-l {
+  font-size: 9px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-top: 3px;
+}
+
+/* ── Gradientes de reserva (sin imagen destacada) ── */
+.ent-trip-collection .bg1 { background: linear-gradient(135deg, #1a2a4a, #080818); }
+.ent-trip-collection .bg2 { background: linear-gradient(135deg, #2a4a3a, #081a10); }
+.ent-trip-collection .bg3 { background: linear-gradient(135deg, #4a3a1a, #1a1008); }
+.ent-trip-collection .bg4 { background: linear-gradient(135deg, #3a1a4a, #100818); }
+.ent-trip-collection .bg5 { background: linear-gradient(135deg, #4a2a1a, #180a08); }
+
+/* ── Responsive ── */
+@media (max-width: 1000px) {
+  .ent-trip-collection .trip-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .ent-trip-collection .trip-grid { grid-template-columns: 1fr; }
+}

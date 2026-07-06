@@ -36,56 +36,8 @@ function enterprise_render_post_stages_block( $attributes ) {
     }
     $nav_suffix = $from_post_id ? array( 'from_post' => $from_post_id ) : array();
 
-    /* ── Construir la query ── */
-    $query_args = array(
-        'post_type'      => 'post',
-        'posts_per_page' => $posts_per_page,
-        'orderby'        => $order_by,
-        'order'          => strtoupper( $order ),
-        'post_status'    => 'publish',
-        'no_found_rows'  => true,
-    );
-
-    /*
-     * tax_query con relación AND entre categorías y etiquetas:
-     * - Si hay categorías Y etiquetas → post debe cumplir ambas condiciones
-     * - Si solo hay categorías → OR entre ellas (posts de cualquiera)
-     * - Si solo hay etiquetas  → OR entre ellas
-     */
-    $tax_query = array();
-
-    if ( ! empty( $category_ids ) ) {
-        $tax_query[] = array(
-            'taxonomy' => 'category',
-            'field'    => 'term_id',
-            'terms'    => $category_ids,
-            'operator' => 'IN',   // OR entre categorías seleccionadas
-        );
-    }
-
-    if ( ! empty( $tag_ids ) ) {
-        $tax_query[] = array(
-            'taxonomy' => 'post_tag',
-            'field'    => 'term_id',
-            'terms'    => $tag_ids,
-            'operator' => $tag_relation, // AND = todas las etiquetas | IN = cualquiera (OR)
-        );
-    }
-
-    if ( ! empty( $tax_query ) ) {
-        $tax_query['relation'] = count( $tax_query ) > 1 ? 'AND' : 'AND';
-        $query_args['tax_query'] = $tax_query;
-    }
-
-    // Filtro de fecha absoluta (desde / hasta)
-    if ( $filter_date_from || $filter_date_to ) {
-        $dq = array( 'relation' => 'AND' );
-        if ( $filter_date_from ) $dq[] = array( 'after'  => $filter_date_from . ' 00:00:00', 'inclusive' => true );
-        if ( $filter_date_to )   $dq[] = array( 'before' => $filter_date_to   . ' 23:59:59', 'inclusive' => true );
-        $query_args['date_query'] = $dq;
-    }
-
-    $query = new WP_Query( $query_args );
+    /* ── Construir la query (lógica compartida con enterprise/trip-collection) ── */
+    $query = enterprise_stage_query( $attributes );
 
     if ( ! $query->have_posts() ) {
         if ( current_user_can( 'edit_posts' ) ) {
