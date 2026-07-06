@@ -102,11 +102,21 @@ $ticker_loop = array_merge( $ticker_names, $ticker_names ); // duplicado para el
     <?php endif; ?>
 
     <div class="col-stats">
+      <?php if ( $col_viajes > 0 ) : ?>
       <div class="col-stat"><div class="col-stat-n"><?php echo intval( $col_viajes ); ?></div><div class="col-stat-l"><?php esc_html_e( 'Viajes', 'enterprise-moto' ); ?></div></div>
+      <?php endif; ?>
+      <?php if ( $col_km > 0 ) : ?>
       <div class="col-stat"><div class="col-stat-n"><?php echo esc_html( $km_display ); ?></div><div class="col-stat-l"><?php esc_html_e( 'Kilómetros', 'enterprise-moto' ); ?></div></div>
+      <?php endif; ?>
+      <?php if ( $col_etapas > 0 ) : ?>
       <div class="col-stat"><div class="col-stat-n"><?php echo intval( $col_etapas ); ?></div><div class="col-stat-l"><?php esc_html_e( 'Etapas', 'enterprise-moto' ); ?></div></div>
+      <?php endif; ?>
+      <?php if ( $col_paises > 0 ) : ?>
       <div class="col-stat"><div class="col-stat-n"><?php echo intval( $col_paises ); ?></div><div class="col-stat-l"><?php esc_html_e( 'Países', 'enterprise-moto' ); ?></div></div>
+      <?php endif; ?>
+      <?php if ( $col_ferrys > 0 ) : ?>
       <div class="col-stat"><div class="col-stat-n"><?php echo intval( $col_ferrys ); ?></div><div class="col-stat-l"><?php esc_html_e( 'Ferrys', 'enterprise-moto' ); ?></div></div>
+      <?php endif; ?>
     </div>
 
     <?php if ( $col_updated ) : ?>

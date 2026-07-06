@@ -565,6 +565,172 @@ function enterprise_collection_post_ids( $page_id ) {
 }
 
 /* ─────────────────────────────────────────
+   CIFRAS DE LA COLECCIÓN (cacheadas al guardar) — #5 Fase 4
+───────────────────────────────────────── */
+/**
+ * Parseo de _post_paises de UNA entrada: separa por « · » o coma, hace trim y
+ * pone la inicial en mayúscula. La deduplicación ENTRE entradas la hace el
+ * llamante (case-insensitive).
+ *
+ * @param string $raw
+ * @return string[]
+ */
+function enterprise_parse_paises( $raw ) {
+    if ( ! is_string( $raw ) || '' === trim( $raw ) ) {
+        return array();
+    }
+    $parts = preg_split( '/\s*[·,]\s*/u', $raw );
+    $out   = array();
+    foreach ( (array) $parts as $p ) {
+        $p = trim( $p );
+        if ( '' === $p ) {
+            continue;
+        }
+        if ( function_exists( 'mb_strtoupper' ) && function_exists( 'mb_substr' ) ) {
+            $p = mb_strtoupper( mb_substr( $p, 0, 1, 'UTF-8' ), 'UTF-8' ) . mb_substr( $p, 1, null, 'UTF-8' );
+        } else {
+            $p = ucfirst( $p );
+        }
+        $out[] = $p;
+    }
+    return $out;
+}
+
+/**
+ * Convierte un valor de km almacenado a entero. Puede venir con separador de
+ * miles a la española ("1.448" = 1448; así lo guarda enterprise_calculate_viaje_stats
+ * vía number_format), por lo que se descartan los puntos de miles y cualquier
+ * parte decimal tras coma. Cadena vacía o sin dígitos → null (no aporta km).
+ *
+ * @param mixed $raw
+ * @return int|null
+ */
+function enterprise_km_to_int( $raw ) {
+    $s = trim( (string) $raw );
+    if ( '' === $s ) {
+        return null;
+    }
+    $s = preg_replace( '/,.*$/', '', $s );    // descarta parte decimal ",5"
+    $s = preg_replace( '/[^\d]/', '', $s );   // quita puntos de miles y cualquier no-dígito
+    return ( '' === $s ) ? null : (int) $s;
+}
+
+/**
+ * Computa y persiste las cifras del hero de una página «Colección de viajes»
+ * (§3.4) sobre el CONJUNTO ÚNICO de entradas (enterprise_collection_post_ids).
+ * Reutiliza enterprise_trip_card_data() por entrada (mismo branching viaje/salida
+ * que las tarjetas). Guarda en _col_stats (+ _col_stats_updated). No pinta nada:
+ * el formateo del km (≈, miles, sin unidad) lo hace la plantilla.
+ *
+ * @param int $page_id
+ * @return array Cifras persistidas.
+ */
+function enterprise_compute_collection_stats( $page_id ) {
+    $ids = enterprise_collection_post_ids( $page_id );
+
+    $km     = 0;
+    $km_inc = false;
+    $etapas = 0;
+    $ferrys = 0;
+    $paises = array();   // clave normalizada (minúsculas) => display; dedup case-insensitive
+
+    foreach ( $ids as $pid ) {
+        $d = enterprise_trip_card_data( $pid );
+
+        // Kilómetros: el valor almacenado puede venir con separador de miles a la
+        // española ("1.448" = 1448; así lo guarda enterprise_calculate_viaje_stats
+        // vía number_format), así que se normaliza a entero. Vacío o sin dígitos →
+        // la entrada no aporta km → marca incompleto (un 0 sí cuenta).
+        $km_int = enterprise_km_to_int( $d['km'] );
+        if ( null === $km_int ) {
+            $km_inc = true;
+        } else {
+            $km += $km_int;
+        }
+        if ( ! empty( $d['km_inc'] ) ) {
+            $km_inc = true;   // viaje con km propio incompleto
+        }
+
+        $etapas += (int) $d['etapas'];
+        $ferrys += (int) $d['ferrys'];
+
+        // Países: unión deduplicada entre entradas (R6-países).
+        foreach ( enterprise_parse_paises( get_post_meta( $pid, '_post_paises', true ) ) as $pais ) {
+            $key = function_exists( 'mb_strtolower' ) ? mb_strtolower( $pais, 'UTF-8' ) : strtolower( $pais );
+            if ( ! isset( $paises[ $key ] ) ) {
+                $paises[ $key ] = $pais;
+            }
+        }
+    }
+
+    $stats = array(
+        'viajes'        => count( $ids ),
+        'km'            => $km,
+        'km_incompleto' => $km_inc,
+        'etapas'        => $etapas,
+        'paises'        => count( $paises ),
+        'ferrys'        => $ferrys,
+    );
+
+    update_post_meta( $page_id, '_col_stats', $stats );
+    update_post_meta(
+        $page_id,
+        '_col_stats_updated',
+        date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) )
+    );
+
+    return $stats;
+}
+
+/**
+ * R8 — Recalcula las cifras al guardar la PÁGINA de la plantilla de colección.
+ */
+function enterprise_recache_collection_on_page_save( $post_id, $post ) {
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+    if ( wp_is_post_revision( $post_id ) ) return;
+    if ( ! ( $post instanceof WP_Post ) || 'page' !== $post->post_type ) return;
+    if ( ! current_user_can( 'edit_page', $post_id ) ) return;
+    if ( 'page-templates/template-trip-coleccion.php' !== get_post_meta( $post_id, '_wp_page_template', true ) ) return;
+
+    enterprise_compute_collection_stats( $post_id );
+}
+add_action( 'save_post', 'enterprise_recache_collection_on_page_save', 20, 2 );
+
+/**
+ * R9 — Frescura sin cálculo en caliente: al guardar una entrada (post), recacha
+ * TODAS las páginas de la plantilla «Colección de viajes». Prioridad 20 para
+ * correr DESPUÉS de enterprise_post_stage_save (10), que actualiza las cachés por
+ * entrada (_post_km_calculado, _post_etapas_count, _post_ferry_count). El
+ * recálculo usa update_post_meta sobre las páginas (no dispara save_post → sin
+ * recursión). Volumen bajo → coste trivial. La query re-deriva el conjunto
+ * vigente, así que una despublicación desde el editor también actualiza las
+ * cifras; el vaciado a papelera no dispara save_post (edge conocido: se corrige
+ * al re-guardar la página).
+ */
+function enterprise_recache_collections_on_post_save( $post_id, $post ) {
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+    if ( wp_is_post_revision( $post_id ) ) return;
+    if ( ! ( $post instanceof WP_Post ) || 'post' !== $post->post_type ) return;
+    if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+
+    $pages = get_posts( array(
+        'post_type'        => 'page',
+        'post_status'      => 'publish',
+        'posts_per_page'   => -1,
+        'fields'           => 'ids',
+        'meta_key'         => '_wp_page_template',
+        'meta_value'       => 'page-templates/template-trip-coleccion.php',
+        'no_found_rows'    => true,
+        'suppress_filters' => true,
+    ) );
+
+    foreach ( $pages as $pg ) {
+        enterprise_compute_collection_stats( (int) $pg );
+    }
+}
+add_action( 'save_post', 'enterprise_recache_collections_on_post_save', 20, 2 );
+
+/* ─────────────────────────────────────────
    ENCOLADO CSS: plantilla «Colección de viajes»
 ───────────────────────────────────────── */
 /**
