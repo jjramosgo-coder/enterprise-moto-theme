@@ -369,3 +369,98 @@ construido. Complementan el «Análisis — #4 §9» (centrado en el design doc 
    muestra la barra de progreso al **100 %** (R5: «progreso 100 por estado») y **omite** la duración.
    Es el caso «Semana Santa 2025». Conforme al análisis, pero conviene dejarlo explícito por si el
    arquitecto quiere afinar la UX.
+
+### Notas para documentación — #5 · [doc] (para el arquitecto)
+
+Apuntes surgidos al **implementar** #5 (Fases 1–4), para que la documentación refleje lo
+realmente construido. Insumo para la Fase 5 (design doc §1/§6/§7/§11/§13.7). **#5 sigue
+pendiente**: estas notas no son cierre, solo material para documentar y validar.
+
+1. **Query y recolección compartidas (§7):** `enterprise_stage_query( $attrs ): WP_Query`
+   extraída de `blocks/post-stages/render.php` (render **byte-idéntico** para el contenido
+   existente) y usada por `post-stages` y `trip-collection`. `enterprise_collect_stage_blocks()`
+   generalizada para reconocer **ambos** bloques y movida a `functions.php` (deja de vivir en la
+   plantilla). `enterprise_collection_post_ids( $page_id )` devuelve la **unión deduplicada** de
+   IDs de todos los bloques de filtrado de la página, en orden de aparición; es la fuente única
+   del ticker (Fase 3) y del cálculo de cifras (Fase 4). Un post en dos bloques cuenta una vez.
+
+2. **Bloque `enterprise/trip-collection` (§7):** registrado en PHP (`register_block_type`,
+   api_version 3) + `render.php` + editor JS vanilla; **sin `block.json`** (patrón del tema).
+   Reutiliza la query compartida y los **mismos atributos de filtro** que `post-stages`
+   (categorías/etiquetas/fechas/orden/cantidad). Render propio: tarjetas `.trip-card` con badge
+   de tipo, año y pie de datos, como **enlaces planos** (sin contexto `from_*`).
+
+3. **Vocabulario y tipos de entrada (`_post_tipo`) (§1 / §11):** el `select` tiene **cuatro**
+   valores: `etapa`, `viaje` (el «tipo D»), `jornada` (sin moto), `generica`. **No existe un
+   «tipo C» como valor de campo**; la «salida de un día» es cualquier no-`viaje`. Mapeo en la
+   colección: `viaje` → cachés `_post_km_calculado` / `_post_etapas_count` / `_post_ferry_count`
+   / `_post_km_incompleto`, badge «Viaje»; no-`viaje` → `_post_km`, 1 etapa, ferry si
+   `_post_horas_ferry`, badge «Salida»; `jornada` = «Salida» / 0 km. Año del badge:
+   `_post_fecha_inicio`; si falta, año de publicación.
+
+4. **Campo `_post_ticker_name` (alta en §11):** texto, en el metabox de entrada; visible en
+   `viaje` / `etapa` / `jornada`, oculto en `generica`. Guardado con las guardas habituales
+   (nonce/autosave/capacidad), sin unidad ni transformación. Alimenta el ticker de la colección
+   (fallback al título, deduplicado, orden de aparición, tope `ENTERPRISE_COLECCION_TICKER_MAX = 16`).
+
+5. **Metadatos `_col_*` (alta en §11):** `_col_stats` = array con `viajes` (int), `km` (int),
+   `km_incompleto` (bool), `etapas` (int), `paises` (int, **conteo** de la unión), `ferrys` (int);
+   `_col_stats_updated` = texto de fecha ya formateado. Se **cachean al guardar**, no en caliente.
+   El contrato está sembrado también en la **cabecera de `template-trip-coleccion.php`**; conviene
+   reflejarlo en §11.
+
+6. **Km del hero SIN unidad (contrasta con la spec §3.4):** el hero pinta número + `≈` si es
+   incompleto, **sin** « km» (la etiqueta ya dice «Kilómetros»). Las **tarjetas** sí usan
+   `enterprise_km_display()`. Decisión validada por Juanjo.
+
+7. **Km con separador de miles y criterio de «incompleto»:** `enterprise_calculate_viaje_stats()`
+   guarda `_post_km_calculado` con `number_format(…, ',', '.')` («1.448» = 1448) y `_post_km` se
+   guarda **crudo**; el cómputo de la colección normaliza con el helper **`enterprise_km_to_int()`**
+   antes de sumar (un `(int)` directo daba 1). **Matiz importante:** a nivel de **etapa**,
+   `enterprise_calculate_viaje_stats()` **ya normaliza bien** (usa `floatval(str_replace(',', '.', …))`);
+   el fallo estaba solo al **consumir el total ya formateado**, no en la suma por etapas. **Km
+   incompleto** = alguna entrada con km vacío o sin dígitos (un 0 numérico sí cuenta), o un viaje
+   con `_post_km_incompleto`.
+
+8. **Países (R6-países):** `enterprise_parse_paises()` separa `_post_paises` por « · » o coma,
+   hace trim y pone la inicial en mayúscula; la **unión** entre entradas se deduplica
+   case-insensitive. El nº de países del hero = tamaño de esa unión.
+
+9. **Ocultar cifras a 0 (matiza la maqueta de 5 cifras fijas; candidata a §13.7):** el hero **no**
+   pinta una cifra cuyo valor sea 0 (p. ej. «Ferrys» cuando no hay ferrys). `.col-stats` pasó de
+   `grid` fijo de 5 columnas a **flex** (`flex:1 1 0; min-width:140px; flex-wrap`) para repartirse
+   según el nº de cifras visibles; se retiraron los overrides `grid-template-columns` de las media
+   queries. Decisión de Juanjo.
+
+10. **Cacheo al guardar (decisión §13.7; contraste con §13.5):** `enterprise_compute_collection_stats()`
+    computa sobre la unión deduplicada. Recache en `save_post` de la **página** (R8) y de **cualquier
+    entrada** (R9, prioridad 20 para leer las cachés de viaje ya frescas, actualizadas a prioridad 10).
+    Es cacheado **en escritura**, no en render — a diferencia de las estadísticas del cuaderno **en
+    caliente** de §13.5. Edge conocido: el vaciado a papelera no dispara `save_post` (se corrige al
+    re-guardar la página).
+
+11. **Desacople `_exp_*` (Fase 3b; §11 / §13.7):** la colección **no** usa el metabox de expedición
+    (no se registra en su plantilla). Retirados: el set de campos «congelado», el ticker antiguo por
+    `_exp_categoria` / `_exp_etiquetas` del metabox y su guardado, los dos hooks de encolado de la
+    plantilla vieja y el filtro muerto `enterprise_show_expedition_metabox`. **`_exp_categoria` queda
+    desbloqueado para su retirada, pero eso es un TO-DO nuevo, fuera de #5.**
+
+12. **Encolado de `coleccion.css` (§7):** vía el `'style'` del bloque `trip-collection` + un hook de
+    plantilla gateado a `page-templates/template-trip-coleccion.php` (matiza «solo si la plantilla
+    está activa»). El carrusel se auto-encola por `has_block`. Bugfix: `var(--display)` inexistente →
+    `var(--font-display)` en `coleccion.css`.
+
+13. **Plantillas (§6):** alta de la fila «Colección de viajes»
+    (`page-templates/template-trip-coleccion.php`, `git mv` desde `page-bitacora-bloques.php`
+    conservando historia) y retirada de la fila «Bitácora con bloques».
+
+14. **Fuera de alcance de #5 (para no reintroducirlo por error):** (a) **navegación anterior/siguiente
+    entre los viajes de la colección** — las tarjetas son enlaces planos; si se aborda, será un TO-DO
+    nuevo que deberá cumplir §13.1/§6 (propagar contexto y reconstruir la secuencia desde el mismo
+    bloque que la genera, con desambiguación por bloque al haber varios); (b) **retirada del legacy
+    `_exp_categoria`** (TO-DO nuevo, ya desbloqueado); (c) **renombrar `page-cuaderno-de-bitacora.php`**;
+    (d) **flag «incluir en cifras» por bloque**.
+
+**Observación al margen (posible TO-DO nuevo, fuera de #5):** en `enterprise_post_stage_save` hay
+**dos `update_post_meta` idénticos de `_post_paises`** seguidos; redundante e inocuo, candidato a
+limpieza trivial aparte.
