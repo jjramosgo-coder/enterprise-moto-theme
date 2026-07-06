@@ -691,7 +691,13 @@ add_action( 'wp_enqueue_scripts', 'enterprise_expedition_styles' );
 /* ─────────────────────────────────────────
    METABOXES PARA LA PÁGINA DE EXPEDICIÓN
 ───────────────────────────────────────── */
-function enterprise_register_expedition_metabox() {
+function enterprise_register_expedition_metabox( $post_type = 'page', $post = null ) {
+    // La «Colección de viajes» no usa el metabox de expedición (#5 Fase 3b):
+    // no lo registramos en esa plantilla. El resto de páginas no se ven afectadas.
+    if ( $post instanceof WP_Post
+        && 'page-templates/template-trip-coleccion.php' === get_post_meta( $post->ID, '_wp_page_template', true ) ) {
+        return;
+    }
     add_meta_box(
         'enterprise_expedition_data',
         __( 'Datos de la expedición', 'enterprise-moto' ),
@@ -701,23 +707,21 @@ function enterprise_register_expedition_metabox() {
         'high'
     );
 }
-add_action( 'add_meta_boxes', 'enterprise_register_expedition_metabox' );
+add_action( 'add_meta_boxes', 'enterprise_register_expedition_metabox', 10, 2 );
 
 function enterprise_expedition_metabox_cb( $post ) {
     $template          = get_post_meta( $post->ID, '_wp_page_template', true );
     $allowed_templates = array(
         'page-cuaderno-de-bitacora.php',
-        'page-bitacora-bloques.php',
     );
 
     if ( ! in_array( $template, $allowed_templates, true ) ) {
         echo '<p style="color:#888;font-size:13px;">' .
-             esc_html__( 'Asigna la plantilla "Cuaderno de bitácora" o "Bitácora con bloques" para activar estos campos.', 'enterprise-moto' ) .
+             esc_html__( 'Asigna la plantilla "Cuaderno de bitácora" para activar estos campos.', 'enterprise-moto' ) .
              '</p>';
         return;
     }
 
-    $is_bloques   = ( 'page-bitacora-bloques.php' === $template );
     $has_parent   = (bool) wp_get_post_parent_id( $post->ID );
     $exp_estado_v = get_post_meta( $post->ID, '_exp_estado', true );
     $is_portal    = ! $has_parent && empty( $exp_estado_v );
@@ -752,35 +756,18 @@ function enterprise_expedition_metabox_cb( $post ) {
     echo '<div style="' . $s_sbody . '">';
     echo '<div style="' . $s_grid2 . '">';
 
-    if ( $is_bloques ) {
-        // Plantilla «Bitácora con bloques» CONGELADA (R4): conjunto de campos y
-        // labels EXACTAMENTE como estaban, incluidos _exp_duracion y _exp_progreso
-        // y la semántica «(vacío = en curso)» de la fecha de fin.
-        $exp_fields = array(
-            '_exp_nombre'      => array( 'label' => __( 'Nombre del viaje',          'enterprise-moto' ), 'placeholder' => 'Ej: Sicilia 2026' ),
-            '_exp_subtitulo'   => array( 'label' => __( 'Descripción / ruta',        'enterprise-moto' ), 'placeholder' => 'Ej: BCN → Palermo → Cerdeña → BCN' ),
-            '_exp_fecha_inicio' => array( 'label' => __( 'Fecha de inicio',          'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
-            '_exp_fecha_fin'   => array( 'label' => __( 'Fecha de fin (vacío = en curso)', 'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
-            '_exp_salida'      => array( 'label' => __( 'Texto salida (auto si hay fechas)', 'enterprise-moto' ), 'placeholder' => 'Ej: 23 Mar 2026' ),
-            '_exp_duracion'    => array( 'label' => __( 'Duración (auto si hay fechas)', 'enterprise-moto' ), 'placeholder' => 'Ej: 18 días' ),
-            '_exp_km'          => array( 'label' => __( 'Kilómetros totales',        'enterprise-moto' ), 'placeholder' => 'Ej: ~3.200 km (vacío = auto)' ),
-            '_exp_paises'      => array( 'label' => __( 'Países recorridos',         'enterprise-moto' ), 'placeholder' => 'Ej: España · Francia · Italia' ),
-            '_exp_progreso'    => array( 'label' => __( 'Progreso (0–100)',           'enterprise-moto' ), 'placeholder' => 'Ej: 75' ),
-        );
-    } else {
-        // Plantilla «Cuaderno de bitácora» (R4): duración y progreso se CALCULAN en
-        // caliente, así que se retiran del metabox. _exp_fecha_fin es opcional y sin
-        // semántica «en curso» — el estado lo da _exp_estado.
-        $exp_fields = array(
-            '_exp_nombre'      => array( 'label' => __( 'Nombre del viaje',          'enterprise-moto' ), 'placeholder' => 'Ej: Sicilia 2026' ),
-            '_exp_subtitulo'   => array( 'label' => __( 'Descripción / ruta',        'enterprise-moto' ), 'placeholder' => 'Ej: BCN → Palermo → Cerdeña → BCN' ),
-            '_exp_fecha_inicio' => array( 'label' => __( 'Fecha de inicio',          'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
-            '_exp_fecha_fin'   => array( 'label' => __( 'Fecha de fin',              'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
-            '_exp_salida'      => array( 'label' => __( 'Texto salida (auto si hay fechas)', 'enterprise-moto' ), 'placeholder' => 'Ej: 23 Mar 2026' ),
-            '_exp_km'          => array( 'label' => __( 'Kilómetros totales',        'enterprise-moto' ), 'placeholder' => 'Ej: ~3.200 km (vacío = auto)' ),
-            '_exp_paises'      => array( 'label' => __( 'Países recorridos',         'enterprise-moto' ), 'placeholder' => 'Ej: España · Francia · Italia' ),
-        );
-    }
+    // Plantilla «Cuaderno de bitácora»: duración y progreso se CALCULAN en caliente,
+    // así que se retiran del metabox. _exp_fecha_fin es opcional y sin semántica
+    // «en curso» — el estado lo da _exp_estado.
+    $exp_fields = array(
+        '_exp_nombre'      => array( 'label' => __( 'Nombre del viaje',          'enterprise-moto' ), 'placeholder' => 'Ej: Sicilia 2026' ),
+        '_exp_subtitulo'   => array( 'label' => __( 'Descripción / ruta',        'enterprise-moto' ), 'placeholder' => 'Ej: BCN → Palermo → Cerdeña → BCN' ),
+        '_exp_fecha_inicio' => array( 'label' => __( 'Fecha de inicio',          'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
+        '_exp_fecha_fin'   => array( 'label' => __( 'Fecha de fin',              'enterprise-moto' ), 'placeholder' => 'AAAA-MM-DD', 'type' => 'date' ),
+        '_exp_salida'      => array( 'label' => __( 'Texto salida (auto si hay fechas)', 'enterprise-moto' ), 'placeholder' => 'Ej: 23 Mar 2026' ),
+        '_exp_km'          => array( 'label' => __( 'Kilómetros totales',        'enterprise-moto' ), 'placeholder' => 'Ej: ~3.200 km (vacío = auto)' ),
+        '_exp_paises'      => array( 'label' => __( 'Países recorridos',         'enterprise-moto' ), 'placeholder' => 'Ej: España · Francia · Italia' ),
+    );
     foreach ( $exp_fields as $key => $f ) {
         $val  = get_post_meta( $post->ID, $key, true );
         $type = isset( $f['type'] ) ? $f['type'] : 'text';
@@ -807,23 +794,6 @@ function enterprise_expedition_metabox_cb( $post ) {
     echo '</div></div>';
 
     // Las secciones 3–5 solo aplican a la plantilla "Cuaderno de bitácora" (automática)
-    if ( $is_bloques ) {
-        // Para page-bitacora-bloques solo mostramos la nota del ticker
-        $exp_cat_slug  = get_post_meta( $post->ID, '_exp_categoria', true );
-        $exp_tags_raw  = get_post_meta( $post->ID, '_exp_etiquetas', true );
-        echo '<div style="' . $s_section . '">';
-        echo '<div style="' . $s_sheader . '">🎞 ' . esc_html__( 'Ticker (plantilla Bitácora con bloques)', 'enterprise-moto' ) . '</div>';
-        echo '<div style="' . $s_sbody . '">';
-        echo '<div style="' . $s_grid2 . '">';
-        echo '<div><label style="' . $s_label . '">' . esc_html__( 'Slug de categoría (para el ticker)', 'enterprise-moto' ) . '</label>';
-        echo '<input type="text" name="_exp_categoria" value="' . esc_attr( $exp_cat_slug ) . '" placeholder="Ej: cuaderno-etapa" style="' . $s_input . '"></div>';
-        echo '<div><label style="' . $s_label . '">' . esc_html__( 'Etiquetas para el ticker (slugs, coma)', 'enterprise-moto' ) . '</label>';
-        echo '<input type="text" name="_exp_etiquetas" value="' . esc_attr( $exp_tags_raw ) . '" placeholder="Ej: sicilia-2026, italia" style="' . $s_input . '"></div>';
-        echo '</div>';
-        echo '<p style="font-size:11px;color:#888;margin:10px 0 0;">🎞 ' . esc_html__( 'Prioridad ticker: (1) bloques con categoría → (2) Slug de categoría → (3) Etiquetas → (4) categorías del blog.', 'enterprise-moto' ) . '</p>';
-        echo '</div></div>';
-        return;
-    }
 
     // ── SECCIÓN 3: Filtros (solo page-cuaderno-de-bitacora) ───────────────
     $filt_cat_ids     = get_post_meta( $post->ID, '_filt_category_ids',  true ) ?: array();
@@ -987,24 +957,6 @@ function enterprise_save_expedition_meta( $post_id ) {
     foreach ( $text_fields as $field ) {
         if ( isset( $_POST[ $field ] ) ) {
             update_post_meta( $post_id, $field, sanitize_text_field( $_POST[ $field ] ) );
-        }
-    }
-
-    // Campos EXCLUSIVOS de la plantilla «Bitácora con bloques» (congelada, R4):
-    // duración manual, progreso manual y los slugs del ticker. En «Cuaderno de
-    // bitácora» NO se guardan (duración y progreso se calculan en caliente). Se
-    // gatea por plantilla además de por isset, para no tocar esas metas en el
-    // cuaderno aunque llegaran por POST.
-    $is_bloques = ( 'page-bitacora-bloques.php' === get_post_meta( $post_id, '_wp_page_template', true ) );
-    if ( $is_bloques ) {
-        foreach ( array( '_exp_duracion', '_exp_categoria', '_exp_etiquetas' ) as $field ) {
-            if ( isset( $_POST[ $field ] ) ) {
-                update_post_meta( $post_id, $field, sanitize_text_field( $_POST[ $field ] ) );
-            }
-        }
-        // Progreso: solo números 0-100
-        if ( isset( $_POST['_exp_progreso'] ) ) {
-            update_post_meta( $post_id, '_exp_progreso', min( 100, max( 0, intval( $_POST['_exp_progreso'] ) ) ) );
         }
     }
 
@@ -1654,79 +1606,10 @@ function enterprise_markdown_assets() {
 }
 add_action( 'wp_enqueue_scripts', 'enterprise_markdown_assets' );
 
-/* ─────────────────────────────────────────
-   CARGAR CSS DE LA PLANTILLA BITÁCORA BLOQUES
-───────────────────────────────────────── */
-function enterprise_bitacora_bloques_styles() {
-    if ( ! is_page() ) return;
-    $template = get_page_template_slug( get_queried_object_id() );
-    if ( 'page-bitacora-bloques.php' !== $template ) return;
 
-    // Reutiliza el CSS de expedition (mismo diseño de héroe/summary)
-    wp_enqueue_style(
-        'enterprise-expedition',
-        get_template_directory_uri() . '/assets/css/expedition.css',
-        array( 'enterprise-style' ),
-        ENTERPRISE_VERSION
-    );
-    // Y el carrusel (siempre, porque la plantilla usa bloques)
-    wp_enqueue_style(
-        'enterprise-carousel',
-        get_template_directory_uri() . '/assets/css/carousel.css',
-        array( 'enterprise-style' ),
-        ENTERPRISE_VERSION
-    );
-    wp_enqueue_script(
-        'enterprise-carousel',
-        get_template_directory_uri() . '/assets/js/carousel.js',
-        array(),
-        ENTERPRISE_VERSION,
-        true
-    );
-}
-add_action( 'wp_enqueue_scripts', 'enterprise_bitacora_bloques_styles' );
-
-/* ─────────────────────────────────────────
-   CSS DEL LAYOUT de BITÁCORA BLOQUES
-   (columna contenido + sidebar)
-───────────────────────────────────────── */
-function enterprise_bitacora_bloques_inline_css() {
-    if ( ! is_page() ) return;
-    $template = get_page_template_slug( get_queried_object_id() );
-    if ( 'page-bitacora-bloques.php' !== $template ) return;
-
-    $css = '
-    .exp-blocks-layout {
-        display: grid;
-        grid-template-columns: 1fr 288px;
-        gap: 48px;
-        align-items: start;
-        padding-top: 56px;
-        padding-bottom: 72px;
-    }
-    .exp-blocks-content { min-width: 0; }
-    .exp-blocks-entry > * + * { margin-top: 32px; }
-    /* Bloque de etapas ocupa todo el ancho disponible */
-    .exp-blocks-entry .ent-stages { margin-left: 0; margin-right: 0; }
-    /* Alineación wide sale de la columna */
-    .exp-blocks-entry .alignwide {
-        margin-left: -32px;
-        margin-right: -32px;
-        max-width: calc(100% + 64px);
-    }
-    @media (max-width: 1100px) {
-        .exp-blocks-layout { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 640px) {
-        .exp-blocks-layout { padding: 36px 20px 56px; }
-        .exp-blocks-entry .alignwide { margin-left: 0; margin-right: 0; max-width: 100%; }
-    }
-    ';
-
-    wp_add_inline_style( 'enterprise-expedition', $css );
-}
-add_action( 'wp_enqueue_scripts', 'enterprise_bitacora_bloques_inline_css', 20 );
-
+/* Encolado de la antigua plantilla de bloques retirado en #5 Fase 3b: la
+   «Colección de viajes» carga assets/css/coleccion.css vía enterprise_coleccion_assets();
+   el carrusel (si hay bloque post-stages) se auto-encola por has_block. */
 /* ─────────────────────────────────────────
    BLOCK PATTERN: Carrusel de etapas listo
 ───────────────────────────────────────── */
@@ -1748,17 +1631,6 @@ function enterprise_register_block_patterns() {
     // Ver: sección "Elementos pendientes de eliminar" del documento de diseño
 }
 add_action( 'init', 'enterprise_register_block_patterns' );
-
-/* ─────────────────────────────────────────
-   METABOX: DATOS DE EXPEDICIÓN
-   (también para page-bitacora-bloques.php)
-───────────────────────────────────────── */
-// La función enterprise_expedition_metabox_cb ya muestra el metabox
-// en todas las páginas. Añadimos detección de la nueva plantilla:
-add_filter( 'enterprise_show_expedition_metabox', function( $show, $template ) {
-    if ( 'page-bitacora-bloques.php' === $template ) return true;
-    return $show;
-}, 10, 2 );
 
 /* ─────────────────────────────────────────
    FUNCIONES DE PORTADA (index.php)
