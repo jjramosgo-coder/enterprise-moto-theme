@@ -148,6 +148,9 @@ function enterprise_render_trip_collection_block( $attributes ) {
                         </div>
                         <?php endif; ?>
                     </div>
+                    <div class="trip-foot">
+                        <span class="trip-arrow" aria-hidden="true">→</span>
+                    </div>
                 </div>
             </a>
             <?php

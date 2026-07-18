@@ -124,6 +124,23 @@
   margin-top: 3px;
 }
 
+/* ── Flecha-botón (footer de la card) ── */
+.ent-trip-collection .trip-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.ent-trip-collection .trip-arrow {
+  width: 32px; height: 32px;
+  background: var(--black); color: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+  transition: background .2s, color .2s;
+}
+.ent-trip-collection .trip-card:hover .trip-arrow {
+  background: var(--gold); color: var(--black);
+}
+
 /* ── Gradientes de reserva (sin imagen destacada) ── */
 .ent-trip-collection .bg1 { background: linear-gradient(135deg, #1a2a4a, #080818); }
 .ent-trip-collection .bg2 { background: linear-gradient(135deg, #2a4a3a, #081a10); }
