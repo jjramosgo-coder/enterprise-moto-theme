@@ -303,7 +303,7 @@
 }
 
 @media (max-width: 640px) {
-  .ent-stages--carousel .ent-stages__slide { width: calc(85% - 8px); }
+  .ent-stages--carousel:not(.ent-stages--large) .ent-stages__slide { width: calc(85% - 8px); }
   .ent-stages--carousel.ent-stages--large .ent-stages__slide { width: calc(90% - 8px); }
   .ent-tl-item { grid-template-columns: 40px 1fr; gap: 14px; }
   .ent-tl-dot  { width: 40px; height: 40px; font-size: 11px; }
