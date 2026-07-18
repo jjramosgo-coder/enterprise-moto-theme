@@ -1,7 +1,7 @@
 # Bitácora Enterprise — Diseño conceptual e implementación
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.6.1  
+**Tema WordPress:** Enterprise Moto v2.7.0  
 **Última revisión:** Julio 2026
 
 ---
@@ -461,8 +461,11 @@ El orden se toma siempre de **la misma fuente que generó el listado mostrado**,
 |---|---|---|---|
 | Cuaderno de bitácora | `from_cuaderno=ID_página` | Metadatos `_filt_orderby` / `_filt_order` (+ `_filt_*`) de la página del cuaderno | A la página del cuaderno |
 | Viaje tipo D | `from_post=ID_post` | **Atributos del bloque «Etapas de ruta»** (`orderBy` / `order` + filtros) leídos del contenido del post | Al post del viaje |
+| Colección de viajes | `from_col=ID_página` + `col_key=hash` | **Atributos del bloque `trip-collection` concreto** (identificado por `col_key`, hash de `enterprise_collection_block_key()`), reconstruidos con `enterprise_stage_query()` (misma guarda `showAll`) | A la página de colección |
 | Archivo de categoría | `from_cat=slug` | Orden del propio archivo | Al archivo de la categoría |
 | Sin contexto | — | Adyacentes dentro de la misma categoría (fallback de WordPress) | Referer / página de entradas |
+
+En el contexto de colección (`from_col`) las etiquetas de los botones se muestran como **«Viaje anterior» / «Siguiente viaje»** en lugar de «ruta»; el resto de contextos conservan «ruta» (#8, v2.7.0).
 
 **Regla para funcionalidades análogas:** cualquier listado nuevo que enlace a entradas con navegación anterior/siguiente debe (a) propagar su parámetro de contexto en los enlaces, y (b) reconstruir la secuencia leyendo **la misma fuente** que genera el listado visible (nunca un orden fijado a fuego), de modo que navegación y presentación coincidan siempre.
 
@@ -490,7 +493,7 @@ Todos los bloques están en la categoría **Enterprise Moto** del insertor de Gu
 | Bloque | Identificador | Descripción |
 |---|---|---|
 | Etapas de ruta | `enterprise/post-stages` | Timeline vertical o carrusel horizontal de entradas filtradas. Filtros: categorías (OR), etiquetas (AND/OR), fechas absolutas desde/hasta. Campos visibles, ordenación y cantidad configurables. |
-| Colección de viajes | `enterprise/trip-collection` | **Tarjetas de viaje** (una por entrada) para la plantilla «Colección de viajes», con presentación **configurable como `post-stages`**: carrusel horizontal o timeline vertical (atributo `layout`, def. `carousel`; #11, v2.6.0). Reutiliza el scaffolding `.ent-stages--{layout}` y los assets `carousel.js`/`carousel.css` de «Etapas de ruta» **sin tocarlos**, conservando la `.trip-card` (el contenedor lleva ambas clases: `.ent-stages .ent-trip-collection`). Mismos atributos de filtro y **query compartida** con «Etapas de ruta», más el toggle **«sin límite»** (`showAll`, §13.7). Enlaces planos, sin `from_*` (navegación entre viajes: #8). Alta en #5 (v2.5.0). Retoques de presentación de la tarjeta (v2.6.1): flecha-botón con cambio de color al pasar el ratón por la card (coherente con las cards de listado/portada) y celda de «Ferry» oculta si el viaje no tiene conexiones (misma regla «una cifra 0 no se pinta» del hero, §13.7). |
+| Colección de viajes | `enterprise/trip-collection` | **Tarjetas de viaje** (una por entrada) para la plantilla «Colección de viajes», con presentación **configurable como `post-stages`**: carrusel horizontal o timeline vertical (atributo `layout`, def. `carousel`; #11, v2.6.0). Reutiliza el scaffolding `.ent-stages--{layout}` y los assets `carousel.js`/`carousel.css` de «Etapas de ruta» **sin tocarlos**, conservando la `.trip-card` (el contenedor lleva ambas clases: `.ent-stages .ent-trip-collection`). Mismos atributos de filtro y **query compartida** con «Etapas de ruta», más el toggle **«sin límite»** (`showAll`, §13.7). Navegación anterior/siguiente **entre los viajes de la colección**: cada tarjeta propaga `?from_col&col_key` y `single.php` reconstruye la secuencia del bloque concreto, con «← Volver a la colección» y etiqueta «Viaje» (#8, v2.7.0; §6, §13.10). Alta en #5 (v2.5.0). Retoques de presentación de la tarjeta (v2.6.1): flecha-botón con cambio de color al pasar el ratón por la card (coherente con las cards de listado/portada) y celda de «Ferry» oculta si el viaje no tiene conexiones (misma regla «una cifra 0 no se pinta» del hero, §13.7). |
 | Mapa de localizaciones | `enterprise/location-map` | Marcadores numerados en mapa OpenLayers con popup de información. |
 | Mapa de ruta | `enterprise/route-map` | Trazado GPX con perfil de elevación. Soporta dos ficheros GPX simultáneos. |
 | Mapa de ruta animado | `enterprise/animated-route-map` | Trazado GPX con sincronización animada elevación ↔ marcador. |
@@ -785,6 +788,14 @@ Registro de decisiones de arquitectura del tema. Cada entrada es **autocontenida
 **Decisión.** Alinear el encolado de `carousel.css`/`carousel.js` al patrón ya presente en el tema: `file_exists( $path ) ? filemtime( $path ) : ENTERPRISE_VERSION`. Solo se cambió el **encolado** en `functions.php`; los ficheros CSS/JS no se tocaron. **Contrato:** todos los assets de bloque (CSS/JS servidos condicionalmente según `has_block()`) se encolan con `filemtime()`, no con `ENTERPRISE_VERSION`, de modo que cualquier cambio del fichero invalida la caché sin depender de un bump de versión.
 
 **Consecuencias.** Un cambio de CSS/JS de bloque es visible tras el push **sin** necesidad de subir la versión — decisivo porque esos cambios se **validan** en el WordPress real y una caché obsoleta enmascararía el resultado (como ocurrió con §13.8). El bump de versión queda para lo que es —marcar el cierre de un lote— desacoplado de la invalidación de caché. Invariante para bloques nuevos: encolar sus assets con `filemtime()`, coherente con §7 («CSS cargado solo si el bloque está presente en la página»).
+
+### 13.10 Contexto de navegación «colección» (`from_col`) con desambiguación por bloque
+
+**Contexto.** Una página «Colección de viajes» (§6, §7) lista viajes (tipo D) con uno o **varios** bloques `enterprise/trip-collection`. Sus tarjetas eran enlaces planos: al entrar en un viaje, `single.php` no sabía que se venía de una colección, así que el «Volver» caía al fallback del referer y la navegación anterior/siguiente caía a la adyacencia por categoría (no al orden ni al conjunto de la colección), incumpliendo el contrato §13.1/§6. El `id` que emite el bloque en el render es aleatorio (`wp_rand`), inservible como identificador estable en un enlace; y como una página puede tener varios bloques de filtrado, hacía falta desambiguar **cuál** generó la tarjeta.
+
+**Decisión.** Añadir el contexto de origen **`from_col`** (id de la página) + **`col_key`** (hash de identidad del bloque), a imagen del `from_post` de las etapas. La identidad del bloque la da un helper único, `enterprise_collection_block_key( $attributes )`, que hashea los **atributos que determinan la secuencia** (categorías, etiquetas, relación, fechas, orden, `postsPerPage`, `showAll` — **no** `layout`); lo usan tanto la tarjeta al estampar el enlace como `single.php` al casar el bloque, de modo que no puedan divergir. La navegación reconstruye la secuencia **del bloque concreto** reutilizando `enterprise_stage_query()` con la misma guarda `showAll` (no se replica la query a mano, a diferencia de `from_post`), garantizando que navegación == listado. El «Volver» regresa a la página de colección y las etiquetas pasan a «Viaje». El detalle del contexto y su tabla están en §6 «Contrato de navegación entre entradas».
+
+**Consecuencias.** Se cumple el contrato §13.1/§6 también para las colecciones, con desambiguación por bloque robusta a reordenar bloques (una colisión de hash implica bloques con filtros idénticos → misma secuencia, inocua). Principio: la **identidad navegable** de un bloque de filtrado es su conjunto de filtros de secuencia, no un id volátil de render. **Límite conocido (→ #13):** el contexto de origen es de **un solo nivel** — al bajar de un viaje a una etapa (`from_post`) y volver, se pierde el `from_col`; y el estampado de contexto es desigual entre orígenes (portada, `archive.php`). Ambos exceden #8 y se abordan en #13.
 
 ---
 
