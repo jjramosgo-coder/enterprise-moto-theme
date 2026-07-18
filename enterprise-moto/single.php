@@ -18,6 +18,9 @@ $cat_name = enterprise_first_category();
     $from_cat_slug = isset( $_GET['from_cat'] )  ? sanitize_key( $_GET['from_cat'] )  : '';
     $from_post_id  = isset( $_GET['from_post'] ) ? intval( $_GET['from_post'] )        : 0;
     $from_cuaderno_id = isset( $_GET['from_cuaderno'] ) ? intval( $_GET['from_cuaderno'] ) : 0;
+    // #8: contexto de origen «colección» (id de la página + clave del bloque concreto).
+    $from_col_id = isset( $_GET['from_col'] ) ? intval( $_GET['from_col'] ) : 0;
+    $col_key     = isset( $_GET['col_key'] )  ? sanitize_key( $_GET['col_key'] ) : '';
     // Validar que from_post es realmente un post tipo D
     if ( $from_post_id && get_post_meta( $from_post_id, '_post_tipo', true ) !== 'viaje' ) {
         $from_post_id = 0;
@@ -26,12 +29,20 @@ $cat_name = enterprise_first_category();
     if ( $from_cuaderno_id && ! get_post_meta( $from_cuaderno_id, '_exp_estado', true ) ) {
         $from_cuaderno_id = 0;
     }
+    // #8: validar que from_col es una página con la plantilla «Colección de viajes»
+    if ( $from_col_id
+         && 'page-templates/template-trip-coleccion.php' !== get_page_template_slug( $from_col_id ) ) {
+        $from_col_id = 0;
+    }
     if ( $from_post_id ) {
         $back_url   = get_permalink( $from_post_id );
         $back_label = esc_html__( '← Volver al viaje', 'enterprise-moto' );
     } elseif ( $from_cuaderno_id ) {
         $back_url   = get_permalink( $from_cuaderno_id );
         $back_label = esc_html__( '← Volver al cuaderno', 'enterprise-moto' );
+    } elseif ( $from_col_id ) {
+        $back_url   = get_permalink( $from_col_id );
+        $back_label = esc_html__( '← Volver a la colección', 'enterprise-moto' );
     } elseif ( $from_cat_slug ) {
         $from_cat_obj  = get_category_by_slug( $from_cat_slug );
         $back_url      = $from_cat_obj ? get_term_link( $from_cat_obj ) : home_url( '/las-rutas/' );
@@ -416,6 +427,44 @@ if ( $has_data ) : ?>
           $next    = $next_id ? get_post( $next_id ) : null;
       }
 
+  } elseif ( $from_col_id ) {
+      /* ── Contexto: venimos de una «Colección de viajes» (#8) ───────────
+         CONTRATO DE NAVEGACIÓN (§13.1/§6): «anterior/siguiente» recorren la
+         secuencia en el MISMO orden que el listado mostrado. En una colección
+         el listado lo genera el bloque enterprise/trip-collection, y una misma
+         página puede tener VARIOS bloques de filtrado. Se localiza el bloque
+         concreto por su clave de identidad (enterprise_collection_block_key,
+         el mismo helper que usó la tarjeta al estampar col_key), se aplica la
+         MISMA guarda showAll y se reutiliza enterprise_stage_query() —la misma
+         resolución que el render del bloque— para que navegación y listado no
+         puedan divergir. */
+      $nav_suffix = array( 'from_col' => $from_col_id, 'col_key' => $col_key );
+
+      $col_blocks   = enterprise_collect_stage_blocks( parse_blocks( get_post_field( 'post_content', $from_col_id ) ) );
+      $target_attrs = null;
+      foreach ( $col_blocks as $blk ) {
+          if ( isset( $blk['blockName'] ) && 'enterprise/trip-collection' === $blk['blockName']
+               && enterprise_collection_block_key( $blk['attrs'] ) === $col_key ) {
+              $target_attrs = $blk['attrs'];
+              break;
+          }
+      }
+      if ( is_array( $target_attrs ) ) {
+          /* Misma guarda showAll que el bloque (#11 R3) + misma query → misma secuencia. */
+          if ( ! empty( $target_attrs['showAll'] ) ) {
+              $target_attrs['postsPerPage'] = -1;
+          }
+          $col_q       = enterprise_stage_query( $target_attrs );
+          $col_ids     = wp_list_pluck( $col_q->posts, 'ID' );
+          $current_pos = array_search( get_the_ID(), $col_ids, true );
+          if ( $current_pos !== false ) {
+              $prev_id = $current_pos > 0                     ? $col_ids[ $current_pos - 1 ] : null;
+              $next_id = $current_pos < count( $col_ids ) - 1 ? $col_ids[ $current_pos + 1 ] : null;
+              $prev    = $prev_id ? get_post( $prev_id ) : null;
+              $next    = $next_id ? get_post( $next_id ) : null;
+          }
+      }
+
   } elseif ( $from_cat_slug ) {
       /* ── Contexto: venimos de una categoría ─────────────────────────── */
       $nav_suffix       = array( 'from_cat' => $from_cat_slug );
@@ -433,10 +482,17 @@ if ( $has_data ) : ?>
       $prev = get_previous_post( true );
       $next = get_next_post(     true );
   }
+
+  /* #8: etiquetas conscientes de contexto. Solo en contexto de colección
+     (from_col) pasan a «Viaje»; el resto de contextos conservan «Ruta». */
+  $nav_prev_label = $from_col_id ? esc_html__( 'Viaje anterior',  'enterprise-moto' )
+                                 : esc_html__( 'Ruta anterior',   'enterprise-moto' );
+  $nav_next_label = $from_col_id ? esc_html__( 'Siguiente viaje', 'enterprise-moto' )
+                                 : esc_html__( 'Siguiente ruta',  'enterprise-moto' );
   ?>
   <div class="post-nav-item">
     <?php if ( $prev ) : ?>
-      <div class="post-nav-label">← <?php esc_html_e( 'Ruta anterior', 'enterprise-moto' ); ?></div>
+      <div class="post-nav-label">← <?php echo $nav_prev_label; ?></div>
       <div class="post-nav-title">
         <a href="<?php echo esc_url( $nav_suffix ? add_query_arg( $nav_suffix, get_permalink( $prev->ID ) ) : get_permalink( $prev->ID ) ); ?>">
           <?php echo esc_html( get_the_title( $prev->ID ) ); ?>
@@ -446,7 +502,7 @@ if ( $has_data ) : ?>
   </div>
   <div class="post-nav-item">
     <?php if ( $next ) : ?>
-      <div class="post-nav-label"><?php esc_html_e( 'Siguiente ruta', 'enterprise-moto' ); ?> →</div>
+      <div class="post-nav-label"><?php echo $nav_next_label; ?> →</div>
       <div class="post-nav-title">
         <a href="<?php echo esc_url( $nav_suffix ? add_query_arg( $nav_suffix, get_permalink( $next->ID ) ) : get_permalink( $next->ID ) ); ?>">
           <?php echo esc_html( get_the_title( $next->ID ) ); ?>
