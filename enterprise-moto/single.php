@@ -34,23 +34,39 @@ $cat_name = enterprise_first_category();
          && 'page-templates/template-trip-coleccion.php' !== get_page_template_slug( $from_col_id ) ) {
         $from_col_id = 0;
     }
+    // #13: ancestro = orígenes validados presentes, salvo el inmediato from_post.
+    // Se construye desde los locales YA validados (no se re-lee $_GET), de modo que
+    // un from_col/from_cat/from_cuaderno inválido no se arrastra.
+    $nav_ancestor = array();
+    if ( $from_cuaderno_id ) { $nav_ancestor['from_cuaderno'] = $from_cuaderno_id; }
+    if ( $from_col_id )      { $nav_ancestor['from_col'] = $from_col_id; $nav_ancestor['col_key'] = $col_key; }
+    if ( $from_cat_slug )    { $nav_ancestor['from_cat'] = $from_cat_slug; }
     if ( $from_post_id ) {
-        $back_url   = get_permalink( $from_post_id );
+        // #13: al volver al viaje, conservar el ancestro para que el viaje siga
+        // sabiendo de dónde vino; from_post no se arrastra (autorreferente al viaje).
+        $back_url   = $nav_ancestor
+                        ? add_query_arg( $nav_ancestor, get_permalink( $from_post_id ) )
+                        : get_permalink( $from_post_id );
         $back_label = esc_html__( '← Volver al viaje', 'enterprise-moto' );
+        $active_context = 'post';
     } elseif ( $from_cuaderno_id ) {
         $back_url   = get_permalink( $from_cuaderno_id );
         $back_label = esc_html__( '← Volver al cuaderno', 'enterprise-moto' );
+        $active_context = 'cuaderno';
     } elseif ( $from_col_id ) {
         $back_url   = get_permalink( $from_col_id );
         $back_label = esc_html__( '← Volver a la colección', 'enterprise-moto' );
+        $active_context = 'col';
     } elseif ( $from_cat_slug ) {
         $from_cat_obj  = get_category_by_slug( $from_cat_slug );
         $back_url      = $from_cat_obj ? get_term_link( $from_cat_obj ) : home_url( '/las-rutas/' );
         $back_label    = esc_html__( '← Volver', 'enterprise-moto' );
+        $active_context = 'cat';
     } else {
         $referer   = wp_get_referer();
         $back_url  = $referer ?: get_permalink( get_option( 'page_for_posts' ) ) ?: home_url( '/las-rutas/' );
         $back_label = esc_html__( '← Volver', 'enterprise-moto' );
+        $active_context = 'none';
     }
     ?>
     <a href="<?php echo esc_url( $back_url ); ?>" class="post-back">
@@ -281,7 +297,7 @@ if ( $has_data ) : ?>
          y replica su query exacta, garantizando que coincida con lo que se
          ve. Si no se encontrara el bloque (no debería: el enlace from_post
          lo genera el propio bloque), se usa un fallback por metadatos. */
-      $nav_suffix = array( 'from_post' => $from_post_id );
+      $nav_suffix = array_merge( array( 'from_post' => $from_post_id ), $nav_ancestor );
 
       $vd_blocks = parse_blocks( get_post_field( 'post_content', $from_post_id ) );
       $vd_stages = function_exists( 'enterprise_find_first_block' )
@@ -483,12 +499,14 @@ if ( $has_data ) : ?>
       $next = get_next_post(     true );
   }
 
-  /* #8: etiquetas conscientes de contexto. Solo en contexto de colección
-     (from_col) pasan a «Viaje»; el resto de contextos conservan «Ruta». */
-  $nav_prev_label = $from_col_id ? esc_html__( 'Viaje anterior',  'enterprise-moto' )
-                                 : esc_html__( 'Ruta anterior',   'enterprise-moto' );
-  $nav_next_label = $from_col_id ? esc_html__( 'Siguiente viaje', 'enterprise-moto' )
-                                 : esc_html__( 'Siguiente ruta',  'enterprise-moto' );
+  /* #8 + #13: etiquetas conscientes del CONTEXTO ACTIVO (innermost), no de la
+     mera presencia de from_col. Una etapa alcanzada vía colección→viaje→etapa
+     tiene contexto activo «post» (viaje) → «Ruta», aunque arrastre from_col. */
+  $in_col_context = ( 'col' === $active_context );
+  $nav_prev_label = $in_col_context ? esc_html__( 'Viaje anterior',  'enterprise-moto' )
+                                    : esc_html__( 'Ruta anterior',   'enterprise-moto' );
+  $nav_next_label = $in_col_context ? esc_html__( 'Siguiente viaje', 'enterprise-moto' )
+                                    : esc_html__( 'Siguiente ruta',  'enterprise-moto' );
   ?>
   <div class="post-nav-item">
     <?php if ( $prev ) : ?>

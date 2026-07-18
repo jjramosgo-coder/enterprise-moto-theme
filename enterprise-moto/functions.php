@@ -483,6 +483,37 @@ function enterprise_collection_block_key( $attributes ) {
 }
 
 /* ─────────────────────────────────────────
+   CONTEXTO DE NAVEGACIÓN PRESENTE EN LA REQUEST (#13)
+───────────────────────────────────────── */
+/**
+ * Contexto de navegación presente en la request (#13).
+ * Lee y SANEA los parámetros de origen del enlace de entrada; NO valida su
+ * semántica (eso lo hace single.php al consumirlos). Fuente única de «qué
+ * cuenta como parámetro de origen», para que el estampado del ancestro
+ * (render.php) y el consumo (single.php) no diverjan.
+ *
+ * @return array Subconjunto presente y saneado. p.ej.
+ *   array( 'from_col' => 12, 'col_key' => 'a1b2c3d4' ) | array( 'from_cat' => 'italia' ) | array()
+ */
+function enterprise_nav_origin_params() {
+    $out = array();
+    if ( isset( $_GET['from_post'] ) && intval( $_GET['from_post'] ) ) {
+        $out['from_post'] = intval( $_GET['from_post'] );
+    }
+    if ( isset( $_GET['from_cuaderno'] ) && intval( $_GET['from_cuaderno'] ) ) {
+        $out['from_cuaderno'] = intval( $_GET['from_cuaderno'] );
+    }
+    if ( isset( $_GET['from_col'] ) && intval( $_GET['from_col'] ) ) {
+        $out['from_col'] = intval( $_GET['from_col'] );
+        $out['col_key']  = isset( $_GET['col_key'] ) ? sanitize_key( $_GET['col_key'] ) : '';
+    }
+    if ( isset( $_GET['from_cat'] ) && sanitize_key( $_GET['from_cat'] ) ) {
+        $out['from_cat'] = sanitize_key( $_GET['from_cat'] );
+    }
+    return $out;
+}
+
+/* ─────────────────────────────────────────
    BLOQUES DE FILTRADO EN UNA PÁGINA (recolección recursiva)
 ───────────────────────────────────────── */
 /**

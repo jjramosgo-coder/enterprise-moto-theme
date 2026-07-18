@@ -34,7 +34,14 @@ function enterprise_render_post_stages_block( $attributes ) {
     if ( $current_id && get_post_meta( $current_id, '_post_tipo', true ) === 'viaje' ) {
         $from_post_id = $current_id;
     }
-    $nav_suffix = $from_post_id ? array( 'from_post' => $from_post_id ) : array();
+    // #13: además del from_post inmediato, propagar hacia las etapas el contexto
+    // de llegada del propio viaje (el ancestro). El viaje no es «etapa» de nadie,
+    // así que se excluye from_post por seguridad. Sin viaje → sin estampado.
+    $ancestor = enterprise_nav_origin_params();
+    unset( $ancestor['from_post'] );
+    $nav_suffix = $from_post_id
+        ? array_merge( array( 'from_post' => $from_post_id ), $ancestor )
+        : array();
 
     /* ── Construir la query (lógica compartida con enterprise/trip-collection) ── */
     $query = enterprise_stage_query( $attributes );
