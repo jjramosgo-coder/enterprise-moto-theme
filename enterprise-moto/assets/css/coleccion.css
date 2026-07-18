@@ -104,9 +104,10 @@
 }
 .ent-trip-collection .trip-meta-i {
   flex: 1;
-  padding: 10px 0;
+  padding: 10px 0 10px 12px;
   border-right: 1px solid var(--border);
 }
+.ent-trip-collection .trip-meta-i:first-child { padding-left: 0; }
 .ent-trip-collection .trip-meta-i:last-child { border-right: none; }
 .ent-trip-collection .trip-meta-n {
   font-family: var(--font-display);
