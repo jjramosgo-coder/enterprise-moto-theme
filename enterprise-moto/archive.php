@@ -28,9 +28,18 @@
       <?php $n = 1; while ( have_posts() ) : the_post();
         $route    = enterprise_get_route_data();
         $cat_name = enterprise_first_category();
+        // #13: en un archivo de categoría, estampar from_cat en la tarjeta para
+        // que single.php conozca el origen (mismo patrón que la portada, §1.5).
+        $card_permalink = get_permalink();
+        if ( is_category() ) {
+            $cat_obj = get_queried_object();
+            if ( $cat_obj instanceof WP_Term ) {
+                $card_permalink = add_query_arg( 'from_cat', $cat_obj->slug, $card_permalink );
+            }
+        }
       ?>
         <article <?php post_class( 'post-card' ); ?> id="post-<?php the_ID(); ?>">
-          <a href="<?php the_permalink(); ?>" tabindex="-1" aria-hidden="true">
+          <a href="<?php echo esc_url( $card_permalink ); ?>" tabindex="-1" aria-hidden="true">
             <div class="post-card-thumb">
               <div class="post-card-thumb-inner">
                 <?php if ( has_post_thumbnail() ) : the_post_thumbnail( 'enterprise-card', array( 'loading' => 'lazy' ) );
@@ -44,14 +53,14 @@
               <span class="entry-tag entry-tag--cat"><?php echo esc_html( $cat_name ); ?></span>
               <span class="entry-tag entry-tag--date"><?php the_date( 'Y' ); ?></span>
             </div>
-            <h2 class="post-card-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+            <h2 class="post-card-title"><a href="<?php echo esc_url( $card_permalink ); ?>"><?php the_title(); ?></a></h2>
             <p class="post-card-excerpt"><?php echo esc_html( get_the_excerpt() ); ?></p>
             <div class="post-card-footer">
               <div class="post-card-km">
                 <?php if ( $route['km'] ) echo esc_html( $route['km'] ) . ' <span>km</span>';
                 else echo '<span>' . esc_html__( 'Ruta', 'enterprise-moto' ) . '</span>'; ?>
               </div>
-              <a href="<?php the_permalink(); ?>" class="post-card-arrow" aria-label="<?php echo esc_attr( get_the_title() ); ?>">→</a>
+              <a href="<?php echo esc_url( $card_permalink ); ?>" class="post-card-arrow" aria-label="<?php echo esc_attr( get_the_title() ); ?>">→</a>
             </div>
           </div>
         </article>
