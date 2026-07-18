@@ -1673,18 +1673,20 @@ function enterprise_carousel_assets() {
     if ( ! has_block( 'enterprise/post-stages', $post )
       && ! has_block( 'enterprise/trip-collection', $post ) ) return;
 
+    $carousel_css_path = get_template_directory() . '/assets/css/carousel.css';
     wp_enqueue_style(
         'enterprise-carousel',
         get_template_directory_uri() . '/assets/css/carousel.css',
         array( 'enterprise-style' ),
-        ENTERPRISE_VERSION
+        file_exists( $carousel_css_path ) ? filemtime( $carousel_css_path ) : ENTERPRISE_VERSION
     );
 
+    $carousel_js_path = get_template_directory() . '/assets/js/carousel.js';
     wp_enqueue_script(
         'enterprise-carousel',
         get_template_directory_uri() . '/assets/js/carousel.js',
         array(),
-        ENTERPRISE_VERSION,
+        file_exists( $carousel_js_path ) ? filemtime( $carousel_js_path ) : ENTERPRISE_VERSION,
         true
     );
 }
