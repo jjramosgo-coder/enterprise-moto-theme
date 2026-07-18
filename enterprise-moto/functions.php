@@ -450,6 +450,39 @@ function enterprise_stage_query( $attributes ) {
 }
 
 /* ─────────────────────────────────────────
+   CLAVE DE IDENTIDAD DE BLOQUE DE FILTRADO (navegación #8)
+───────────────────────────────────────── */
+/**
+ * Clave de identidad de un bloque de filtrado para la navegación (#8).
+ * Hash corto y estable de los atributos que determinan la SECUENCIA (no layout),
+ * para desambiguar entre varios bloques de la misma página. La usan
+ * blocks/trip-collection/render.php (al pintar la tarjeta) y single.php (al casar
+ * el bloque de origen): única fuente de verdad del identificador, para que ambos
+ * lados no diverjan. Se hashean los atributos ORIGINALES del bloque (los mismos
+ * que lee single.php al parsear la página), no los mutados por la guarda showAll.
+ * Los valores por defecto coinciden con enterprise_stage_query().
+ */
+function enterprise_collection_block_key( $attributes ) {
+    $cat = ( isset( $attributes['categoryIds'] ) && is_array( $attributes['categoryIds'] ) )
+             ? array_map( 'intval', $attributes['categoryIds'] ) : array();
+    $tag = ( isset( $attributes['tagIds'] ) && is_array( $attributes['tagIds'] ) )
+             ? array_map( 'intval', $attributes['tagIds'] ) : array();
+    sort( $cat ); sort( $tag );
+    $norm = array(
+        'cat'   => $cat,
+        'tag'   => $tag,
+        'trel'  => isset( $attributes['tagRelation'] ) && $attributes['tagRelation'] === 'AND' ? 'AND' : 'IN',
+        'dfrom' => isset( $attributes['filterDateFrom'] ) ? (string) $attributes['filterDateFrom'] : '',
+        'dto'   => isset( $attributes['filterDateTo'] )   ? (string) $attributes['filterDateTo']   : '',
+        'obw'   => isset( $attributes['orderBy'] ) ? (string) $attributes['orderBy'] : 'date',
+        'ord'   => isset( $attributes['order'] )   ? (string) $attributes['order']   : 'DESC',
+        'ppp'   => isset( $attributes['postsPerPage'] ) ? intval( $attributes['postsPerPage'] ) : 6,
+        'all'   => ! empty( $attributes['showAll'] ) ? 1 : 0,
+    );
+    return substr( md5( wp_json_encode( $norm ) ), 0, 8 );
+}
+
+/* ─────────────────────────────────────────
    BLOQUES DE FILTRADO EN UNA PÁGINA (recolección recursiva)
 ───────────────────────────────────────── */
 /**

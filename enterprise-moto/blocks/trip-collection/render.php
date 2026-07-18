@@ -6,10 +6,10 @@
  * entradas que resultan de los MISMOS filtros que enterprise/post-stages
  * (query compartida: enterprise_stage_query()). Presentación configurable
  * (#11): carrusel horizontal o timeline vertical, reutilizando el scaffolding
- * y los assets (carousel.js/carousel.css) de post-stages. Cada tarjeta es un
- * enlace plano al relato; NO se inyecta contexto de navegación (from_*) — la
- * navegación anterior/siguiente entre viajes de la colección queda fuera de
- * alcance (navegación entre viajes = #8).
+ * y los assets (carousel.js/carousel.css) de post-stages. Cada tarjeta enlaza al
+ * relato propagando el contexto de origen «colección» (?from_col&col_key) para la
+ * navegación anterior/siguiente entre viajes de la colección (#8), a imagen del
+ * from_post de las etapas de un viaje.
  *
  * Datos por entrada (badge de tipo, año, km/etapas/ferrys): enterprise_trip_card_data().
  */
@@ -22,6 +22,14 @@ function enterprise_render_trip_collection_block( $attributes ) {
                         ? array_map( 'intval', $attributes['categoryIds'] ) : array();
     $tag_ids      = isset( $attributes['tagIds'] ) && is_array( $attributes['tagIds'] )
                         ? array_map( 'intval', $attributes['tagIds'] ) : array();
+
+    /* #8: contexto de origen «colección» para la navegación anterior/siguiente
+       (a imagen de from_post). Se capturan ANTES de la mutación showAll para que
+       la clave hashee los atributos ORIGINALES del bloque —los mismos que leerá
+       single.php al parsear la página— vía el helper compartido. El id de página
+       (get_queried_object_id) es independiente del bucle interno del bloque. */
+    $col_page_id = get_queried_object_id();
+    $col_key     = enterprise_collection_block_key( $attributes );
 
     /* #11 R3: «sin límite» → traer todas las entradas del filtro. No se toca la
        query compartida (ya mapea -1 nativamente); el ajuste es a nivel de bloque. */
@@ -68,7 +76,7 @@ function enterprise_render_trip_collection_block( $attributes ) {
        nav/dots, .ent-tl-item) para aprovechar carousel.js/carousel.css SIN tocarlos.
        El contenedor conserva además .ent-trip-collection para que coleccion.css siga
        estilando la .trip-card, que se preserva intacta como contenido de cada
-       slide/fila. Sigue siendo enlace plano (sin from_*; navegación entre viajes = #8). */
+       slide/fila. Propaga el contexto de origen «colección» en el href (from_col; #8). */
     $layout      = isset( $attributes['layout'] ) ? sanitize_key( $attributes['layout'] ) : 'carousel';
     $is_carousel = ( 'carousel' === $layout );
     $total       = $query->post_count;
@@ -115,7 +123,10 @@ function enterprise_render_trip_collection_block( $attributes ) {
             /* Tarjeta de viaje: idéntica en ambos modos. Se compone una vez y se
                envuelve según el layout (slide de carrusel o fila de timeline). */
             ob_start(); ?>
-            <a href="<?php echo esc_url( get_permalink() ); ?>" class="trip-card">
+            <a href="<?php echo esc_url( add_query_arg(
+                    array( 'from_col' => $col_page_id, 'col_key' => $col_key ),
+                    get_permalink()
+            ) ); ?>" class="trip-card">
                 <div class="trip-thumb <?php echo esc_attr( $bg_class ); ?>">
                     <?php if ( $thumb ) : ?>
                         <img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( get_the_title() ); ?>" loading="lazy">
