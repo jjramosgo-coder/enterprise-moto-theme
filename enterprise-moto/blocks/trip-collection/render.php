@@ -141,10 +141,12 @@ function enterprise_render_trip_collection_block( $attributes ) {
                             <div class="trip-meta-n"><?php echo intval( $data['etapas'] ); ?></div>
                             <div class="trip-meta-l"><?php esc_html_e( 'Etapas', 'enterprise-moto' ); ?></div>
                         </div>
+                        <?php if ( $data['ferrys'] > 0 ) : ?>
                         <div class="trip-meta-i">
                             <div class="trip-meta-n"><?php echo intval( $data['ferrys'] ); ?></div>
-                            <div class="trip-meta-l"><?php esc_html_e( 'Ferrys', 'enterprise-moto' ); ?></div>
+                            <div class="trip-meta-l"><?php esc_html_e( 'Ferry', 'enterprise-moto' ); ?></div>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </a>
