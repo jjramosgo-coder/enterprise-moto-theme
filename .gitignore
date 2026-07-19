@@ -43,3 +43,7 @@ GIT-WORKFLOW.md
 CLAUDE.md
 claude/
 
+# ─────────────────────────────────────────
+#  Requerimientos históricos (movidos a claude/requirements/closed) — no versionar
+# ─────────────────────────────────────────
+docs/
