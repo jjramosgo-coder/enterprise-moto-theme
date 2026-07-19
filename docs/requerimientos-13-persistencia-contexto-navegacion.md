@@ -95,6 +95,12 @@ ningún `from_*`**. Cabecera con `is_category()` / `is_tag()` / `is_author()` / 
 por slug (`get_category_by_slug`). **No se toca** (ver §5): una sección sin categoría no
 tiene destino de regreso en el modelo actual.
 
+> **Corrección post-validación (ampliación §7).** Esta suposición resultó **incorrecta** al
+> validar #13: la resolución `get_category_by_slug( sanitize_title( $nombre ) )` reconstruye
+> el término desde la **cadena de presentación**, y falla siempre que `sanitize_title(nombre)
+> ≠ slug` (subcategoría con nombre ≠ slug, p. ej. «De vacaciones con la moto» → slug real
+> `vacaciones`; o secciones con título personalizado). Se aborda en la nueva **§7**.
+
 ### 1.6. Reutilizable
 - `enterprise_collection_block_key()` (`functions.php` l. 465) — identidad de bloque, intacta.
 - `enterprise_collect_stage_blocks()` (l. 499), `enterprise_stage_query()` (l. 388),
@@ -307,6 +313,9 @@ la portada, §1.5). Sin cambio en archivos de etiqueta/autor/fecha (guarda `is_c
   de categoría; no distingue el orden de una sección de portada del del archivo). Se mantiene
   tal cual.
 - **No** tocar la portada (`functions.php`): ya estampa el único contexto que aplica.
+  &nbsp;&nbsp;↳ **Levantado por la ampliación §7 (post-validación):** la premisa era incorrecta
+  (§1.5, corrección). La cobertura de la portada era, además, lo que §13.10 del design doc
+  asignó a #13. Se aborda en §7; el resto de esta lista sigue vigente.
 - **No** tocar la navegación ni el «Volver» de `from_cuaderno`, `from_col` ni `from_cat` como
   **origen de nivel superior** (solo se les añade `$active_context` para la etiqueta); ni el
   fallback.
@@ -351,3 +360,179 @@ la portada, §1.5). Sin cambio en archivos de etiqueta/autor/fecha (guarda `is_c
      (gracias al Commit 1) y al volver al viaje se conserva → «Volver» a la categoría.
   8. *No regresión:* en archivos de **etiqueta/autor/fecha** las tarjetas siguen sin estampar
      contexto (enlaces planos), como antes.
+
+---
+
+## 7. Ampliación (post-validación) — cobertura del contexto de regreso en la PORTADA (Commit 3)
+
+> **Encaje (decidido por el arquitecto).** Esta ampliación **no** abre TO-DO nuevo: completa
+> lo que §13.10 del documento de diseño ya asignó a #13 («el estampado de contexto es desigual
+> entre orígenes —portada, `archive.php`—… se abordan en #13»). El spec original difirió la
+> portada en §5 sobre una premisa —«la portada ya estampa el único contexto que aplica»— que la
+> validación en WordPress **desmintió**. Por el protocolo de error de diseño del arquitecto, esa
+> premisa se **asume como error propio**, se levanta la restricción §5 para esta ampliación y se
+> cierra todo en el mismo bump **2.7.0 → 2.7.1**. Los Commits 1 y 2 quedan intactos y validados;
+> esto es un tercer topic, **validable por separado**.
+
+### 7.0. Alcance de la ampliación
+Dos hallazgos de cobertura en la portada (`index.php` + `functions.php`), **ambos previos a #13**
+(no regresión de los commits validados) y **ninguno** pasa por `archive.php`:
+- **(a)** las secciones de categoría de la portada no estampan `from_cat` de forma fiable;
+- **(b)** la tarjeta destacada «Última ruta publicada» enlaza en plano.
+
+La resolución de (a) es código (Commit 3); la de (b) es una **decisión de no-estampado
+documentada** (un comentario, sin lógica nueva).
+
+### 7.1. Estado actual (verificado en código real — clon `273167b`, v2.7.0)
+
+**(a) Resolución del término desde la cadena de presentación.**
+`enterprise_home_post_card( $post_id, $num, $section_cat_name = '' )` (`functions.php`, buscar por
+nombre de función) usa `$section_cat_name` para **dos** cosas: la **etiqueta visible** de la
+tarjeta (`$cat_name = $section_cat_name ?: enterprise_first_category( $post_id )`) y el
+**estampado** de `from_cat`:
+```php
+if ( $section_cat_name ) {
+    $section_cat_obj = get_category_by_slug( sanitize_title( $section_cat_name ) );
+    if ( $section_cat_obj ) {
+        $card_permalink = add_query_arg( 'from_cat', $section_cat_obj->slug, $card_permalink );
+    }
+}
+```
+El estampado reconstruye el término **desde una cadena de presentación** con `sanitize_title()`.
+Falla siempre que `sanitize_title(nombre) ≠ slug`. `index.php` pasa **el nombre** (no el slug) en
+todas las ramas:
+- `cat_children` (bucle `$hijos`): pasa `$hijo->name` como `$section_cat` → **falla** con
+  «De vacaciones con la moto» (slug real `vacaciones`); las demás subcategorías funcionan **por
+  coincidencia** `sanitize_title(nombre)==slug`, no por robustez.
+- `cat`: pasa `$cfg['title'] ?: $term->name` → **falla también** si hay **título personalizado**
+  en el Personalizador (no solo el caso `vacaciones`).
+- `tag`: pasa `$tag_term->name` → `get_category_by_slug()` devuelve `null` (una etiqueta no es
+  categoría) → no estampa. Hoy «funciona» por accidente, no por diseño.
+
+**(b) Tarjeta destacada sin contexto.**
+`index.php`, bloque `$latest_post` (buscar `$latest_post`): los enlaces (título y botón) usan
+`get_permalink( $latest_post->ID )` **plano**. El destacado es «la entrada más reciente **entre
+las categorías** de `enterprise_latest_cats`» (`get_theme_mod`), es decir **un único ítem sin un
+listado detrás** ni una categoría única.
+
+### 7.2. Decisiones de diseño fijadas (confirmadas por el arquitecto — no reabrir sin motivo)
+
+1. **(a) Decouplar identidad de presentación.** La cadena visible (nombre / título
+   personalizado) y la **identidad navegable** (slug real del término) son cosas distintas y
+   dejan de compartir variable. Se propaga el **slug real** por un parámetro nuevo, usado **solo**
+   para estampar; la etiqueta visible sigue usando el nombre (sin cambio visual). *Principio:* la
+   identidad navegable de una sección es el **término real**, no una cadena de presentación
+   re-saneada — se lee del término que ya se tiene (`$hijo` / `$term`), no se reconstruye.
+
+2. **(a) Alcance de la corrección:** se aplica a `cat_children` (`$hijo->slug`) y a `cat`
+   (`$term->slug`). En `tag` se pasa **`''` explícito**: una etiqueta **no** es categoría y el
+   modelo **no** tiene `from_tag` (prohibido por §5); el «no estampado» de las secciones de
+   etiqueta pasa a ser **intencionado y documentado**, no accidental.
+
+3. **(b) Dejar el fallback, deliberadamente.** El destacado es **un ítem sin listado** detrás: no
+   hay secuencia que el usuario haya visto ni categoría única. Estampar `from_cat` = categoría
+   primaria **fabricaría** una secuencia inexistente (violaría §6) y desviaría el «Volver» a un
+   archivo de categoría en vez de a la portada. El modelo **no** tiene un contexto «vengo del
+   destacado» (un `from_home` sería **tipo nuevo → prohibido por §5** sin decisión mayor). Por
+   tanto: **no se estampa**; se conserva el fallback (referer → portada). Se documenta con un
+   comentario en el sitio para que no se «arregle» por error más adelante. **No es lógica nueva.**
+
+4. **Contrato §6 (confirmado).** El `from_cat` de portada lo consume la **rama `from_cat` ya
+   validada** de `single.php` (adyacencia cronológica de la (sub)categoría; «Volver» por
+   `get_term_link`). El **orden** coincide con el de la sección (fecha DESC → misma fuente de
+   orden). La diferencia de **subconjunto** (la sección limita a `$cfg['max']`; prev/next recorre
+   el archivo completo) es la **semántica interna de `from_cat` ya congelada** en §5, **idéntica**
+   a la de `archive.php` (Commit 2, validado): no introduce desviación nueva. El «Volver» de la
+   sección `cat_children` cae además en el mismo destino que su CTA «Ver todas las rutas de {sub}»
+   (`get_term_link( $hijo )`), coherente.
+
+### 7.3. Requerimientos — Commit 3
+`git commit -m "fix(home): cobertura del contexto de regreso en la portada (from_cat por slug real)"`
+Dos ficheros: `functions.php` e `index.php`. Un solo commit (topic «cobertura de portada»),
+validable de forma independiente de los Commits 1 y 2.
+
+**a) `functions.php` — decouplar el slug para el estampado.**
+Añadir un parámetro nuevo `$section_cat_slug` a **ambas** funciones, propagándolo:
+```php
+function enterprise_home_section( $eyebrow, $title, $posts, $cta_url, $cta_label,
+                                  $section_cat = '', $section_cat_slug = '' ) {
+    // … idéntico, salvo el paso a la tarjeta:
+    foreach ( $posts as $i => $post ) :
+        enterprise_home_post_card( $post->ID, $i + 1, $section_cat, $section_cat_slug );
+    endforeach;
+    // …
+}
+
+function enterprise_home_post_card( $post_id, $num, $section_cat_name = '', $section_cat_slug = '' ) {
+    // … la ETIQUETA VISIBLE sigue igual (usa $section_cat_name):
+    $cat_name = $section_cat_name ?: enterprise_first_category( $post_id );
+    // …
+    // ESTAMPADO: usar el SLUG REAL directamente; NO reconstruir con sanitize_title($nombre).
+    $card_permalink = get_permalink( $post_id );
+    if ( $section_cat_slug ) {
+        $card_permalink = add_query_arg( 'from_cat', sanitize_key( $section_cat_slug ), $card_permalink );
+    }
+    // …
+}
+```
+- Se **elimina** la reconstrucción `get_category_by_slug( sanitize_title( $section_cat_name ) )`
+  del estampado; el `$section_cat_slug` ya es el slug canónico de un término real (lo garantiza el
+  llamante). `sanitize_key()` es higiene defensiva (coincide con cómo `single.php` lee `from_cat`).
+- Compatibilidad: sin `$section_cat_slug` → **no** se estampa (fallback seguro; nunca un
+  `from_cat` erróneo).
+
+**b) `index.php` — pasar el slug real en cada rama.**
+- Inicializar junto a `$section_cat = ''` (rama del bucle de secciones): `$section_cat_slug = '';`
+- Rama `cat_children` (llamada a `enterprise_home_section` dentro del `foreach ( $hijos … )`):
+  añadir `$hijo->slug` como 7.º argumento.
+- Rama `cat`: fijar `$section_cat_slug = $term->slug;` (se usa en la llamada del final del bucle).
+- Rama `tag` (llamada dentro del `foreach ( $tag_parts … )`): añadir `''` como 7.º argumento
+  **explícito** (documenta el no-estampado; ver decisión 7.2.2).
+- Llamada final del bucle (la del `else`/`cat` tras los `continue`): añadir `$section_cat_slug`
+  como 7.º argumento.
+
+**c) `index.php` — comentario en el destacado (b), sin lógica.**
+En el bloque `$latest_post`, junto a los enlaces `get_permalink( $latest_post->ID )`, añadir un
+comentario que fije la decisión 7.2.3, p. ej.:
+```php
+// #13 (§7): el destacado es un único ítem sin listado detrás; no hay secuencia ni categoría
+// única que estampar. Se deja el permalink plano a propósito (fallback → portada). No añadir
+// from_cat aquí: fabricaría una secuencia inexistente y desviaría el «Volver» (ver §7.2.3).
+```
+No se cambia el `href`.
+
+### 7.4. Confirmar al implementar (verificar contra el código real)
+- Nombres/aridad reales de `enterprise_home_section()` y `enterprise_home_post_card()` y **todos**
+  sus puntos de llamada (que no quede ninguna llamada con la aridad antigua).
+- Que las ramas `cat_children` / `cat` / `tag` / final del bucle en `index.php` son exactamente las
+  descritas (las líneas se habrán desplazado por el helper de #13; localizar por estructura, no por
+  número).
+- Que `$hijo` y `$term` exponen `->slug` en el punto de la llamada (son términos de
+  `get_categories()` / `get_term_by()`).
+
+### 7.5. Fuera de alcance (de la ampliación)
+- **No** introducir `from_tag` / `from_author` / `from_home` ni contexto para secciones de portada
+  **sin** categoría: siguen siendo feature aparte (§5 original).
+- **No** cambiar la semántica interna de `from_cat` (orden/ subconjunto): congelada (§5, §7.2.4).
+- **No** tocar `single.php` (la rama `from_cat` que consume esto ya está validada, Commit 2), ni
+  `archive.php`, ni la reconstrucción de #8.
+- **No** cambiar la **etiqueta visible** de la tarjeta ni ningún estilo (sin cambio visual).
+- El desarrollador **no** sube versión ni edita `TODO.md` / el documento de diseño. El **cierre**
+  (design doc §13.10 y, si procede, §6/§9; registro de la decisión 7.2.3 sobre el destacado;
+  reconciliación de `TODO.md`; bump 2.7.0 → 2.7.1) lo hace el **arquitecto** tras la validación.
+
+### 7.6. Validación de Juanjo (en WordPress real) — Commit 3
+1. **Sección «De vacaciones con la moto»** (subcategoría `vacaciones`): las tarjetas llevan ahora
+   `?from_cat=vacaciones`; al entrar en una entrada, «Volver» va al archivo de esa subcategoría
+   (no al fallback por referer). Sin cambio visual en la etiqueta de la tarjeta.
+2. **Resto de secciones de categoría / con título personalizado:** estampan el `from_cat` correcto
+   (slug real), incluso si el título mostrado difiere del nombre de la categoría.
+3. **Secciones de etiqueta:** siguen **sin** estampar `from_cat` (enlaces sin `from_cat`), ahora
+   por diseño explícito.
+4. **Anidamiento portada→viaje→etapa→volver:** si una tarjeta de sección de categoría es un viaje,
+   sus etapas heredan `from_cat` (gracias al Commit 1) y al volver al viaje se conserva → «Volver»
+   a la (sub)categoría.
+5. **Destacado «Última ruta publicada»:** enlace plano a propósito; «Volver» cae al fallback
+   (portada vía referer). Sin `from_cat`. Comportamiento inalterado respecto a antes.
+6. **No regresión:** los Commits 1 y 2 (colección/archivo de categoría/anidamiento viaje→etapa)
+   siguen intactos.
