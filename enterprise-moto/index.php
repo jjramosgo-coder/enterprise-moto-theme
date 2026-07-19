@@ -101,7 +101,7 @@ get_header();
     <?php if ( $latest_post ) : ?>
     <div class="hero-photo-caption">
       <span class="hero-photo-label"><?php echo esc_html( get_the_title( $latest_post->ID ) ); ?></span>
-      <span class="hero-photo-tag"><?php esc_html_e( 'Última ruta', 'enterprise-moto' ); ?></span>
+      <a href="#ultima-ruta" class="hero-photo-tag"><?php esc_html_e( 'Última ruta', 'enterprise-moto' ); ?></a>
     </div>
     <?php endif; ?>
   </div>
@@ -124,7 +124,7 @@ get_header();
   // única que estampar. Se deja el permalink plano a propósito (fallback → portada). No añadir
   // from_cat aquí: fabricaría una secuencia inexistente y desviaría el «Volver» (ver §7.2.3).
 ?>
-<section class="featured-section">
+<section class="featured-section" id="ultima-ruta">
   <div class="container">
     <div class="section-eyebrow"><?php esc_html_e( 'Última ruta publicada', 'enterprise-moto' ); ?></div>
     <div class="featured-grid">
