@@ -2,7 +2,7 @@
 <a id="top"></a>
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.7.1  
+**Tema WordPress:** Enterprise Moto v2.7.2  
 **Última revisión:** Julio 2026
 
 ---
@@ -597,6 +597,8 @@ Con el tipo **Etiqueta**, si se especifican varias etiquetas separadas por coma,
 ### "Última ruta publicada"
 
 El hero de la portada muestra la última ruta publicada. Se puede configurar qué categorías se usan para esta selección en **Apariencia → Personalizar → Hero — Estadísticas → Categorías para "Última ruta publicada"** (slugs separados por coma, por defecto: `etapa`).
+
+El rótulo dorado **«Última ruta»** sobre la imagen del hero (`hero-photo-tag`) es un **enlace ancla real** a la sección destacada «Última ruta publicada» situada justo debajo (`<section class="featured-section" id="ultima-ruta">`): un `<a href="#ultima-ruta">` que aprovecha el `scroll-behavior: smooth` global del tema, **sin JS**. El destino lleva `scroll-margin-top: calc(var(--nav-h) + 24px)` para que su arranque no quede oculto bajo el header fijo (mismo idiom que los elementos `sticky` del tema, que ya se separan de la barra con `calc(var(--nav-h) + …)`). El rótulo conserva su aspecto de pastilla dorada; la interactividad la señalan el cursor y el enlace real, no un reestilado. Tanto el rótulo como la sección destino se renderizan bajo la misma guarda `if ( $latest_post )`, de modo que el enlace nunca apunta a un ancla inexistente. (#14, v2.7.2)
 
 ### Estadística "Días de ruta publicados"
 
