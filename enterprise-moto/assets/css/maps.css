@@ -63,6 +63,7 @@
   text-transform: uppercase;
   color: var(--gold-dk);
   text-decoration: none;
+  pointer-events: auto;   /* #15: el contenedor .ent-ol-popup tiene pointer-events:none inline; reactivar el puntero solo en el enlace */
 }
 .ent-map-popup__link:hover { color: var(--black); }
 
