@@ -2,7 +2,7 @@
 /**
  * Enterprise Moto — blocks/location-map/render.php
  * Solo HTML + data-* attributes. Sin <script> inline.
- * La lógica Leaflet está en assets/js/map-frontend.js
+ * La lógica de mapa (OpenLayers 9.2.4) está en assets/js/map-frontend.js
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
