@@ -33,6 +33,8 @@ numerado nuevo.
 | 9 | limpieza | Retirada del campo legacy `_exp_categoria`. Quedó **desbloqueada** al eliminar #5 el ticker antiguo que lo consumía. Limpieza de código (dejar de escribirlo y de leerlo); **no borrar el dato de la BD**. Verificar antes que ningún otro consumidor lo use. | pendiente |
 | 10 | limpieza | Limpieza trivial: en `enterprise_post_stage_save()` hay **dos `update_post_meta( _post_paises )` idénticos seguidos**; redundante e inocuo. Eliminar la duplicación. | pendiente |
 | 12 | limpieza | CSS muerto en `assets/css/coleccion.css`: las reglas `.ent-trip-collection .trip-grid` (el `grid` y sus media queries) ya no aplican tras #11, porque el bloque dejó de emitir `.trip-grid`. Retirarlas; inocuo, no cambia comportamiento. Surgido al cerrar #11. | pendiente |
+| 16 | limpieza | CSS muerto en `assets/css/maps.css`: las reglas `.leaflet-*` (≈l. 69-88, cabecera «Override estilos Leaflet para que encaje con el tema») ya no aplican — el motor de mapas es **OpenLayers 9.2.4**, no Leaflet. Retirarlas; inocuo, no cambia comportamiento. Surgido al cerrar #15. | pendiente |
+
 ## Resueltas
 
 | # | Tipo | Descripción | Resuelto en |
