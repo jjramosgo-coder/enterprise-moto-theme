@@ -120,6 +120,9 @@ get_header();
 <?php if ( $latest_post ) :
   $route = enterprise_get_route_data( $latest_post->ID );
   $cat   = get_the_category( $latest_post->ID );
+  // #13 (§7): el destacado es un único ítem sin listado detrás; no hay secuencia ni categoría
+  // única que estampar. Se deja el permalink plano a propósito (fallback → portada). No añadir
+  // from_cat aquí: fabricaría una secuencia inexistente y desviaría el «Volver» (ver §7.2.3).
 ?>
 <section class="featured-section">
   <div class="container">
@@ -184,6 +187,7 @@ for ( $g = 1; $g <= 6; $g++ ) :
     $cta_url     = home_url( '/' );
     $cta_label   = __( 'Ver todas', 'enterprise-moto' );
     $section_cat = '';
+    $section_cat_slug = '';
     $eyebrow     = $cfg['eyebrow'];
 
     if ( 'cat_children' === $cfg['type'] ) {
@@ -212,7 +216,8 @@ for ( $g = 1; $g <= 6; $g++ ) :
                 $hijo_posts,
                 get_term_link( $hijo ),
                 sprintf( __( 'Ver todas las rutas de %s', 'enterprise-moto' ), $hijo->name ),
-                $hijo->name
+                $hijo->name,
+                $hijo->slug
             );
         endforeach;
         continue; /* Saltar el bloque de abajo */
@@ -233,6 +238,7 @@ for ( $g = 1; $g <= 6; $g++ ) :
         $cta_url     = get_term_link( $term );
         $cta_label   = sprintf( __( 'Ver todas las rutas de %s', 'enterprise-moto' ), $term->name );
         $section_cat = $cfg['title'] ?: $term->name;
+        $section_cat_slug = $term->slug;
         if ( ! $eyebrow ) $eyebrow = __( 'Categoría', 'enterprise-moto' );
 
     } elseif ( 'tag' === $cfg['type'] && $cfg['slug'] ) {
@@ -262,7 +268,8 @@ for ( $g = 1; $g <= 6; $g++ ) :
                 $tag_posts,
                 get_term_link( $tag_term ),
                 sprintf( __( 'Ver todas las rutas de %s', 'enterprise-moto' ), $tag_term->name ),
-                $tag_term->name
+                $tag_term->name,
+                '' /* #13 (§7): una etiqueta no es categoría; el modelo no tiene from_tag → no se estampa (intencionado, §7.2.2) */
             );
         }
         continue; /* Cada etiqueta ya generó su propia sección arriba */
@@ -276,7 +283,8 @@ for ( $g = 1; $g <= 6; $g++ ) :
         $posts,
         $cta_url,
         $cta_label,
-        $section_cat
+        $section_cat,
+        $section_cat_slug
     );
 
 endfor;

@@ -1879,20 +1879,19 @@ add_action( 'init', 'enterprise_register_block_patterns' );
    Definidas aquí para evitar redeclaración.
 ───────────────────────────────────────── */
 /* ── Tarjeta de post ── */
-function enterprise_home_post_card( $post_id, $num, $section_cat_name = '' ) {
+function enterprise_home_post_card( $post_id, $num, $section_cat_name = '', $section_cat_slug = '' ) {
     $route    = enterprise_get_route_data( $post_id );
     /* Mostrar la categoría del contexto de la sección, no la primera del post */
     $cat_name = $section_cat_name ?: enterprise_first_category( $post_id );
     $thumb    = get_the_post_thumbnail_url( $post_id, 'enterprise-card' );
     ?>
     <?php
-    /* Añadir ?from_cat al enlace para que single.php sepa la categoría de origen */
+    /* #13 (§7): estampar ?from_cat con el SLUG REAL del término de la sección (identidad
+       navegable), no reconstruido desde el nombre/título visible. Sin slug → no se estampa
+       (fallback seguro: nunca un from_cat erróneo). La etiqueta visible sigue usando el nombre. */
     $card_permalink = get_permalink( $post_id );
-    if ( $section_cat_name ) {
-        $section_cat_obj = get_category_by_slug( sanitize_title( $section_cat_name ) );
-        if ( $section_cat_obj ) {
-            $card_permalink = add_query_arg( 'from_cat', $section_cat_obj->slug, $card_permalink );
-        }
+    if ( $section_cat_slug ) {
+        $card_permalink = add_query_arg( 'from_cat', sanitize_key( $section_cat_slug ), $card_permalink );
     }
     ?>
     <article class="post-card" id="post-<?php echo intval( $post_id ); ?>">
@@ -1942,7 +1941,7 @@ function enterprise_home_post_card( $post_id, $num, $section_cat_name = '' ) {
 }
 
 /* ── Sección con título + grid + CTA ── */
-function enterprise_home_section( $eyebrow, $title, $posts, $cta_url, $cta_label, $section_cat = '' ) {
+function enterprise_home_section( $eyebrow, $title, $posts, $cta_url, $cta_label, $section_cat = '', $section_cat_slug = '' ) {
     if ( empty( $posts ) ) return;
     ?>
     <section class="home-group-section">
@@ -1956,7 +1955,7 @@ function enterprise_home_section( $eyebrow, $title, $posts, $cta_url, $cta_label
             </div>
             <div class="posts-grid">
                 <?php foreach ( $posts as $i => $post ) :
-                    enterprise_home_post_card( $post->ID, $i + 1, $section_cat );
+                    enterprise_home_post_card( $post->ID, $i + 1, $section_cat, $section_cat_slug );
                 endforeach; ?>
             </div>
             <div class="home-group-footer">
