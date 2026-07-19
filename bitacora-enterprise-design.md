@@ -2,7 +2,7 @@
 <a id="top"></a>
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.7.2  
+**Tema WordPress:** Enterprise Moto v2.7.3  
 **Última revisión:** Julio 2026
 
 ---
@@ -572,6 +572,12 @@ El tema incluye un parser GPX escrito en JavaScript que procesa:
 - `<trkseg>` → polilíneas separadas (permite rutas con interrupciones)
 - `<rtept>` y `<wpt>` → marcadores en forma de diamante con nombre y descripción
 - `<ele>` → datos de elevación para el gráfico
+
+### Popup del mapa — enlace clicable (#15, v2.7.3)
+
+El popup de un marcador (usado por `location-map`) se pinta en un contenedor `.ent-ol-popup` (un `ol.Overlay` creado en `assets/js/map-frontend.js`) que lleva `pointer-events: none` en su estilo inline, de modo que los clics **atraviesan** el popup hacia el mapa (click-through: poder seleccionar otro marcador o cerrar el popup pulsando el fondo). Cuando un marcador tiene `postUrl`, el popup incluye el enlace «→ Leer la entrada» (`.ent-map-popup__link`). Como `pointer-events` se hereda, ese enlace heredaba el `none` del contenedor y **no era objetivo de clic** (el ancla se pintaba pero no navegaba, y su `:hover` tampoco reaccionaba).
+
+La solución reactiva el puntero **solo en el enlace**: `.ent-map-popup__link` recibe `pointer-events: auto` en `assets/css/maps.css`, mientras el contenedor `.ent-ol-popup` conserva su `pointer-events: none`. Un descendiente con `auto` es objetivo de eventos aunque su ancestro esté en `none` (comportamiento estándar de la propiedad), así que el enlace vuelve a navegar y el resto del popup mantiene el click-through al mapa. Es un arreglo de la capa de presentación (CSS), sin tocar el JS ni la capa de interacción de OpenLayers. En el mismo lote se corrigió el comentario de cabecera de `blocks/location-map/render.php`, que aún nombraba «Leaflet» como motor cuando el real es OpenLayers 9.2.4.
 
 ---
 
