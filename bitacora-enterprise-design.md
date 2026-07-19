@@ -1,7 +1,8 @@
 # Bitácora Enterprise — Diseño conceptual e implementación
+<a id="top"></a>
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.7.0  
+**Tema WordPress:** Enterprise Moto v2.7.1  
 **Última revisión:** Julio 2026
 
 ---
@@ -23,6 +24,8 @@
 13. [Decisiones de arquitectura](#13-decisiones-de-arquitectura)
 
 ---
+
+[↑ Volver arriba](#top)
 
 ## 1. Principios de diseño
 
@@ -68,6 +71,8 @@ Un cuaderno finalizado se conserva exactamente como fue escrito durante el viaje
 
 ---
 
+[↑ Volver arriba](#top)
+
 ## 2. Modelo de contenidos
 
 ### Entidades principales
@@ -112,6 +117,8 @@ SI el post tiene tipo-de-salida/*
 El contador solo cuenta posts en la categoría `etapa` (a posteriori). Los posts del cuaderno (`cuaderno-etapa`) no cuentan, evitando doble conteo cuando un mismo día existe en ambas versiones.
 
 ---
+
+[↑ Volver arriba](#top)
 
 ## 3. Sistema de tipos de entrada
 
@@ -166,6 +173,8 @@ Contenido que no es una ruta: preparativos, equipación, reflexiones, noticias d
 **Franja de datos:** no aparece
 
 ---
+
+[↑ Volver arriba](#top)
 
 ## 4. Cuaderno de bitácora
 
@@ -273,6 +282,8 @@ El conteo de etapas sale de esa misma query `_filt_*` (la que genera el listado)
 **Fallbacks defensivos.** Un cuaderno `finalizado` sin `_exp_fecha_fin` (dato heredado de la antigua semántica «vacío = en curso») usa como fin la **fecha de la etapa más reciente**. Caso límite: un `finalizado` sin fin **y sin etapas** muestra el progreso al **100 %** (por estado) y **omite** la duración. El disparador de la barra de progreso es `_exp_estado` (no el legacy `_exp_en_ruta`); toda división comprueba `dias_totales > 0`.
 
 ---
+
+[↑ Volver arriba](#top)
 
 ## 5. Flujo editorial
 
@@ -394,6 +405,8 @@ Nota: los filtros del metabox y del bloque "Etapas de ruta" son idénticos
 
 ---
 
+[↑ Volver arriba](#top)
+
 ## 6. Arquitectura de páginas y URLs
 
 ### Estructura de URLs
@@ -465,9 +478,13 @@ El orden se toma siempre de **la misma fuente que generó el listado mostrado**,
 | Archivo de categoría | `from_cat=slug` | Orden del propio archivo | Al archivo de la categoría |
 | Sin contexto | — | Adyacentes dentro de la misma categoría (fallback de WordPress) | Referer / página de entradas |
 
-En el contexto de colección (`from_col`) las etiquetas de los botones se muestran como **«Viaje anterior» / «Siguiente viaje»** en lugar de «ruta»; el resto de contextos conservan «ruta» (#8, v2.7.0).
+Las etiquetas de los botones dependen del **contexto activo** (el de nivel inmediato, ver «Persistencia» más abajo): solo cuando el contexto activo es la colección (`from_col`) se muestran **«Viaje anterior» / «Siguiente viaje»**; el resto de contextos —incluida una etapa alcanzada *a través* de un viaje que a su vez venía de una colección— conservan «ruta» (#8, v2.7.0; matiz de contexto activo, #13, v2.7.1).
 
 **Regla para funcionalidades análogas:** cualquier listado nuevo que enlace a entradas con navegación anterior/siguiente debe (a) propagar su parámetro de contexto en los enlaces, y (b) reconstruir la secuencia leyendo **la misma fuente** que genera el listado visible (nunca un orden fijado a fuego), de modo que navegación y presentación coincidan siempre.
+
+**Persistencia del contexto en navegación anidada (#13, v2.7.1).** El contexto no es de un solo nivel: la única cadena anidada real es *listado → viaje (tipo D) → etapa*. El origen **inmediato** (el más interior) gobierna el «Volver», el prev/next y la etiqueta; el origen **ancestro** (aquel desde el que se llegó al viaje) **se arrastra** en los enlaces salientes para sobrevivir al regreso, pero **no** es fuente de secuencia. En concreto: al bajar de un viaje a una etapa, los enlaces de etapa llevan `from_post` (inmediato) **más** el ancestro del propio viaje (`from_col`+`col_key`, `from_cat` o `from_cuaderno`, según cómo se llegó al viaje); el «Volver al viaje» de la etapa arrastra ese ancestro pero **descarta** `from_post` (sería autorreferente); al regresar, el viaje recupera su contexto y el «Volver» vuelve a apuntar a la colección/categoría/cuaderno de origen. El ancestro es **memoria de navegación, no secuencia**: el prev/next de la etapa siempre se computa desde el bloque «Etapas de ruta» del viaje (el listado que el usuario vio), nunca desde el ancestro. Sin ancestro (viaje alcanzado directamente), el «Volver al viaje» es un permalink plano, como antes.
+
+**Puntos de estampado del contexto (#13, v2.7.1).** El estampado quedó **uniforme** en los orígenes que existen en el modelo: el bloque `trip-collection` estampa `from_col`+`col_key`; el bloque «Etapas de ruta» dentro de un viaje estampa `from_post` (+ ancestro); la plantilla del cuaderno estampa `from_cuaderno`; el **archivo de categoría** (`archive.php`, solo `is_category()`) y las **secciones de categoría de la portada** (`index.php` → `enterprise_home_post_card()`) estampan `from_cat` con el **slug real del término** (nunca reconstruido desde la cadena de presentación, que fallaba con nombre ≠ slug o título personalizado). **No** se estampa contexto —a propósito— en ítems **sin un listado ni una categoría única detrás**: la tarjeta destacada «Última ruta publicada» y la sección «Mientras tanto» de la portada (ver §13.11); ni en las secciones de **etiqueta** de la portada (una etiqueta no es categoría y el modelo no tiene `from_tag`).
 
 ### Robustez del contenido Gutenberg
 
@@ -483,6 +500,8 @@ Para evitarlo, el contenedor del contenido encierra sus propios floats y la reji
 Con esto la alineación de bloques (cita o imagen flotada) sigue funcionando dentro del propio contenido, pero no puede afectar al timeline. El fallo no era HTML mal formado, sino un float sin contener.
 
 ---
+
+[↑ Volver arriba](#top)
 
 ## 7. Bloques Gutenberg
 
@@ -531,6 +550,8 @@ La implementación usa interceptación de eventos en fase capture antes de que O
 
 ---
 
+[↑ Volver arriba](#top)
+
 ## 8. Sistema de mapas
 
 Los mapas usan **OpenLayers 9.2.4** (CDN: `cdn.jsdelivr.net/npm/ol@9.2.4/dist/ol.js`).
@@ -553,6 +574,8 @@ El tema incluye un parser GPX escrito en JavaScript que procesa:
 - `<ele>` → datos de elevación para el gráfico
 
 ---
+
+[↑ Volver arriba](#top)
 
 ## 9. Portada
 
@@ -584,7 +607,13 @@ El contador del hero suma los `count` de WordPress de las categorías indicadas 
 - Si se indican varias categorías, los conteos se **suman** (puede haber duplicados si un post está en varias categorías de la lista — tenerlo en cuenta al configurar)
 - Por defecto: `etapa`
 
+### Contexto de navegación de la portada (#13, v2.7.1)
+
+Las tarjetas de las secciones de **categoría** y de **hijos de categoría** estampan `from_cat` con el **slug real del término** de la sección (no reconstruido desde el título/nombre mostrado), de modo que el «Volver» y el prev/next de la entrada respeten el contrato §6. Las secciones de **etiqueta** no estampan contexto (una etiqueta no es categoría; el modelo no tiene `from_tag`). La tarjeta destacada **«Última ruta publicada»** y la sección **«Mientras tanto»** **no** estampan contexto **a propósito**: son ítems sin un listado ni una categoría única detrás, y estampar uno fabricaría una secuencia inexistente (ver §6 «Puntos de estampado» y la decisión §13.11).
+
 ---
+
+[↑ Volver arriba](#top)
 
 ## 10. Página fuera de ruta
 
@@ -612,6 +641,8 @@ Se muestra en `/cuaderno-de-bitacora/` cuando no hay ningún cuaderno activo.
 - Etiqueta "Mientras tanto" (slug, fallback si no hay categorías)
 
 ---
+
+[↑ Volver arriba](#top)
 
 ## 11. Referencia de campos personalizados
 
@@ -669,6 +700,8 @@ El contrato de `_col_stats` está sembrado también en la cabecera de `page-temp
 
 ---
 
+[↑ Volver arriba](#top)
+
 ## 12. Referencia de categorías
 
 ### Categorías de tipo de entrada (posts)
@@ -708,6 +741,8 @@ Un post tiene tipo-de-salida/*
 Los descriptores `etapa` y `jornada` son compartidos pero no colisionan porque identifican el tipo de día, no la pertenencia a un sistema u otro. El contador de portada solo suma `etapa`, nunca `cuaderno-etapa`.
 
 ---
+
+[↑ Volver arriba](#top)
 
 ## 13. Decisiones de arquitectura
 
@@ -795,7 +830,17 @@ Registro de decisiones de arquitectura del tema. Cada entrada es **autocontenida
 
 **Decisión.** Añadir el contexto de origen **`from_col`** (id de la página) + **`col_key`** (hash de identidad del bloque), a imagen del `from_post` de las etapas. La identidad del bloque la da un helper único, `enterprise_collection_block_key( $attributes )`, que hashea los **atributos que determinan la secuencia** (categorías, etiquetas, relación, fechas, orden, `postsPerPage`, `showAll` — **no** `layout`); lo usan tanto la tarjeta al estampar el enlace como `single.php` al casar el bloque, de modo que no puedan divergir. La navegación reconstruye la secuencia **del bloque concreto** reutilizando `enterprise_stage_query()` con la misma guarda `showAll` (no se replica la query a mano, a diferencia de `from_post`), garantizando que navegación == listado. El «Volver» regresa a la página de colección y las etiquetas pasan a «Viaje». El detalle del contexto y su tabla están en §6 «Contrato de navegación entre entradas».
 
-**Consecuencias.** Se cumple el contrato §13.1/§6 también para las colecciones, con desambiguación por bloque robusta a reordenar bloques (una colisión de hash implica bloques con filtros idénticos → misma secuencia, inocua). Principio: la **identidad navegable** de un bloque de filtrado es su conjunto de filtros de secuencia, no un id volátil de render. **Límite conocido (→ #13):** el contexto de origen es de **un solo nivel** — al bajar de un viaje a una etapa (`from_post`) y volver, se pierde el `from_col`; y el estampado de contexto es desigual entre orígenes (portada, `archive.php`). Ambos exceden #8 y se abordan en #13.
+**Consecuencias.** Se cumple el contrato §13.1/§6 también para las colecciones, con desambiguación por bloque robusta a reordenar bloques (una colisión de hash implica bloques con filtros idénticos → misma secuencia, inocua). Principio: la **identidad navegable** de un bloque de filtrado es su conjunto de filtros de secuencia, no un id volátil de render. **Límite conocido en #8 (resuelto en #13, v2.7.1 — ver §13.11):** el contexto de origen era de **un solo nivel** —al bajar de un viaje a una etapa (`from_post`) y volver, se perdía el `from_col`— y el estampado era **desigual** entre orígenes (portada, `archive.php`). Ambos excedían #8 y se abordaron en #13.
+
+### 13.11 Persistencia y cobertura uniforme del contexto de navegación (arrastre de ancestro)
+
+**Contexto.** Tras #8 (§13.10) el contexto de origen (`from_*`) era de **un solo nivel** y de cobertura **desigual**. Dos síntomas validados: (1) al bajar de un viaje (tipo D) —alcanzado desde una colección— a una de sus etapas y **volver**, el viaje «olvidaba» la colección: la etapa solo estampaba `from_post` y su «Volver al viaje» era un permalink plano, así que al regresar no había `from_col` → fallback → «Volver» genérico; (2) el estampado era desigual entre orígenes: `archive.php` no estampaba nada y la portada resolvía la categoría de sección **desde la cadena de presentación** (`get_category_by_slug( sanitize_title( $nombre ) )`), que fallaba siempre que `sanitize_title(nombre) ≠ slug` (subcategoría con nombre ≠ slug —p. ej. «De vacaciones con la moto» → slug real `vacaciones`— o sección con título personalizado). La jerarquía de anidamiento real está **acotada** a dos niveles: una etapa es hoja, así que no hay profundidad 3.
+
+**Decisión.** Modelo de **parámetros con nombre + arrastre de ancestro** (no una pila opaca), porque la jerarquía de origen es **semánticamente tipada** (colección ≠ viaje ≠ cuaderno ≠ categoría, cada una con su etiqueta, validación y fuente de secuencia). El origen **inmediato** gobierna «Volver», prev/next y etiqueta; el **ancestro** se arrastra en los enlaces salientes y sobrevive al regreso, pero **no** es fuente de secuencia (invariante del contrato §13.1/§6). Mecánica construida y validada: (a) `single.php` construye `$nav_ancestor` desde los orígenes ya validados **excluyendo** `from_post`; la rama `from_post` del «Volver» lo arrastra (plano si no hay ancestro) y el `$nav_suffix` del prev/next hace `array_merge` con él; cada rama fija un `$active_context` (`post`/`cuaderno`/`col`/`cat`/`none`) que gobierna la **etiqueta** («Viaje…» solo si `active_context === 'col'`), corrigiendo el que la etiqueta de #8 dependiera de la mera presencia de `from_col`. (b) El bloque «Etapas de ruta» (`post-stages/render.php`) propaga hacia las etapas, **solo en un viaje tipo D**, el `from_post` inmediato **más** el ancestro de llegada del propio viaje —tocando únicamente la línea `$nav_suffix`, sin alterar el scaffolding compartido con `trip-collection`—. (c) La cobertura se hizo **uniforme** para los orígenes del modelo: `archive.php` estampa `from_cat` en `is_category()`, y la portada estampa `from_cat` con el **slug real del término** (nuevo parámetro `$section_cat_slug`: `cat_children` → `$hijo->slug`, `cat` → `$term->slug`), desacoplando la **identidad navegable** (slug real) de la **presentación** (nombre/título, que sigue rotulando la tarjeta). Las secciones de **etiqueta** de la portada pasan `''` explícito (una etiqueta no es categoría; no hay `from_tag`).
+
+**No-estampado deliberado (subdecisión).** La tarjeta destacada **«Última ruta publicada»** y la sección **«Mientras tanto»** de la portada son **ítems sin un listado ni una categoría única detrás** (agregan «la más reciente / lo de entre expediciones» de varias categorías). Estampar `from_cat` con la categoría primaria **fabricaría una secuencia que el usuario nunca vio** (violando §6) y desviaría el «Volver» a un archivo de categoría en vez de a la portada. Como el modelo no tiene un contexto «vengo del destacado/portada» (un `from_home` sería un **tipo nuevo**, fuera de alcance), la decisión correcta **dentro del modelo** es **no estampar** y conservar el fallback (referer → portada). Es una ausencia intencionada, fijada con un comentario en `index.php` para que no se «arregle» por error; «Mientras tanto» comparte exactamente esta razón. Un eventual contexto propio para estos slots sería una decisión mayor y su propio TO-DO.
+
+**Consecuencias.** El contexto sobrevive a la navegación anidada viaje→etapa→viaje en los tres orígenes que pueden anidar (`from_col`, `from_cat`, `from_cuaderno`), y el estampado es coherente entre portada, archivo de categoría y bloques. El contrato §13.1/§6 se mantiene en cada nivel porque el ancestro es memoria, no secuencia. Principio transferible: la **identidad navegable** de una sección es su **término real**, no una cadena de presentación re-saneada; y un ítem **sin listado detrás no debe fabricar** un contexto de secuencia. Límite deliberado que permanece: los archivos de **etiqueta/autor/fecha** y las secciones de portada sin categoría siguen sin contexto propio (requerirían tipos `from_*` nuevos); la **semántica interna de `from_cat`** (adyacencia del archivo de categoría; el orden coincide con el de la sección de portada, no su subconjunto acotado) se mantiene tal cual.
 
 ---
 
@@ -803,14 +848,20 @@ Registro de decisiones de arquitectura del tema. Cada entrada es **autocontenida
 
 ---
 
+[↑ Volver arriba](#top)
+
 ## Elementos pendientes de eliminar
 
 | Elemento | Motivo | Estado |
 |---|---|---|
 | Patrón "Timeline de etapas de ruta" | El bloque 'Etapas de ruta' ya cubre esta función con modos carrusel y timeline. | ✅ Eliminado en v2.3.1 |
 
+[↑ Volver arriba](#top)
+
 ## Notas de uso
 
 | Nota | Detalle |
 |---|---|
 | Edición rápida de WordPress | Los campos del metabox personalizado (`_post_tipo`, `_post_km`, `_post_tramo`, etc.) **no se guardan** con la edición rápida de WordPress. Siempre abrir el editor completo del post para que los campos del metabox se guarden correctamente. De lo contrario, los posts quedarán sin `_post_tipo` definido y no serán contabilizados en las estadísticas del viaje. |
+
+[↑ Volver arriba](#top)
