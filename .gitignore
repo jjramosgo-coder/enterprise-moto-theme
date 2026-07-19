@@ -38,7 +38,8 @@ Desktop.ini
 GIT-WORKFLOW.md
 
 # ─────────────────────────────────────────
-#  Carpeta de trabajo local de Claude (no versionar)
+#  Documentación de trabajo local de Claude (no versionar)
 # ─────────────────────────────────────────
+CLAUDE-md
 claude/
 
