@@ -1767,8 +1767,12 @@ function enterprise_carousel_assets() {
     $post = get_queried_object();
     if ( ! $post || ! isset( $post->post_content ) ) return;
     // #11 R7: el carrusel/timeline lo usan tanto post-stages como trip-collection.
-    if ( ! has_block( 'enterprise/post-stages', $post )
-      && ! has_block( 'enterprise/trip-collection', $post ) ) return;
+    // #18: la página-destino de «Rutas por localización» también reutiliza el
+    // carrusel (carruseles de .post-card por categoría) vía su plantilla.
+    $needs_carousel = has_block( 'enterprise/post-stages', $post )
+                   || has_block( 'enterprise/trip-collection', $post )
+                   || ( 'page-templates/template-routes-by-location.php' === get_page_template_slug( $post ) );
+    if ( ! $needs_carousel ) return;
 
     $carousel_css_path = get_template_directory() . '/assets/css/carousel.css';
     wp_enqueue_style(
