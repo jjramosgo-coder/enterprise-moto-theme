@@ -2074,9 +2074,9 @@ function enterprise_customizer( $wp_customize ) {
     ) );
 
     /* ════════════════════════════════════════
-       SECCIÓN: MAPA DE RUTAS POR LOCALIZACIÓN (#17)
-       Página-destino a la que enlazan las localizaciones del bloque.
-       PROVISIONAL: el rediseño definitivo del destino es #18.
+       SECCIÓN: MAPA DE RUTAS POR LOCALIZACIÓN (#17, rediseño #18)
+       Página-destino a la que enlazan las localizaciones del bloque:
+       carruseles de entradas por categoría del marcador.
     ════════════════════════════════════════ */
     $wp_customize->add_section( 'enterprise_rbl', array(
         'title' => __( 'Mapa de rutas por localización', 'enterprise-moto' ),
@@ -2089,8 +2089,8 @@ function enterprise_customizer( $wp_customize ) {
         'transport'         => 'refresh',
     ) );
     $wp_customize->add_control( 'enterprise_rbl_dest_page', array(
-        'label'       => __( 'Página-destino (provisional)', 'enterprise-moto' ),
-        'description' => __( 'Página a la que enlaza cada localización del bloque «Mapa de rutas por localización». Crea una Página con la plantilla «Mapa de rutas por localización (provisional)» y selecciónala aquí. Rediseño definitivo pendiente (#18).', 'enterprise-moto' ),
+        'label'       => __( 'Página-destino', 'enterprise-moto' ),
+        'description' => __( 'Página a la que enlaza cada localización del bloque «Mapa de rutas por localización». Crea una Página con la plantilla «Mapa de rutas por localización» y selecciónala aquí.', 'enterprise-moto' ),
         'section'     => 'enterprise_rbl',
         'type'        => 'dropdown-pages',
     ) );
