@@ -128,7 +128,7 @@
       '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36">' +
       '<path d="M14 1C8.2 1 3.5 5.7 3.5 11.5c0 8.1 10.5 23.5 10.5 23.5s10.5-15.4 10.5-23.5C24.5 5.7 19.8 1 14 1z"' +
       ' fill="#0e0e0e" stroke="#f2c118" stroke-width="2.2"/>' +
-      (num ? '<text x="14" y="13" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="middle">'+num+'</text>' : '') +
+      (num ? '<text x="14" y="13" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="middle">'+num+'</text>' : '<circle cx="14" cy="13" r="3.2" fill="#fff"/>') +
       '</svg>'
     );
     return new ol.style.Style({
@@ -280,6 +280,7 @@
     var markers = [];
     try { markers = JSON.parse(container.dataset.markers || '[]'); } catch(e) { return; }
     if (!markers.length) return;
+    var showNumbers = container.dataset.showNumbers !== '0';
 
     var pop = makePopup(container);
     var map = makeMap(uid, pop.overlay);
@@ -293,7 +294,7 @@
         geometry: new ol.geom.Point(ol.proj.fromLonLat([m.lng, m.lat])),
         _pt: true, _name: m.name||'', _desc: m.description||'', _url: m.postUrl||'',
       });
-      f.setStyle(olPinStyle(i + 1));
+      f.setStyle(olPinStyle(showNumbers ? (i + 1) : null));
       feats.push(f);
     });
 
@@ -1009,6 +1010,7 @@
     var markers = [];
     try { markers = JSON.parse(container.dataset.markers || '[]'); } catch(e) { return; }
     if (!markers.length) return;
+    var showNumbers = container.dataset.showNumbers !== '0';
 
     var pop = makePopup(container);
     var map = makeMap(uid, pop.overlay);
@@ -1022,7 +1024,7 @@
         geometry: new ol.geom.Point(ol.proj.fromLonLat([m.lng, m.lat])),
         _pt: true, _name: m.name||'', _desc: m.description||'', _url: m.url||'',
       });
-      f.setStyle(olPinStyle(i + 1));
+      f.setStyle(olPinStyle(showNumbers ? (i + 1) : null));
       feats.push(f);
     });
 

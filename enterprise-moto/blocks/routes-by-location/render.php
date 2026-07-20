@@ -104,6 +104,7 @@ function enterprise_render_routes_by_location_block( $attributes ) {
              id="<?php echo esc_attr( $uid ); ?>"
              data-map-type="routes-by-location"
              data-zoom="<?php echo intval( $map_zoom ); ?>"
+             data-show-numbers="<?php echo $show_numbers ? '1' : '0'; ?>"
              data-markers="<?php echo esc_attr( wp_json_encode( $clean_markers ) ); ?>"
              role="img"
              aria-label="<?php echo $heading ? esc_attr( $heading ) : esc_attr__( 'Mapa de rutas por localización', 'enterprise-moto' ); ?>">
