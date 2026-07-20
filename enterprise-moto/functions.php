@@ -2061,6 +2061,28 @@ function enterprise_customizer( $wp_customize ) {
     ) );
 
     /* ════════════════════════════════════════
+       SECCIÓN: MAPA DE RUTAS POR LOCALIZACIÓN (#17)
+       Página-destino a la que enlazan las localizaciones del bloque.
+       PROVISIONAL: el rediseño definitivo del destino es #18.
+    ════════════════════════════════════════ */
+    $wp_customize->add_section( 'enterprise_rbl', array(
+        'title' => __( 'Mapa de rutas por localización', 'enterprise-moto' ),
+        'panel' => 'enterprise_home',
+    ) );
+
+    $wp_customize->add_setting( 'enterprise_rbl_dest_page', array(
+        'default'           => 0,
+        'sanitize_callback' => 'absint',
+        'transport'         => 'refresh',
+    ) );
+    $wp_customize->add_control( 'enterprise_rbl_dest_page', array(
+        'label'       => __( 'Página-destino (provisional)', 'enterprise-moto' ),
+        'description' => __( 'Página a la que enlaza cada localización del bloque «Mapa de rutas por localización». Crea una Página con la plantilla «Mapa de rutas por localización (provisional)» y selecciónala aquí. Rediseño definitivo pendiente (#18).', 'enterprise-moto' ),
+        'section'     => 'enterprise_rbl',
+        'type'        => 'dropdown-pages',
+    ) );
+
+    /* ════════════════════════════════════════
        SECCIONES DE GRUPOS (hasta 6)
        Cada sección tiene: título, tipo (cat/tag), slug, max posts
     ════════════════════════════════════════ */
