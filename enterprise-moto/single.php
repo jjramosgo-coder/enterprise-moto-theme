@@ -26,6 +26,9 @@ $cat_name = enterprise_first_category();
     $from_loc_id = isset( $_GET['from_loc'] ) ? intval( $_GET['from_loc'] ) : 0;
     $loc_cat     = isset( $_GET['loc_cat'] )  ? intval( $_GET['loc_cat'] )  : 0;
     $loc_tag     = isset( $_GET['loc_tag'] )  ? wp_parse_id_list( wp_unslash( $_GET['loc_tag'] ) ) : array();
+    // #21: id de la página que hospeda el mapa (rbl_src en el destino), propagado
+    // como loc_src por el viaje de ida y vuelta para reponer «← Volver al mapa».
+    $loc_src     = isset( $_GET['loc_src'] )  ? intval( $_GET['loc_src'] )  : 0;
     // Validar que from_post es realmente un post tipo D
     if ( $from_post_id && get_post_meta( $from_post_id, '_post_tipo', true ) !== 'viaje' ) {
         $from_post_id = 0;
@@ -49,6 +52,7 @@ $cat_name = enterprise_first_category();
         $from_loc_id = 0;
         $loc_cat     = 0;
         $loc_tag     = array();
+        $loc_src     = 0;
     }
     // #13: ancestro = orígenes validados presentes, salvo el inmediato from_post.
     // Se construye desde los locales YA validados (no se re-lee $_GET), de modo que
@@ -56,7 +60,7 @@ $cat_name = enterprise_first_category();
     $nav_ancestor = array();
     if ( $from_cuaderno_id ) { $nav_ancestor['from_cuaderno'] = $from_cuaderno_id; }
     if ( $from_col_id )      { $nav_ancestor['from_col'] = $from_col_id; $nav_ancestor['col_key'] = $col_key; }
-    if ( $from_loc_id )      { $nav_ancestor['from_loc'] = $from_loc_id; $nav_ancestor['loc_cat'] = $loc_cat; $nav_ancestor['loc_tag'] = implode( ',', $loc_tag ); }
+    if ( $from_loc_id )      { $nav_ancestor['from_loc'] = $from_loc_id; $nav_ancestor['loc_cat'] = $loc_cat; $nav_ancestor['loc_tag'] = implode( ',', $loc_tag ); if ( $loc_src > 0 ) { $nav_ancestor['loc_src'] = $loc_src; } }
     if ( $from_cat_slug )    { $nav_ancestor['from_cat'] = $from_cat_slug; }
     if ( $from_post_id ) {
         // #13: al volver al viaje, conservar el ancestro para que el viaje siga
@@ -77,10 +81,9 @@ $cat_name = enterprise_first_category();
     } elseif ( $from_loc_id ) {
         // #18: volver a la vista de esa categoría del destino (§3.6): el mismo
         // carrusel, reconstruido con rbl_cat = loc_cat y rbl_tag = tags del marcador.
-        $back_url   = add_query_arg(
-            array( 'rbl_cat' => $loc_cat, 'rbl_tag' => implode( ',', $loc_tag ) ),
-            get_permalink( $from_loc_id )
-        );
+        $back_args = array( 'rbl_cat' => $loc_cat, 'rbl_tag' => implode( ',', $loc_tag ) );
+        if ( $loc_src > 0 ) { $back_args['rbl_src'] = $loc_src; }
+        $back_url   = add_query_arg( $back_args, get_permalink( $from_loc_id ) );
         $back_label = esc_html__( '← Volver', 'enterprise-moto' );
         $active_context = 'loc';
     } elseif ( $from_cat_slug ) {
@@ -515,6 +518,7 @@ if ( $has_data ) : ?>
          enterprise_stage_query() usando los MISMOS atributos que la plantilla por
          carrusel (§3.1/§3.7), para que navegación y listado no puedan divergir. */
       $nav_suffix = array( 'from_loc' => $from_loc_id, 'loc_cat' => $loc_cat, 'loc_tag' => implode( ',', $loc_tag ) );
+      if ( $loc_src > 0 ) { $nav_suffix['loc_src'] = $loc_src; }
 
       $loc_q       = enterprise_stage_query( array(
           'categoryIds'  => array( $loc_cat ),

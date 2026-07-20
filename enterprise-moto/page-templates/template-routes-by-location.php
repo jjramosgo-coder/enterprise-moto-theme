@@ -134,11 +134,13 @@ get_header();
                 /* Contexto de navegación del destino: categoría del carrusel + tags
                    del marcador (§3.5). Se estampa en TODOS los enlaces de la tarjeta
                    para que el prev/next se conserve sea cual sea el enlace pulsado. */
-                $card_href = add_query_arg( array(
+                $card_args = array(
                     'from_loc' => $dest_page_id,
                     'loc_cat'  => $cat_i,
                     'loc_tag'  => $tag_str,
-                ), get_permalink() );
+                );
+                if ( $rbl_src > 0 ) { $card_args['loc_src'] = $rbl_src; }
+                $card_href = add_query_arg( $card_args, get_permalink() );
             ?>
                 <div class="ent-stages__slide" role="listitem" data-index="<?php echo intval( $n - 1 ); ?>">
                     <article <?php post_class( 'post-card' ); ?> id="post-<?php the_ID(); ?>">
