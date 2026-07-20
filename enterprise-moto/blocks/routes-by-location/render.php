@@ -24,11 +24,16 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * configurada —o no esté publicada— la base cae a home_url('/'); el enlace sigue
  * llevando el filtro en los parámetros rbl_cat / rbl_tag (IDs de término separados
  * por comas), que la página-destino (Commit 4) mapea a enterprise_stage_query().
+ *
+ * El tercer parámetro $src_page_id (id de la página que hospeda el bloque-mapa) se
+ * estampa como rbl_src cuando es un entero positivo, para el enlace «← Volver al
+ * mapa» de la página-destino (#18); si es 0 se omite.
  */
 if ( ! function_exists( 'enterprise_rbl_destination_url' ) ) :
-function enterprise_rbl_destination_url( $cat_ids, $tag_ids ) {
-    $cat_ids = is_array( $cat_ids ) ? array_values( array_filter( array_map( 'intval', $cat_ids ) ) ) : array();
-    $tag_ids = is_array( $tag_ids ) ? array_values( array_filter( array_map( 'intval', $tag_ids ) ) ) : array();
+function enterprise_rbl_destination_url( $cat_ids, $tag_ids, $src_page_id = 0 ) {
+    $cat_ids     = is_array( $cat_ids ) ? array_values( array_filter( array_map( 'intval', $cat_ids ) ) ) : array();
+    $tag_ids     = is_array( $tag_ids ) ? array_values( array_filter( array_map( 'intval', $tag_ids ) ) ) : array();
+    $src_page_id = intval( $src_page_id );
 
     $page_id = (int) get_theme_mod( 'enterprise_rbl_dest_page', 0 );
     $base    = ( $page_id && 'publish' === get_post_status( $page_id ) )
@@ -38,6 +43,7 @@ function enterprise_rbl_destination_url( $cat_ids, $tag_ids ) {
     $args = array();
     if ( ! empty( $cat_ids ) ) $args['rbl_cat'] = implode( ',', $cat_ids );
     if ( ! empty( $tag_ids ) ) $args['rbl_tag'] = implode( ',', $tag_ids );
+    if ( $src_page_id > 0 )    $args['rbl_src'] = $src_page_id;
 
     return empty( $args ) ? esc_url_raw( $base ) : esc_url_raw( add_query_arg( $args, $base ) );
 }
@@ -63,9 +69,14 @@ function enterprise_render_routes_by_location_block( $attributes ) {
 
     $uid = 'ent-rbl-' . wp_rand( 1000, 9999 );
 
+    /* Página que hospeda el bloque-mapa: se estampa como rbl_src en la URL de cada
+       marcador para el enlace «← Volver al mapa» de la página-destino (#18). En el
+       editor u otros contextos sin objeto consultado vale 0 y se omite. */
+    $src_page_id = (int) get_queried_object_id();
+
     /* Sanitizar y serializar marcadores. Cada localización lleva su filtro
        compuesto como listas de IDs de término (site-global), no una URL. */
-    $clean_markers = array_map( function( $m ) {
+    $clean_markers = array_map( function( $m ) use ( $src_page_id ) {
         $cat_ids = ( isset( $m['filterCatIds'] ) && is_array( $m['filterCatIds'] ) )
                      ? array_values( array_map( 'intval', $m['filterCatIds'] ) ) : array();
         $tag_ids = ( isset( $m['filterTagIds'] ) && is_array( $m['filterTagIds'] ) )
@@ -77,7 +88,7 @@ function enterprise_render_routes_by_location_block( $attributes ) {
             'description'  => isset( $m['description'] ) ? sanitize_text_field( $m['description'] ) : '',
             'filterCatIds' => $cat_ids,
             'filterTagIds' => $tag_ids,
-            'url'          => enterprise_rbl_destination_url( $cat_ids, $tag_ids ),
+            'url'          => enterprise_rbl_destination_url( $cat_ids, $tag_ids, $src_page_id ),
         );
     }, $markers );
 
