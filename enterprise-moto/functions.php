@@ -1377,11 +1377,13 @@ function enterprise_register_map_blocks() {
         'supports' => array( 'html' => false, 'align' => array( 'wide', 'full' ) ),
     ) );
 
-    /* ── Script routes-by-location (editor) ── */
+    /* ── Script routes-by-location (editor) ──
+       wp-api-fetch: el Modal lee categorías/etiquetas por REST (term pickers).
+       OpenLayers se carga bajo demanda desde el propio JS al abrir el Modal. */
     wp_register_script(
         'enterprise-block-routes-by-location',
         get_template_directory_uri() . '/assets/js/block-routes-by-location.js',
-        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components' ),
+        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-api-fetch' ),
         filemtime( get_template_directory() . '/assets/js/block-routes-by-location.js' ),
         true
     );
