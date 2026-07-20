@@ -9,7 +9,7 @@
  *   - lista propia BUSCABLE/PAGINADA con edición, borrado y borrado múltiple
  *     (fallback del §5: DataViews/DataForm NO están disponibles como globales wp.*).
  * Cada localización guarda un filtro compuesto por IDs de término:
- *   (cat_1 OR … OR cat_n) AND (tag_1 OR … OR tag_m).
+ *   (cat_1 OR … OR cat_n) AND (tag_1 AND … AND tag_m).
  * OpenLayers se carga BAJO DEMANDA al abrir el Modal (mount-on-open). El estado del
  * Modal es local y se confirma en `markers` al guardar o cerrar.
  *

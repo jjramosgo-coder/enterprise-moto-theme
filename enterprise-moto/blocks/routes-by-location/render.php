@@ -7,7 +7,7 @@
  *
  * A diferencia de location-map, cada marcador NO guarda una URL fija: guarda un
  * filtro compuesto sobre las taxonomías existentes —(cat_1 OR … OR cat_n) AND
- * (tag_1 OR … OR tag_m)— mediante IDs de término (filterCatIds / filterTagIds).
+ * (tag_1 AND … AND tag_m)— mediante IDs de término (filterCatIds / filterTagIds).
  *
  * NOTA de fases: en el Commit 1 el render emite el contrato de mapa con
  * data-map-type="routes-by-location" y los marcadores saneados. La derivación de
