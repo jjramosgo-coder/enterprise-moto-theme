@@ -515,6 +515,11 @@ function enterprise_nav_origin_params() {
         $out['from_loc'] = intval( $_GET['from_loc'] );
         $out['loc_cat']  = isset( $_GET['loc_cat'] ) ? intval( $_GET['loc_cat'] ) : 0;
         $out['loc_tag']  = isset( $_GET['loc_tag'] ) ? implode( ',', wp_parse_id_list( wp_unslash( $_GET['loc_tag'] ) ) ) : '';
+        // #21 (ampliación): arrastrar también el origen del mapa por el ancestro
+        // (colección/post-stages), para que «← Volver al mapa» sobreviva al viaje
+        // destino → colección → etapa → vuelta. Solo si es entero positivo.
+        $loc_src = isset( $_GET['loc_src'] ) ? intval( $_GET['loc_src'] ) : 0;
+        if ( $loc_src > 0 ) { $out['loc_src'] = $loc_src; }
     }
     if ( isset( $_GET['from_cat'] ) && sanitize_key( $_GET['from_cat'] ) ) {
         $out['from_cat'] = sanitize_key( $_GET['from_cat'] );
