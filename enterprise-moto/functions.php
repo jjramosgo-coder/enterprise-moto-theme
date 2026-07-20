@@ -1277,6 +1277,7 @@ function enterprise_register_map_blocks() {
 
     require_once get_template_directory() . '/blocks/location-map/render.php';
     require_once get_template_directory() . '/blocks/route-map/render.php';
+    require_once get_template_directory() . '/blocks/routes-by-location/render.php';
 
     /* ── Script location-map (editor) ── */
     wp_register_script(
@@ -1375,6 +1376,35 @@ function enterprise_register_map_blocks() {
         ),
         'supports' => array( 'html' => false, 'align' => array( 'wide', 'full' ) ),
     ) );
+
+    /* ── Script routes-by-location (editor) ── */
+    wp_register_script(
+        'enterprise-block-routes-by-location',
+        get_template_directory_uri() . '/assets/js/block-routes-by-location.js',
+        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components' ),
+        filemtime( get_template_directory() . '/assets/js/block-routes-by-location.js' ),
+        true
+    );
+
+    /* ── Bloque routes-by-location ──
+       Mapa de rutas por localización: cada marcador guarda un filtro compuesto
+       (IDs de categoría/etiqueta) en lugar de una URL fija. Mismos atributos de
+       presentación que location-map; los campos por-marcador (name, lat, lng,
+       description opcional, filterCatIds, filterTagIds) viven dentro de markers[]. */
+    register_block_type( 'enterprise/routes-by-location', array(
+        'api_version'     => 3,
+        'editor_script'   => 'enterprise-block-routes-by-location',
+        'render_callback' => 'enterprise_render_routes_by_location_block',
+        'attributes'      => array(
+            'markers'     => array( 'type' => 'array',   'default' => array(), 'items' => array( 'type' => 'object' ) ),
+            'mapHeight'   => array( 'type' => 'string',  'default' => 'md'   ),
+            'mapZoom'     => array( 'type' => 'integer', 'default' => 6      ),
+            'heading'     => array( 'type' => 'string',  'default' => ''     ),
+            'showLegend'  => array( 'type' => 'boolean', 'default' => true   ),
+            'showNumbers' => array( 'type' => 'boolean', 'default' => true   ),
+        ),
+        'supports' => array( 'html' => false, 'align' => array( 'wide', 'full' ) ),
+    ) );
 }
 add_action( 'init', 'enterprise_register_map_blocks' );
 
@@ -1390,7 +1420,8 @@ function enterprise_map_frontend_assets() {
     $has_route      = has_block( 'enterprise/route-map',             $post );
     $has_animated   = has_block( 'enterprise/animated-route-map',    $post );
     $has_comparison = has_block( 'enterprise/route-comparison',      $post );
-    if ( ! $has_location && ! $has_route && ! $has_animated && ! $has_comparison ) return;
+    $has_rbl        = has_block( 'enterprise/routes-by-location',    $post );
+    if ( ! $has_location && ! $has_route && ! $has_animated && ! $has_comparison && ! $has_rbl ) return;
 
     /* ── OpenLayers — para ambos bloques de mapa ── */
     wp_enqueue_style(
