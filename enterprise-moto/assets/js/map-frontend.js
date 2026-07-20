@@ -966,6 +966,94 @@
       console.warn('Enterprise Moto (route-comparison): error cargando GPX:', err);
     });
   }
+
+  /* ═══════════════════════════════════════════
+     MAPA DE RUTAS POR LOCALIZACIÓN (#17)
+     Aditivo. Copia fiel de initLocationMap con dos cambios:
+       1. El enlace del popup usa m.url (URL de destino derivada del filtro
+          compuesto en render.php), no m.postUrl.
+       2. La etiqueta del enlace es «→ Entradas relacionadas».
+     NO altera la rama "location" ni sus funciones.
+  ═══════════════════════════════════════════ */
+  function popupHtmlRbl(name, desc, url) {
+    var h = '<div class="ent-map-popup">';
+    if (name) h += '<div class="ent-map-popup__title">' + name + '</div>';
+    if (desc) h += '<div class="ent-map-popup__desc">'  + desc + '</div>';
+    if (url)  h += '<a class="ent-map-popup__link" href="'+url+'">→ Entradas relacionadas</a>';
+    return h + '</div>';
+  }
+
+  function attachInteractionRbl(map, pop) {
+    map.on('click', function (e) {
+      var f = map.forEachFeatureAtPixel(e.pixel, function(x){return x;});
+      if (f && f.get('_pt')) {
+        pop.el.innerHTML = popupHtmlRbl(f.get('_name'), f.get('_desc'), f.get('_url') || '');
+        pop.el.style.display = 'block';
+        pop.overlay.setPosition(e.coordinate);
+      } else {
+        pop.el.style.display = 'none';
+        pop.overlay.setPosition(undefined);
+      }
+    });
+    map.on('pointermove', function (e) {
+      map.getTargetElement().style.cursor = map.hasFeatureAtPixel(e.pixel) ? 'pointer' : '';
+    });
+  }
+
+  function initRoutesByLocationMap(container) {
+    if (container._ent_init) return;
+    container._ent_init = true;
+
+    var uid     = container.id;
+    var zoom    = parseInt(container.dataset.zoom, 10) || 6;
+    var markers = [];
+    try { markers = JSON.parse(container.dataset.markers || '[]'); } catch(e) { return; }
+    if (!markers.length) return;
+
+    var pop = makePopup(container);
+    var map = makeMap(uid, pop.overlay);
+    container._olMap = map;
+    attachInteractionRbl(map, pop);
+
+    var feats = [];
+    markers.forEach(function (m, i) {
+      if (!m.lat || !m.lng) return;
+      var f = new ol.Feature({
+        geometry: new ol.geom.Point(ol.proj.fromLonLat([m.lng, m.lat])),
+        _pt: true, _name: m.name||'', _desc: m.description||'', _url: m.url||'',
+      });
+      f.setStyle(olPinStyle(i + 1));
+      feats.push(f);
+    });
+
+    var src = new ol.source.Vector({ features: feats });
+    map.addLayer(new ol.layer.Vector({ source: src }));
+
+    if (feats.length === 1) {
+      map.getView().setCenter(feats[0].getGeometry().getCoordinates());
+      map.getView().setZoom(zoom);
+    } else if (feats.length > 1) {
+      map.getView().fit(src.getExtent(), { size: map.getSize(), padding: [60,60,60,60] });
+    }
+
+    var wrap = document.getElementById(uid + '-wrap');
+    if (wrap) {
+      wrap.querySelectorAll('[data-legend-index]').forEach(function (item) {
+        item.addEventListener('click', function () {
+          var f = feats[parseInt(this.dataset.legendIndex, 10)];
+          if (!f) return;
+          var c = f.getGeometry().getCoordinates();
+          map.getView().animate({ center: c, zoom: Math.max(map.getView().getZoom(), 12), duration: 400 });
+          setTimeout(function () {
+            pop.el.innerHTML = popupHtmlRbl(f.get('_name'), f.get('_desc'), f.get('_url'));
+            pop.el.style.display = 'block';
+            pop.overlay.setPosition(c);
+          }, 450);
+        });
+      });
+    }
+  }
+
   function initAll() {
     if (typeof ol === 'undefined') return;
     document.querySelectorAll('.ent-map[data-map-type="location"]').forEach(function (el) {
@@ -979,6 +1067,9 @@
     });
     document.querySelectorAll('.ent-map[data-map-type="animated-route"]').forEach(function (el) {
       if (!el._ent_init) initAnimatedRouteMap(el);
+    });
+    document.querySelectorAll('.ent-map[data-map-type="routes-by-location"]').forEach(function (el) {
+      if (!el._ent_init) initRoutesByLocationMap(el);
     });
   }
 

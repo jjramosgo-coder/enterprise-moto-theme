@@ -16,6 +16,33 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+/**
+ * Deriva la URL de destino de una localización a partir de su filtro compuesto.
+ *
+ * Base = permalink de la Página-destino elegida en el Customizer (theme mod
+ * `enterprise_rbl_dest_page`, registrado en el Commit 4). Mientras no esté
+ * configurada —o no esté publicada— la base cae a home_url('/'); el enlace sigue
+ * llevando el filtro en los parámetros rbl_cat / rbl_tag (IDs de término separados
+ * por comas), que la página-destino (Commit 4) mapea a enterprise_stage_query().
+ */
+if ( ! function_exists( 'enterprise_rbl_destination_url' ) ) :
+function enterprise_rbl_destination_url( $cat_ids, $tag_ids ) {
+    $cat_ids = is_array( $cat_ids ) ? array_values( array_filter( array_map( 'intval', $cat_ids ) ) ) : array();
+    $tag_ids = is_array( $tag_ids ) ? array_values( array_filter( array_map( 'intval', $tag_ids ) ) ) : array();
+
+    $page_id = (int) get_theme_mod( 'enterprise_rbl_dest_page', 0 );
+    $base    = ( $page_id && 'publish' === get_post_status( $page_id ) )
+                 ? get_permalink( $page_id )
+                 : home_url( '/' );
+
+    $args = array();
+    if ( ! empty( $cat_ids ) ) $args['rbl_cat'] = implode( ',', $cat_ids );
+    if ( ! empty( $tag_ids ) ) $args['rbl_tag'] = implode( ',', $tag_ids );
+
+    return empty( $args ) ? esc_url_raw( $base ) : esc_url_raw( add_query_arg( $args, $base ) );
+}
+endif;
+
 function enterprise_render_routes_by_location_block( $attributes ) {
 
     $markers      = isset( $attributes['markers'] )     && is_array( $attributes['markers'] ) ? $attributes['markers'] : array();
@@ -39,15 +66,18 @@ function enterprise_render_routes_by_location_block( $attributes ) {
     /* Sanitizar y serializar marcadores. Cada localización lleva su filtro
        compuesto como listas de IDs de término (site-global), no una URL. */
     $clean_markers = array_map( function( $m ) {
+        $cat_ids = ( isset( $m['filterCatIds'] ) && is_array( $m['filterCatIds'] ) )
+                     ? array_values( array_map( 'intval', $m['filterCatIds'] ) ) : array();
+        $tag_ids = ( isset( $m['filterTagIds'] ) && is_array( $m['filterTagIds'] ) )
+                     ? array_values( array_map( 'intval', $m['filterTagIds'] ) ) : array();
         return array(
             'lat'          => isset( $m['lat'] )         ? floatval( $m['lat'] )                    : 0,
             'lng'          => isset( $m['lng'] )         ? floatval( $m['lng'] )                    : 0,
             'name'         => isset( $m['name'] )        ? sanitize_text_field( $m['name'] )        : '',
             'description'  => isset( $m['description'] ) ? sanitize_text_field( $m['description'] ) : '',
-            'filterCatIds' => ( isset( $m['filterCatIds'] ) && is_array( $m['filterCatIds'] ) )
-                                ? array_values( array_map( 'intval', $m['filterCatIds'] ) ) : array(),
-            'filterTagIds' => ( isset( $m['filterTagIds'] ) && is_array( $m['filterTagIds'] ) )
-                                ? array_values( array_map( 'intval', $m['filterTagIds'] ) ) : array(),
+            'filterCatIds' => $cat_ids,
+            'filterTagIds' => $tag_ids,
+            'url'          => enterprise_rbl_destination_url( $cat_ids, $tag_ids ),
         );
     }, $markers );
 
