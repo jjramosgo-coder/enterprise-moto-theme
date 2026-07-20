@@ -514,7 +514,7 @@ if ( $has_data ) : ?>
       /* ── Contexto: venimos del destino «Rutas por localización» (#18) ──
          CONTRATO DE NAVEGACIÓN (§6/§13.13): «anterior/siguiente» recorren la
          secuencia en el MISMO orden que el carrusel mostrado. Ese carrusel es
-         (categoría loc_cat) AND (tags del marcador loc_tag), resuelto con
+         (categoría loc_cat) AND (todas las etiquetas del marcador loc_tag), resuelto con
          enterprise_stage_query() usando los MISMOS atributos que la plantilla por
          carrusel (§3.1/§3.7), para que navegación y listado no puedan divergir. */
       $nav_suffix = array( 'from_loc' => $from_loc_id, 'loc_cat' => $loc_cat, 'loc_tag' => implode( ',', $loc_tag ) );
@@ -523,7 +523,7 @@ if ( $has_data ) : ?>
       $loc_q       = enterprise_stage_query( array(
           'categoryIds'  => array( $loc_cat ),
           'tagIds'       => $loc_tag,
-          'tagRelation'  => 'IN',
+          'tagRelation'  => 'AND',
           'postsPerPage' => -1,
           'orderBy'      => 'date',
           'order'        => 'DESC',

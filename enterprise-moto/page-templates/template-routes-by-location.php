@@ -10,7 +10,8 @@
  * hospeda el bloque-mapa, para «← Volver al mapa»). Presenta las entradas
  * agrupadas en UNA SECCIÓN POR CATEGORÍA del marcador: cada sección es un
  * carrusel horizontal de .post-card, resuelto con enterprise_stage_query()
- * —categoría IN + etiquetas del marcador IN, relación AND entre grupos— y
+ * —categoría IN (OR entre categorías) + etiquetas del marcador AND (todas),
+ * relación AND entre grupos: (cat_1 OR … OR cat_n) AND (tag_1 AND … AND tag_m)— y
  * reutilizando la librería de carrusel del tema (carousel.js / carousel.css +
  * andamiaje .ent-stages, SIN modificarla; assets encolados por
  * enterprise_carousel_assets()). La tarjeta .post-card se reutiliza tal cual.
@@ -87,7 +88,7 @@ get_header();
         $sec_query = enterprise_stage_query( array(
             'categoryIds'  => array( $cat_i ),
             'tagIds'       => $rbl_tag,
-            'tagRelation'  => 'IN',   // OR entre etiquetas; enterprise_stage_query hace AND entre los grupos
+            'tagRelation'  => 'AND',  // AND entre etiquetas; enterprise_stage_query hace AND entre los grupos
             'postsPerPage' => -1,
             'orderBy'      => 'date',
             'order'        => 'DESC',
