@@ -21,6 +21,11 @@ $cat_name = enterprise_first_category();
     // #8: contexto de origen «colección» (id de la página + clave del bloque concreto).
     $from_col_id = isset( $_GET['from_col'] ) ? intval( $_GET['from_col'] ) : 0;
     $col_key     = isset( $_GET['col_key'] )  ? sanitize_key( $_GET['col_key'] ) : '';
+    // #18: contexto de origen «localización» (id de la página-destino + categoría del
+    // carrusel + tags del marcador). loc_tag se guarda como array saneado de IDs.
+    $from_loc_id = isset( $_GET['from_loc'] ) ? intval( $_GET['from_loc'] ) : 0;
+    $loc_cat     = isset( $_GET['loc_cat'] )  ? intval( $_GET['loc_cat'] )  : 0;
+    $loc_tag     = isset( $_GET['loc_tag'] )  ? wp_parse_id_list( wp_unslash( $_GET['loc_tag'] ) ) : array();
     // Validar que from_post es realmente un post tipo D
     if ( $from_post_id && get_post_meta( $from_post_id, '_post_tipo', true ) !== 'viaje' ) {
         $from_post_id = 0;
@@ -34,12 +39,24 @@ $cat_name = enterprise_first_category();
          && 'page-templates/template-trip-coleccion.php' !== get_page_template_slug( $from_col_id ) ) {
         $from_col_id = 0;
     }
+    // #18: validar que from_loc es una página con la plantilla «Rutas por localización»
+    // y que trae una categoría de carrusel; sin ambas cosas no es un contexto loc válido.
+    if ( $from_loc_id
+         && 'page-templates/template-routes-by-location.php' !== get_page_template_slug( $from_loc_id ) ) {
+        $from_loc_id = 0;
+    }
+    if ( ! $from_loc_id || $loc_cat < 1 ) {
+        $from_loc_id = 0;
+        $loc_cat     = 0;
+        $loc_tag     = array();
+    }
     // #13: ancestro = orígenes validados presentes, salvo el inmediato from_post.
     // Se construye desde los locales YA validados (no se re-lee $_GET), de modo que
     // un from_col/from_cat/from_cuaderno inválido no se arrastra.
     $nav_ancestor = array();
     if ( $from_cuaderno_id ) { $nav_ancestor['from_cuaderno'] = $from_cuaderno_id; }
     if ( $from_col_id )      { $nav_ancestor['from_col'] = $from_col_id; $nav_ancestor['col_key'] = $col_key; }
+    if ( $from_loc_id )      { $nav_ancestor['from_loc'] = $from_loc_id; $nav_ancestor['loc_cat'] = $loc_cat; $nav_ancestor['loc_tag'] = implode( ',', $loc_tag ); }
     if ( $from_cat_slug )    { $nav_ancestor['from_cat'] = $from_cat_slug; }
     if ( $from_post_id ) {
         // #13: al volver al viaje, conservar el ancestro para que el viaje siga
@@ -57,6 +74,15 @@ $cat_name = enterprise_first_category();
         $back_url   = get_permalink( $from_col_id );
         $back_label = esc_html__( '← Volver a la colección', 'enterprise-moto' );
         $active_context = 'col';
+    } elseif ( $from_loc_id ) {
+        // #18: volver a la vista de esa categoría del destino (§3.6): el mismo
+        // carrusel, reconstruido con rbl_cat = loc_cat y rbl_tag = tags del marcador.
+        $back_url   = add_query_arg(
+            array( 'rbl_cat' => $loc_cat, 'rbl_tag' => implode( ',', $loc_tag ) ),
+            get_permalink( $from_loc_id )
+        );
+        $back_label = esc_html__( '← Volver', 'enterprise-moto' );
+        $active_context = 'loc';
     } elseif ( $from_cat_slug ) {
         $from_cat_obj  = get_category_by_slug( $from_cat_slug );
         $back_url      = $from_cat_obj ? get_term_link( $from_cat_obj ) : home_url( '/las-rutas/' );
@@ -479,6 +505,32 @@ if ( $has_data ) : ?>
               $prev    = $prev_id ? get_post( $prev_id ) : null;
               $next    = $next_id ? get_post( $next_id ) : null;
           }
+      }
+
+  } elseif ( $from_loc_id && $loc_cat ) {
+      /* ── Contexto: venimos del destino «Rutas por localización» (#18) ──
+         CONTRATO DE NAVEGACIÓN (§6/§13.13): «anterior/siguiente» recorren la
+         secuencia en el MISMO orden que el carrusel mostrado. Ese carrusel es
+         (categoría loc_cat) AND (tags del marcador loc_tag), resuelto con
+         enterprise_stage_query() usando los MISMOS atributos que la plantilla por
+         carrusel (§3.1/§3.7), para que navegación y listado no puedan divergir. */
+      $nav_suffix = array( 'from_loc' => $from_loc_id, 'loc_cat' => $loc_cat, 'loc_tag' => implode( ',', $loc_tag ) );
+
+      $loc_q       = enterprise_stage_query( array(
+          'categoryIds'  => array( $loc_cat ),
+          'tagIds'       => $loc_tag,
+          'tagRelation'  => 'IN',
+          'postsPerPage' => -1,
+          'orderBy'      => 'date',
+          'order'        => 'DESC',
+      ) );
+      $loc_ids     = wp_list_pluck( $loc_q->posts, 'ID' );
+      $current_pos = array_search( get_the_ID(), $loc_ids, true );
+      if ( $current_pos !== false ) {
+          $prev_id = $current_pos > 0                     ? $loc_ids[ $current_pos - 1 ] : null;
+          $next_id = $current_pos < count( $loc_ids ) - 1 ? $loc_ids[ $current_pos + 1 ] : null;
+          $prev    = $prev_id ? get_post( $prev_id ) : null;
+          $next    = $next_id ? get_post( $next_id ) : null;
       }
 
   } elseif ( $from_cat_slug ) {

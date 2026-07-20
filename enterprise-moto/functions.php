@@ -493,7 +493,8 @@ function enterprise_collection_block_key( $attributes ) {
  * (render.php) y el consumo (single.php) no diverjan.
  *
  * @return array Subconjunto presente y saneado. p.ej.
- *   array( 'from_col' => 12, 'col_key' => 'a1b2c3d4' ) | array( 'from_cat' => 'italia' ) | array()
+ *   array( 'from_col' => 12, 'col_key' => 'a1b2c3d4' ) | array( 'from_cat' => 'italia' )
+ *   | array( 'from_loc' => 34, 'loc_cat' => 5, 'loc_tag' => '60,59' ) | array()
  */
 function enterprise_nav_origin_params() {
     $out = array();
@@ -506,6 +507,14 @@ function enterprise_nav_origin_params() {
     if ( isset( $_GET['from_col'] ) && intval( $_GET['from_col'] ) ) {
         $out['from_col'] = intval( $_GET['from_col'] );
         $out['col_key']  = isset( $_GET['col_key'] ) ? sanitize_key( $_GET['col_key'] ) : '';
+    }
+    // #18: contexto «localización» (página-destino + categoría del carrusel + tags
+    // del marcador). loc_tag se re-serializa a cadena separada por comas para que
+    // el estampado del ancestro (post-stages) y el consumo (single.php) coincidan.
+    if ( isset( $_GET['from_loc'] ) && intval( $_GET['from_loc'] ) ) {
+        $out['from_loc'] = intval( $_GET['from_loc'] );
+        $out['loc_cat']  = isset( $_GET['loc_cat'] ) ? intval( $_GET['loc_cat'] ) : 0;
+        $out['loc_tag']  = isset( $_GET['loc_tag'] ) ? implode( ',', wp_parse_id_list( wp_unslash( $_GET['loc_tag'] ) ) ) : '';
     }
     if ( isset( $_GET['from_cat'] ) && sanitize_key( $_GET['from_cat'] ) ) {
         $out['from_cat'] = sanitize_key( $_GET['from_cat'] );
