@@ -758,8 +758,8 @@ button { cursor: pointer; }
 .footer-widget-area .widget { }
 .footer-widget-area .widget-title { color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 16px; }
 .footer-widget-area .widget ul { list-style: none; padding: 0; }
-.footer-widget-area .widget ul li a { color: rgba(255,255,255,.5); text-decoration: none; font-size: 14px; font-weight: 300; transition: color .15s; }
-.footer-widget-area .widget ul li a:hover { color: rgba(255,255,255,.85); }
+.footer-widget-area a { color: rgba(255,255,255,.5); text-decoration: none; font-size: 14px; font-weight: 300; transition: color .15s; }
+.footer-widget-area a:hover { color: rgba(255,255,255,.85); }
 
 /* ─────────────────────────────────────────
    BLOQUE DE GUTENBERG: overrides
