@@ -2,7 +2,7 @@
 <a id="top"></a>
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.9.2  
+**Tema WordPress:** Enterprise Moto v2.9.3  
 **Última revisión:** Julio 2026
 
 ---
@@ -881,6 +881,14 @@ Registro de decisiones de arquitectura del tema. Cada entrada es **autocontenida
 - **Enrutado nativo ratificado; rewrite descartado.** La URL = permalink de la Página-destino + `?rbl_cat`/`?rbl_tag` (+`rbl_src`). Un filtro compuesto de **IDs de término** no tiene slug legible; un path solo codificaría IDs opacos o exigiría inventar un slug por localización (dato nuevo + trabajo de edición), fuera de alcance. Se mantiene el mecanismo nativo (Página + plantilla + Customizer).
 
 **Consecuencias.** El destino deja de ser provisional: descubre por categoría con la estética del tema, permite volver al mapa y navegar prev/next dentro de cada carrusel respetando el contrato §6/§13.1, y no introduce taxonomía ni assets nuevos (reutiliza `.post-card` y la librería de carrusel; §13.9 sigue rigiendo su encolado). Se cierra el «límite deliberado» de §13.12. Estado «sin parámetros» conservado (aviso «accede desde un marcador»). Retirado «(provisional)» de la cabecera de la plantilla y del control del Customizer. Implementado en 4 commits (`adfa000`, `bf337e2`, `1a50aea`, `270e7cf`), validados por Juanjo en WordPress real. Principio transferible: **el mecanismo de una funcionalidad nueva lo fija el orden de prioridad (reutilizar antes que a medida), tras analizar el encaje (§1.3)**; y un listado de origen nuevo necesita su contexto `from_*` **tipado** que reconstruya la secuencia desde la misma fuente que el listado.
+
+### 13.14 Tematización de los enlaces de columna del footer por contenedor (`.footer-widget-area a`)
+
+**Contexto.** Las columnas de widgets del footer (`footer.php`, áreas `footer-1`/`footer-2` registradas en `functions.php`) se pintan en **tres formas** distintas: el *fallback* hardcodeado (cuando el área de widgets está vacía), el menú nativo de la ubicación `footer` («Secciones», `wp_nav_menu` con `ul.menu`) y un **widget** (p. ej. la columna «Blog» resuelta con un bloque HTML). La regla de enlace `.footer-widget-area .widget ul li a` / `:hover` exigía un elemento con clase `.widget` **anidado dentro** de `.footer-widget-area`. Confirmado al 100% sobre el HTML renderizado: **ninguna** de las tres formas tiene ese `.widget` anidado —el *fallback* cuelga el `<ul>` como hijo directo, el menú «Secciones» pinta `ul.menu` como hijo directo, y el widget de bloque lleva `widget_block footer-widget-area` en el **mismo** wrapper, no en un descendiente—, así que la regla específica no casaba y los enlaces caían a la **global** `a` / `a:hover` (`style.css` l. 63-64: dorado `--gold-dk` → negro `--black`), invisibles sobre el footer oscuro al pasar el ratón. Bug latente **preexistente** que afectaba a **las dos** columnas, aflorado al poblar `footer-2` con un widget.
+
+**Decisión.** Tematizar los enlaces de columna del footer por su **contenedor** —`.footer-widget-area a` / `:hover`, conservando intacta la paleta del spec (reposo `rgba(255,255,255,.5)`, hover `rgba(255,255,255,.85)`)—, no por el marcado interno del widget. La especificidad (0,1,1) gana a la global `a` (0,0,1) y queda **confinada** a las dos columnas del footer. Se mantiene, **deliberadamente**, la divergencia respecto de la barra de copyright `.footer-bottom` (dorado → blanco): se **descartó** unificar ambas en dorado/blanco. No se tocan ni la `a`/`a:hover` global (correcta para el contenido sobre fondo claro) ni `.footer-bottom`. Cambio de una sola línea de selector en `style.css` (l. 761-762); l. 759 (`.widget-title`) y l. 760 (reset de lista) intactas.
+
+**Consecuencias.** Los enlaces de las dos columnas del footer son legibles en reposo y en hover **con independencia de la forma del marcado** (fallback / menú nativo / widget clásico / widget de bloque); `.footer-bottom` no se ve afectada (conserva su propio hover). Principio transferible: las decisiones de **presentación** de una columna del footer viven en el **contenedor estable que el tema controla** (`.footer-widget-area`), no en las formas de marcado que WordPress puede variar (widget clásico vs. de bloque, menú nativo vs. hardcodeado). **Colateral pendiente (limpieza #24):** la regla de reset de lista `.footer-widget-area .widget ul` (l. 760) arrastra el mismo fallo latente de no-match; no se tocó por spec, queda como TO-DO de limpieza. (#23, v2.9.3)
 
 ---
 
