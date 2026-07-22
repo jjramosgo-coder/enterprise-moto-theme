@@ -60,7 +60,11 @@
       <div class="footer-bottom">
         <span>
           &copy; <?php echo date( 'Y' ); ?>
-          <a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a>
+          <?php
+          $lic_page = get_page_by_path( 'licencia-de-contenido' );
+          $lic_url  = $lic_page ? get_permalink( $lic_page ) : home_url( '/' );
+          ?>
+          <a href="<?php echo esc_url( $lic_url ); ?>"><?php bloginfo( 'name' ); ?></a>
           &mdash; <?php esc_html_e( 'Juanjo & María José', 'enterprise-moto' ); ?>
         </span>
         <span><?php esc_html_e( 'Hecho con ☕ y muchos kilómetros', 'enterprise-moto' ); ?></span>
