@@ -40,7 +40,7 @@ Texto completo: <https://creativecommons.org/licenses/by-nc-nd/4.0/deed.es>
 ### Usos que requieren permiso
 
 Cualquier uso **comercial**, o cualquier uso que se salga de las condiciones anteriores,
-requiere autorización previa por escrito. Escríbeme a través de la página de contacto.
+requiere autorización previa por escrito. Escríbeme al correo de contacto que encontrarás en el pie del blog.
 
 ### Nota sobre las rutas y los tracks
 
