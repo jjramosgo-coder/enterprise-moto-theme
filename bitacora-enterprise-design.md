@@ -2,7 +2,7 @@
 <a id="top"></a>
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Enterprise Moto v2.9.3  
+**Tema WordPress:** Bitácora Enterprise v2.9.4  
 **Última revisión:** Julio 2026
 
 ---
