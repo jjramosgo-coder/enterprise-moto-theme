@@ -1,3 +1,12 @@
+<?php
+/**
+ * Bitácora Enterprise — header.php
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
 <head>

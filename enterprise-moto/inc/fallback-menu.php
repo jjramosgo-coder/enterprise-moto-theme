@@ -1,7 +1,11 @@
 <?php
 /**
- * Enterprise Moto — inc/fallback-menu.php
+ * Bitácora Enterprise — inc/fallback-menu.php
  * Menú de fallback si no hay ninguno asignado en el panel.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 function enterprise_fallback_menu() {

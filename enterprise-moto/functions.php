@@ -1,7 +1,11 @@
 <?php
 /**
- * Enterprise Moto — functions.php
+ * Bitácora Enterprise — functions.php
  * Configuración del tema, menus, widgets y scripts.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;

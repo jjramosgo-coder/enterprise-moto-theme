@@ -1,11 +1,15 @@
 <?php
 /**
- * Enterprise Moto — index.php v1.8.0
+ * Bitácora Enterprise — index.php v1.8.0
  *
  * Las secciones de la portada se configuran en:
  * Apariencia → Personalizar → 🏍 Configuración de la portada
  *
  * No edites este archivo directamente.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 /* ── Datos globales ── */

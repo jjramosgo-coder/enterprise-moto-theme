@@ -12,6 +12,10 @@
  * CUADERNO INDIVIDUAL  (/cuaderno-de-bitacora/sicilia-2026/)
  *   Tiene _exp_estado propio O tiene página padre.
  *   → Renderiza el cuaderno directamente.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 /* ── DETECCIÓN DEL MODO — ANTES de get_header() para permitir redirección ── */

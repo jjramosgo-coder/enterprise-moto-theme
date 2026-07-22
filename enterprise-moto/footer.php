@@ -1,3 +1,12 @@
+<?php
+/**
+ * Bitácora Enterprise — footer.php
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+?>
   </main><!-- /site-main -->
 
   <!-- ── FOOTER ── -->

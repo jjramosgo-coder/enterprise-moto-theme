@@ -1,4 +1,13 @@
-<?php if ( post_password_required() ) return; ?>
+<?php
+/**
+ * Bitácora Enterprise — comments.php
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+if ( post_password_required() ) return;
+?>
 
 <div id="comments">
 

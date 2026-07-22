@@ -1,4 +1,13 @@
-<?php get_header(); ?>
+<?php
+/**
+ * Bitácora Enterprise — archive.php
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+get_header();
+?>
 
 <!-- ══ CABECERA DE ARCHIVO ══ -->
 <div class="archive-header">

@@ -1,4 +1,13 @@
-<?php get_header(); ?>
+<?php
+/**
+ * Bitácora Enterprise — 404.php
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+get_header();
+?>
 
 <div class="error-404-wrap">
   <div>
