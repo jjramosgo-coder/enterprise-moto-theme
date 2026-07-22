@@ -29,8 +29,13 @@
     <!-- Logo -->
     <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="site-logo" rel="home">
       <div class="logo-icon" aria-hidden="true">
-        <?php if ( has_site_icon() ) : ?>
-          <img src="<?php echo esc_url( get_site_icon_url( 40 ) ); ?>"
+        <?php
+        $logo_rel  = 'assets/images/favicon-monograma.svg';
+        $logo_path = get_theme_file_path( $logo_rel );
+        if ( file_exists( $logo_path ) ) :
+          $logo_uri = add_query_arg( 'ver', filemtime( $logo_path ), get_theme_file_uri( $logo_rel ) );
+        ?>
+          <img src="<?php echo esc_url( $logo_uri ); ?>"
                alt=""
                width="40" height="40"
                style="width:40px;height:40px;object-fit:contain;display:block;">
