@@ -11,12 +11,17 @@ del tema. Se listan aquí para cumplir sus condiciones de atribución.
 | **Parsedown** | `enterprise-moto/inc/Parsedown.php` | MIT | © Emanuil Rusev, erusev.com |
 | **Leaflet** | `enterprise-moto/assets/vendor/leaflet/` | BSD-2-Clause | © Vladimir Agafonkin, CloudMade y colaboradores de Leaflet |
 
-> **Nota de mantenimiento:** el motor de mapas activo del tema es **OpenLayers** (ver el
-> documento de diseño §8 y el TODO #16), no Leaflet. Si se confirma que Leaflet ya no se
-> usa, su retirada sería una limpieza (TO-DO nuevo); mientras siga empaquetado, debe
-> conservar su licencia. **Pendiente:** ninguna de las dos librerías conserva hoy un
-> fichero de licencia junto al código empaquetado; conviene añadir el texto de licencia
-> original de cada una en su carpeta (o mantener este aviso como registro).
+> **Estado (verificado, jul 2026):**
+>
+> - **Parsedown — en uso.** Lo requieren e instancian los bloques propios
+>   `enterprise/markdown` y `enterprise/markdown-styled` (`inc/Parsedown.php`, con
+>   `setSafeMode(true)`) como conversor de Markdown → HTML. Se mantiene mientras esos
+>   bloques existan; conserva su aviso MIT (© Emanuil Rusev), presente en la cabecera del
+>   propio fichero.
+> - **Leaflet — sin uso (confirmado).** No se encola en ningún punto, no hay API `L.` en el
+>   JS, y el motor real de mapas es **OpenLayers**. Programada su **retirada completa en el
+>   TODO #16**; al ejecutarse, se eliminan los ficheros de `assets/vendor/leaflet/` y esta
+>   entrada de la tabla.
 
 ## Componentes cargados desde CDN (no empaquetados)
 
