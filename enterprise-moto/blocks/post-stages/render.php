@@ -1,7 +1,11 @@
 <?php
 /**
- * Enterprise Moto — blocks/post-stages/render.php
+ * Bitácora Enterprise — blocks/post-stages/render.php
  * Filtro por múltiples categorías (tax_query OR) y/o etiquetas.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 

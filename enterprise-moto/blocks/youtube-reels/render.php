@@ -2,6 +2,10 @@
 /**
  * Block: enterprise/youtube-reels
  * Galería de YouTube Shorts con swipe en móvil y carrusel en desktop.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 defined( 'ABSPATH' ) || exit;
 

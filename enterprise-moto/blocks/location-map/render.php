@@ -1,8 +1,12 @@
 <?php
 /**
- * Enterprise Moto — blocks/location-map/render.php
+ * Bitácora Enterprise — blocks/location-map/render.php
  * Solo HTML + data-* attributes. Sin <script> inline.
  * La lógica de mapa (OpenLayers 9.2.4) está en assets/js/map-frontend.js
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 

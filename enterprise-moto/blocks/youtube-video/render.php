@@ -2,6 +2,10 @@
 /**
  * Block: enterprise/youtube-video
  * Un único vídeo o Short de YouTube con contenedor estilizado.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 defined( 'ABSPATH' ) || exit;
 

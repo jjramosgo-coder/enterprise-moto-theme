@@ -1,8 +1,12 @@
 <?php
 /**
- * Enterprise Moto — blocks/animated-route-map/render.php
+ * Bitácora Enterprise — blocks/animated-route-map/render.php
  * Mapa de ruta animado: sincronización elevación ↔ marcador en mapa.
  * data-map-type="animated-route"
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 

@@ -2,6 +2,10 @@
 /**
  * Block: enterprise/photo-gallery
  * Carrusel de fotos con autoplay, tamaño de imagen y lightbox básico.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 defined( 'ABSPATH' ) || exit;
 

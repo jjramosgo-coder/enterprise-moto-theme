@@ -2,6 +2,10 @@
 /**
  * Block: enterprise/markdown
  * Renderiza contenido Markdown como HTML heredando los estilos del tema.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 defined( 'ABSPATH' ) || exit;
 

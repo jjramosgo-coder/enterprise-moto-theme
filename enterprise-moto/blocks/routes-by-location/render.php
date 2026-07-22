@@ -1,6 +1,6 @@
 <?php
 /**
- * Enterprise Moto — blocks/routes-by-location/render.php
+ * Bitácora Enterprise — blocks/routes-by-location/render.php
  * Bloque «Mapa de rutas por localización» (enterprise/routes-by-location).
  * Solo HTML + data-* attributes. Sin <script> inline.
  * La lógica de mapa (OpenLayers 9.2.4) está en assets/js/map-frontend.js.
@@ -13,6 +13,10 @@
  * data-map-type="routes-by-location" y los marcadores saneados. La derivación de
  * la URL de destino por marcador (enlace «→ Entradas relacionadas») se añade en el
  * Commit 3, y la página-destino provisional en el Commit 4.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 

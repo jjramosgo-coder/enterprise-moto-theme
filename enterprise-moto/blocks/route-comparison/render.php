@@ -1,8 +1,12 @@
 <?php
 /**
- * Enterprise Moto — blocks/route-comparison/render.php
+ * Bitácora Enterprise — blocks/route-comparison/render.php
  * Mapa comparativa ruta planificada (GPX1, azul) vs realizada (GPX2, rojo).
  * Perfil de altitud y sincronización posición ↔ perfil exclusivamente de GPX2.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 

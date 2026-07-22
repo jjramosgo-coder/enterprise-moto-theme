@@ -2,6 +2,10 @@
 /**
  * Block: enterprise/markdown-styled
  * Renderiza Markdown con opciones de estilo configurables en el inspector.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 defined( 'ABSPATH' ) || exit;
 

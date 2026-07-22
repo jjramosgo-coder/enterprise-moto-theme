@@ -1,7 +1,11 @@
 <?php
 /**
- * Enterprise Moto — blocks/route-map/render.php v1.6.0
+ * Bitácora Enterprise — blocks/route-map/render.php v1.6.0
  * Doble GPX. Sin <script> inline. Todo via data-* attributes.
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 

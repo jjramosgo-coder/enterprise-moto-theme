@@ -1,6 +1,6 @@
 <?php
 /**
- * Enterprise Moto — blocks/trip-collection/render.php
+ * Bitácora Enterprise — blocks/trip-collection/render.php
  *
  * Bloque «Colección de viajes» (#5, #11). Pinta como tarjetas de viaje/ruta las
  * entradas que resultan de los MISMOS filtros que enterprise/post-stages
@@ -12,6 +12,10 @@
  * from_post de las etapas de un viaje.
  *
  * Datos por entrada (badge de tipo, año, km/etapas/ferrys): enterprise_trip_card_data().
+ *
+ * Copyright (C) 2026 Juanjo Ramos y María José Moreno
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
