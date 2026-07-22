@@ -58,4 +58,4 @@ Los autores se reservan además el derecho a registrar formalmente la marca.
 
 ## Autoría y año
 
-Copyright © 2026 Juanjo `<APELLIDOS>` y María José `<APELLIDOS>`. Ver `AUTHORS.md`.
+Copyright © 2026 Juanjo Ramos y María José Moreno. Ver `AUTHORS.md`.

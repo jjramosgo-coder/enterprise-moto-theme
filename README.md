@@ -32,4 +32,4 @@ CC BY-NC-ND 4.0.
 
 ## Autores
 
-Juanjo `<APELLIDOS>` y María José `<APELLIDOS>`. Ver `AUTHORS.md`.
+Juanjo Ramos y María José Moreno. Ver `AUTHORS.md`.

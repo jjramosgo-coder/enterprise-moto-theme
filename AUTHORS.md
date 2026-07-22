@@ -2,8 +2,8 @@
 
 El tema `enterprise-moto` y el proyecto **Bitácora Enterprise** son obra de:
 
-- **Juanjo `<APELLIDOS>`**
-- **María José `<APELLIDOS>`**
+- **Juanjo Ramos**
+- **María José Moreno**
 
 Copyright © 2026 los autores.
 
