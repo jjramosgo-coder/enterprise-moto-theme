@@ -1429,7 +1429,7 @@ function enterprise_register_map_blocks() {
 add_action( 'init', 'enterprise_register_map_blocks' );
 
 /* ─────────────────────────────────────────
-   LEAFLET EN FRONTEND (solo si hay bloques de mapa)
+   MAPAS EN FRONTEND (OpenLayers, solo si hay bloques de mapa)
 ───────────────────────────────────────── */
 function enterprise_map_frontend_assets() {
     if ( ! is_singular() ) return;

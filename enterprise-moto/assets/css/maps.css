@@ -26,7 +26,7 @@
   background: var(--surface);
   position: relative;
   border: 1px solid var(--border);
-  z-index: 0; /* crítico: evita que Leaflet suba por encima del nav */
+  z-index: 0; /* crítico: evita que el mapa suba por encima del nav */
 }
 
 /* Alturas predefinidas */
@@ -66,27 +66,6 @@
   pointer-events: auto;   /* #15: el contenedor .ent-ol-popup tiene pointer-events:none inline; reactivar el puntero solo en el enlace */
 }
 .ent-map-popup__link:hover { color: var(--black); }
-
-/* Override estilos Leaflet para que encaje con el tema */
-.leaflet-popup-content-wrapper {
-  border-radius: 0 !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,.15) !important;
-  border: 1px solid var(--border) !important;
-  padding: 0 !important;
-}
-.leaflet-popup-content {
-  margin: 14px 16px !important;
-}
-.leaflet-popup-tip-container { display: none; }
-.leaflet-control-zoom a {
-  font-family: var(--font-body) !important;
-  color: var(--black) !important;
-}
-.leaflet-control-zoom a:hover { background: var(--surface) !important; }
-.leaflet-control-attribution {
-  font-family: var(--font-body) !important;
-  font-size: 10px !important;
-}
 
 /* ─────────────────────────────────────────
    MARCADOR PERSONALIZADO
