@@ -882,6 +882,36 @@ remove_action( 'wp_head', 'print_emoji_detection_script', 7 );
 remove_action( 'wp_print_styles', 'print_emoji_styles' );
 
 /* ─────────────────────────────────────────
+   IDENTIDAD DE MARCA: favicon / app-icons
+───────────────────────────────────────── */
+
+/**
+ * Emite los <link> de favicon / app-icon de marca en el <head> del frontend.
+ * Fuente única: el tema (assets/images/), no el Site Icon nativo (que no admite SVG).
+ * Cache-busting por filemtime(), coherente con el resto de assets del tema.
+ */
+function enterprise_emit_brand_icons() {
+	$links = array(
+		array( 'rel' => 'icon',             'file' => 'favicon.ico',      'extra' => ' sizes="32x32"' ),
+		array( 'rel' => 'icon',             'file' => 'favicon.svg',      'extra' => ' type="image/svg+xml"' ),
+		array( 'rel' => 'apple-touch-icon', 'file' => 'apple-touch-icon.png', 'extra' => '' ),
+		array( 'rel' => 'manifest',         'file' => 'site.webmanifest', 'extra' => '' ),
+	);
+	foreach ( $links as $l ) {
+		$path = get_theme_file_path( 'assets/images/' . $l['file'] );
+		if ( ! file_exists( $path ) ) {
+			continue;
+		}
+		$uri = add_query_arg( 'ver', filemtime( $path ), get_theme_file_uri( 'assets/images/' . $l['file'] ) );
+		printf( "<link rel=\"%s\" href=\"%s\"%s>\n", esc_attr( $l['rel'] ), esc_url( $uri ), $l['extra'] );
+	}
+}
+add_action( 'wp_head', 'enterprise_emit_brand_icons' );
+
+// Fuente única: retirar la emisión del Site Icon nativo del <head> del frontend.
+remove_action( 'wp_head', 'wp_site_icon', 99 );
+
+/* ─────────────────────────────────────────
    PERMITIR SUBIDA DE ARCHIVOS GPX
    a la biblioteca de medios de WordPress
 ───────────────────────────────────────── */

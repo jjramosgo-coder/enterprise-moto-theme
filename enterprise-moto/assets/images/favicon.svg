@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img">
+  <title>Bitácora Enterprise — favicon simplificado (BE) para tamaños pequeños</title>
+  <desc>Favicon simplificado para 16 y 32 px: letras BE (B blanca, E dorada) sobre fondo negro, sin la aguja, para máxima legibilidad. Letras trazadas desde Bebas Neue (OFL); autocontenido.</desc>
+  <rect width="512" height="512" fill="#0e0e0e"/>
+  <g transform="translate(16.79,463.50) scale(0.59286,-0.59286)" fill="#ffffff"><path d="M41 700H207Q292 700 331.0 660.5Q370 621 370 539V511Q370 457 352.5 423.0Q335 389 299 374V372Q381 344 381 226V166Q381 85 338.5 42.5Q296 0 214 0H41ZM194 415Q227 415 243.5 432.0Q260 449 260 489V528Q260 566 246.5 583.0Q233 600 204 600H151V415ZM214 100Q243 100 257.0 115.5Q271 131 271 169V230Q271 278 254.5 296.5Q238 315 200 315H151V100Z"/></g>
+  <g transform="translate(268.59,463.50) scale(0.59286,-0.59286)" fill="#f2c118"><path d="M41 700H341V600H151V415H302V315H151V100H341V0H41Z"/></g>
+</svg>
