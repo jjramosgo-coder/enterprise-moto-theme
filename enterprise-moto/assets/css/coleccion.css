@@ -142,11 +142,11 @@
 }
 
 /* ── Gradientes de reserva (sin imagen destacada) ── */
-.ent-trip-collection .bg1 { background: linear-gradient(135deg, #1a2a4a, #080818); }
-.ent-trip-collection .bg2 { background: linear-gradient(135deg, #2a4a3a, #081a10); }
-.ent-trip-collection .bg3 { background: linear-gradient(135deg, #4a3a1a, #1a1008); }
-.ent-trip-collection .bg4 { background: linear-gradient(135deg, #3a1a4a, #100818); }
-.ent-trip-collection .bg5 { background: linear-gradient(135deg, #4a2a1a, #180a08); }
+.ent-trip-collection .bg1 { background: var(--grad-col1); }
+.ent-trip-collection .bg2 { background: var(--grad-col2); }
+.ent-trip-collection .bg3 { background: var(--grad-col3); }
+.ent-trip-collection .bg4 { background: var(--grad-col4); }
+.ent-trip-collection .bg5 { background: var(--grad-col5); }
 
 /* ── Responsive ── */
 @media (max-width: 1000px) {
