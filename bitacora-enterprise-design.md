@@ -2,7 +2,7 @@
 <a id="top"></a>
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Bitácora Enterprise v2.10.0  
+**Tema WordPress:** Bitácora Enterprise v2.11.0  
 **Última revisión:** Julio 2026
 
 ---
@@ -903,6 +903,32 @@ Registro de decisiones de arquitectura del tema. Cada entrada es **autocontenida
 - **`enterprise-moto/assets/images/`** se crea como **hogar de las imágenes propias** del tema (© reservado, `COPYRIGHT.md`), donde se colocan los seis activos del set. Se descartaron del cableado los PNG sueltos 16/32/48 (redundan con el `.ico`) y un `favicon-512.png` byte-idéntico al `android-chrome-512x512.png`.
 
 **Consecuencias.** El favicon y el logo son ahora **idénticos en cualquier despliegue** y no dependen de una opción de la BD que se puede perder o divergir entre entornos; el tema sirve el SVG que el Site Icon no admite y controla el marcado exacto. El logo de la cabecera muestra el monograma de marca aunque no haya Site Icon configurado (antes caía al emoji). Principio transferible: **la identidad de marca es código del tema versionado, no configuración de instancia** —el mismo principio por el que el repositorio es la única fuente de verdad—; un activo de marca nuevo se emite desde el tema y se cachea por `filemtime()` (§13.9), no se delega en una opción de WordPress. **Nota operativa (no es TO-DO):** el servidor sirve `.webmanifest` como `application/octet-stream` por falta de mapeo MIME, lo que solo molesta en Safari; es configuración de servidor, no del tema. En la misma tanda se retiró la **carpeta espuria** `assets/{css,js,images}` (nombre literal, resto de un `mkdir` sin expansión de llaves; vacía y no versionada, borrado local sin commit). (#27/#28, v2.10.0)
+
+### 13.16 Marca anclada en el footer (lockup servido como SVG único)
+
+**Contexto.** El footer (`footer.php`, `.footer-grid`) mostraba en su columna izquierda el **nombre del sitio** como título de texto (`.footer-brand-name`, `bloginfo('name')` → «Diario de ruta de la Enterprise») con la descripción del sitio (`bloginfo('description')`) debajo (`.footer-brand-desc`). La marca «Bitácora Enterprise» no tenía presencia en el footer.
+
+**Decisión.** La columna izquierda del footer **ancla la marca** colocando el **lockup horizontal** (insignia BE con marco + wordmark «BITÁCORA ENTERPRISE») como **activo de marca servido: un SVG único autocontenido** que el tema **solo coloca**, nunca recompone. En consecuencia:
+
+- El título de texto `.footer-brand-name` se sustituye por `<img class="footer-brand-lockup" src="assets/images/lockup-footer.svg" alt="Bitácora Enterprise">`, servido con el **mismo idiom que el logo del header** (§13.15): `get_theme_file_path()` (guarda de existencia) + `get_theme_file_uri()` + cache-busting por `filemtime()` (`?ver=`, §13.9) + `esc_url()`. **Sin fallback de emoji**: si el fichero faltara, la guarda `file_exists()` simplemente no emite nada (el lockup no es un icono funcional). CSS `.footer-brand-lockup { display:block; width:300px; max-width:100%; height:auto; margin-bottom:16px; }` (ancho controlado, relación de aspecto preservada, no desborda en móvil).
+- El **tagline** va como **texto HTML** (no incrustado en el SVG), reutilizando `.footer-brand-desc`: «Viajar en moto por asfalto, disfrutar del camino y contarlo después.» (con punto; literal de marca confirmado por Juanjo, manual §2.1).
+- Se retiran las reglas CSS muertas `.footer-brand-name` y `.footer-brand-name span`. El padding vertical de `.site-footer` se compacta `56/32` → `40/24` (horizontal 40 intacto).
+- **Intactos**: las columnas SECCIONES/BLOG, la barra inferior `.footer-bottom` (el copyright conserva el **nombre del sitio** «Diario de ruta de la Enterprise» enlazado a «Licencia de contenido», #26) y el apilado móvil (`@media max-width:900px`).
+
+**Consecuencias.** La marca «Bitácora Enterprise» queda anclada en el footer como activo versionado del tema, coherente con §13.15 (la identidad de marca es código del tema versionado, no configuración de instancia). La marca visible de esa esquina (el lockup, «Bitácora Enterprise») es **deliberadamente distinta** del nombre del sitio que sigue en el copyright («Diario de ruta de la Enterprise»), decisión de Juanjo. Principio transferible: un **lockup de marca** se entrega como **arte final (SVG único)** y el tema **solo lo coloca** —nunca recompone insignia+wordmark por HTML/CSS—; el mockup de referencia (`claude/mockups/footer-rediseno-mockup.html`) fija el **resultado y el layout**, no el método de composición. **Fuera de alcance** (posibles TO-DOs si se piden): marca de agua tenue del monograma en monitores anchos, botón «volver arriba» del mockup, y variantes fondo claro / una tinta del lockup (ligadas al manual, #31). (#30, v2.11.0)
+
+### 13.17 Tarjeta de previsualización al compartir emitida desde el tema (Open Graph / Twitter Card)
+
+**Contexto.** El tema **no emitía ninguna** etiqueta Open Graph (verificado por grep en `functions.php`): al compartir una URL del blog (WhatsApp, redes) la plataforma tomaba una imagen de *fallback* arbitraria y el tema no controlaba la tarjeta de previsualización.
+
+**Decisión.** El tema **emite la tarjeta de previsualización** vía `enterprise_emit_og_tags()` (`functions.php`, hook `wp_head` prioridad 5), espejo de `enterprise_emit_brand_icons()` (§13.15). En consecuencia:
+
+- **`og:image` de marca única para todo el sitio**: `assets/images/og-image.png` (1200×630), URL **absoluta** (`get_theme_file_uri()`) con cache-busting `?ver=filemtime` (§13.9), acompañada de `og:image:type` (`image/png`), `og:image:width`/`height` (1200/630) y `og:image:alt` («Bitácora Enterprise»). Misma imagen en cada URL (decisión de Juanjo: la imagen es para la previsualización al compartir la URL del blog).
+- **Título y descripción siguen a la página, la imagen no**: portada/blog → `bloginfo('name')` / `bloginfo('description')`, `og:type=website`; singular → `wp_get_document_title()` / extracto (`get_the_excerpt()`, o recorte del contenido a 40 palabras si no hay), `og:type=article`; resto → título del documento / descripción del sitio. `og:site_name` = `bloginfo('name')`; `og:locale` = `get_locale()`; `og:url` = permalink en singular, `home_url('/')` en el resto.
+- **Twitter Card** `summary_large_image` reflejando título/descripción/imagen. Escapado: `esc_url()` para imagen y URL, `esc_attr()` para el resto; `og:*` con `property=`, `twitter:*` con `name=`.
+- **Puerta previa sostenida**: se confirmó (comprobación de solo lectura de Juanjo) que **ningún plugin** (Yoast/Rank Math/Jetpack…) emite ya `og:`, de modo que el tema es la fuente y no hay etiquetas duplicadas.
+
+**Consecuencias.** Compartir cualquier URL del blog muestra una tarjeta de marca coherente y controlada por el tema, no una imagen de *fallback* arbitraria; coherente con §13.15 (la marca es código del tema versionado). Principio transferible: la **tarjeta social de marca** es un activo del tema versionado emitido desde `wp_head`, no configuración de instancia ni delegación en un plugin. **Fuera de alcance** (posibles TO-DOs si se piden): `og:image` **por-entrada** (foto de portada de la ruta, con *fallback* a la de marca), `og:url` canónica por-archivo, y schema.org/JSON-LD / etiquetas `article:*`. (#29, v2.11.0)
 
 ---
 
