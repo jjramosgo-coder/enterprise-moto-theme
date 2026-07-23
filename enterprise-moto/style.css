@@ -1011,44 +1011,4 @@ button { cursor: pointer; }
 .ent-card,
 .mt-card,
 .past-card,
-.cuaderno-h-card-link,
 .home-group-cta-top { text-decoration: none !important; }
-
-/* ─────────────────────────────────────────
-   PLANTILLA CUADERNO HORIZONTAL
-───────────────────────────────────────── */
-.cuaderno-h-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1px;
-  background: var(--border, #2a2a2a);
-}
-.cuaderno-h-card { background: var(--black, #0e0e0e); transition: background .2s; }
-.cuaderno-h-card:hover { background: var(--surface, #161616); }
-.cuaderno-h-card-link { display: block; text-decoration: none !important; color: inherit; }
-.cuaderno-h-thumb {
-  width: 100%; aspect-ratio: 4/3;
-  background: var(--surface, #161616);
-  display: flex; align-items: center; justify-content: center;
-  position: relative; overflow: hidden;
-}
-.cuaderno-h-num {
-  position: absolute; top: 12px; left: 12px;
-  font-family: var(--font-display, 'Bebas Neue', sans-serif);
-  font-size: 13px; letter-spacing: .12em;
-  color: var(--gold, #f2c118);
-  background: rgba(14,14,14,.75); padding: 3px 8px; z-index: 2;
-}
-.cuaderno-h-body { padding: 18px 22px 24px; border-top: 1px solid var(--border, #2a2a2a); }
-.cuaderno-h-title {
-  font-family: var(--font-display, 'Bebas Neue', sans-serif);
-  font-size: 21px; letter-spacing: .04em; line-height: 1.1;
-  margin: 0 0 8px; color: var(--white, #f5f4ef);
-  text-decoration: none !important;
-}
-.cuaderno-h-excerpt {
-  font-size: 13px; font-weight: 300; line-height: 1.65;
-  color: rgba(245,244,239,.5); margin: 0;
-}
-@media (max-width: 640px) { .cuaderno-h-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 480px) { .cuaderno-h-grid { grid-template-columns: 1fr; } }
