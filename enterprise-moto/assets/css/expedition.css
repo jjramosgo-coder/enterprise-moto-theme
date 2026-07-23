@@ -75,14 +75,14 @@
   border-radius: 2px;
 }
 .exp-status-badge.is-live {
-  background: rgba(224, 48, 48, .15);
-  border: 1px solid rgba(224, 48, 48, .3);
-  color: #ff6b6b;
+  background: rgba(var(--live-rgb), .15);
+  border: 1px solid rgba(var(--live-rgb), .3);
+  color: var(--live-text);
 }
 .exp-status-badge.is-done {
-  background: rgba(26, 154, 74, .15);
-  border: 1px solid rgba(26, 154, 74, .3);
-  color: #4ade80;
+  background: rgba(var(--done-rgb), .15);
+  border: 1px solid rgba(var(--done-rgb), .3);
+  color: var(--done);
 }
 .exp-status-badge.is-prep {
   background: rgba(var(--gold-rgb), .12);
@@ -94,7 +94,7 @@
 .live-dot {
   width: 7px;
   height: 7px;
-  background: #ff6b6b;
+  background: var(--live-text);
   border-radius: 50%;
   flex-shrink: 0;
   animation: live-blink 1.2s ease-in-out infinite;
@@ -247,7 +247,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  background: #e03030;
+  background: var(--live);
   color: var(--white);
   font-family: var(--font-display);
   font-size: 12px;
@@ -323,7 +323,7 @@
   font-weight: 700;
   letter-spacing: .1em;
   text-transform: uppercase;
-  color: #e03030;
+  color: var(--live);
 }
 
 /* ─────────────────────────────────────────
@@ -424,10 +424,10 @@
   color: var(--white);
 }
 .exp-tl-dot.is-active {
-  background: #e03030;
-  border-color: #e03030;
+  background: var(--live);
+  border-color: var(--live);
   color: var(--white);
-  box-shadow: 0 0 0 6px rgba(224, 48, 48, .1);
+  box-shadow: 0 0 0 6px rgba(var(--live-rgb), .1);
 }
 .exp-tl-connector {
   flex: 1;
@@ -457,7 +457,7 @@
 }
 .exp-tl-card.is-latest {
   border-width: 2px;
-  border-color: #e03030;
+  border-color: var(--live);
 }
 
 .exp-tl-thumb {

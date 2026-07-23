@@ -47,6 +47,15 @@ SPDX-License-Identifier: GPL-3.0-or-later
   --tip-atencion-bg: #FAEEDA; --tip-atencion-border: #BA7517; --tip-atencion-label: #854F0B; --tip-atencion-body: #633806;
   --tip-peligro-bg: #FCEBEB;  --tip-peligro-border: #E24B4A;  --tip-peligro-label: #A32D2D;  --tip-peligro-body: #791F1F;
 
+  /* estado (funcional) */
+  --live:            #e03030;    /* rojo activo/latest (sólido) */
+  --live-rgb:        224,48,48;  /* canal de --live para washes/glow */
+  --live-text:       #ff6b6b;    /* rojo claro: texto de badge live y punto live */
+  --done:            #4ade80;    /* verde texto finalizado */
+  --done-rgb:        26,154,74;  /* canal del wash verde (fondo/borde de badge) */
+  --youtube-red:     #ff0000;    /* rojo de marca YouTube (icono de canal) */
+  --youtube-red-rgb: 255,0,0;    /* canal para el overlay de YouTube */
+
   --font-display: 'Bebas Neue', sans-serif;
   --font-body:    'DM Sans', sans-serif;
   --font-serif:   'DM Serif Display', serif;
