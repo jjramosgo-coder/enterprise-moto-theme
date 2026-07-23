@@ -51,7 +51,7 @@
 /* Bloque de código */
 .ent-markdown pre {
   background: var(--black);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-dk);
   border-radius: 4px;
   padding: 16px 20px;
   overflow-x: auto;
@@ -59,7 +59,7 @@
 }
 .ent-markdown pre code {
   background: none;
-  color: #e0e0e0;
+  color: var(--ink-lt);
   padding: 0;
   font-size: .85em;
   border-radius: 0;
@@ -78,7 +78,7 @@
 /* Separador horizontal */
 .ent-markdown hr {
   border: none;
-  border-top: 1px solid var(--border, #2a2a2a);
+  border-top: 1px solid var(--border);
   margin: 2em 0;
 }
 
@@ -100,7 +100,7 @@
 }
 .ent-markdown td {
   padding: 8px 12px;
-  border-bottom: 1px solid var(--border, #2a2a2a);
+  border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
 .ent-markdown tr:last-child td { border-bottom: none; }

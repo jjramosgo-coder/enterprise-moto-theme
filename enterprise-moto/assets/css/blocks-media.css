@@ -244,7 +244,7 @@
 .ent-stories-viewer {
   position: fixed;
   inset: 0;
-  background: #000;
+  background: var(--media-bg);
   z-index: 99999;
   display: flex;
   flex-direction: column;
