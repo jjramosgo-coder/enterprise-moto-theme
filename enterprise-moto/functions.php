@@ -912,6 +912,81 @@ add_action( 'wp_head', 'enterprise_emit_brand_icons' );
 remove_action( 'wp_head', 'wp_site_icon', 99 );
 
 /* ─────────────────────────────────────────
+   IDENTIDAD DE MARCA: Open Graph / Twitter Card
+───────────────────────────────────────── */
+
+/**
+ * Emite las etiquetas Open Graph + Twitter Card para las previsualizaciones al
+ * compartir enlaces. og:image de marca único para todo el sitio; título y
+ * descripción siguen a la página actual. Mismas convenciones que
+ * enterprise_emit_brand_icons() (hook wp_head, get_theme_file_path/uri +
+ * filemtime para la imagen, escapado).
+ */
+function enterprise_emit_og_tags() {
+	$is_singular = is_singular();
+
+	// Título / descripción siguen a la página; la imagen es siempre la de marca.
+	if ( is_front_page() || is_home() ) {
+		$og_title = get_bloginfo( 'name' );
+		$og_desc  = get_bloginfo( 'description' );
+		$og_url   = home_url( '/' );
+		$og_type  = 'website';
+	} elseif ( $is_singular ) {
+		$og_title = wp_get_document_title();
+		$excerpt  = has_excerpt() ? get_the_excerpt() : wp_trim_words( wp_strip_all_tags( get_post_field( 'post_content', get_queried_object_id() ) ), 40, '…' );
+		$og_desc  = $excerpt !== '' ? $excerpt : get_bloginfo( 'description' );
+		$og_url   = get_permalink();
+		$og_type  = 'article';
+	} else {
+		$og_title = wp_get_document_title();
+		$og_desc  = get_bloginfo( 'description' );
+		$og_url   = home_url( '/' );
+		$og_type  = 'website';
+	}
+
+	// Imagen de marca (única, para todo el sitio); URL absoluta + cache-busting.
+	$img_rel  = 'assets/images/og-image.png';
+	$img_path = get_theme_file_path( $img_rel );
+	$img_uri  = file_exists( $img_path )
+		? add_query_arg( 'ver', filemtime( $img_path ), get_theme_file_uri( $img_rel ) )
+		: '';
+
+	$tags = array(
+		array( 'property', 'og:type',        $og_type ),
+		array( 'property', 'og:site_name',   get_bloginfo( 'name' ) ),
+		array( 'property', 'og:locale',      get_locale() ),
+		array( 'property', 'og:title',       $og_title ),
+		array( 'property', 'og:description', $og_desc ),
+		array( 'property', 'og:url',         $og_url ),
+	);
+	if ( $img_uri !== '' ) {
+		$tags[] = array( 'property', 'og:image',        $img_uri );
+		$tags[] = array( 'property', 'og:image:type',   'image/png' );
+		$tags[] = array( 'property', 'og:image:width',  '1200' );
+		$tags[] = array( 'property', 'og:image:height', '630' );
+		$tags[] = array( 'property', 'og:image:alt',    'Bitácora Enterprise' );
+	}
+	// La Twitter Card refleja los valores og.
+	$tags[] = array( 'name', 'twitter:card',        'summary_large_image' );
+	$tags[] = array( 'name', 'twitter:title',       $og_title );
+	$tags[] = array( 'name', 'twitter:description', $og_desc );
+	if ( $img_uri !== '' ) {
+		$tags[] = array( 'name', 'twitter:image',   $img_uri );
+	}
+
+	foreach ( $tags as $t ) {
+		list( $attr, $key, $val ) = $t;
+		if ( $val === '' || $val === null ) {
+			continue;
+		}
+		$val = ( $key === 'og:image' || $key === 'og:url' || $key === 'twitter:image' )
+			? esc_url( $val ) : esc_attr( $val );
+		printf( "<meta %s=\"%s\" content=\"%s\">\n", esc_attr( $attr ), esc_attr( $key ), $val );
+	}
+}
+add_action( 'wp_head', 'enterprise_emit_og_tags', 5 );
+
+/* ─────────────────────────────────────────
    PERMITIR SUBIDA DE ARCHIVOS GPX
    a la biblioteca de medios de WordPress
 ───────────────────────────────────────── */
