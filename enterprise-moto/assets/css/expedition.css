@@ -229,7 +229,7 @@
 .exp-latest-img-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(14,14,14,.65) 0%, transparent 55%);
+  background: linear-gradient(to top, rgba(var(--black-rgb),.65) 0%, transparent 55%);
   pointer-events: none;
   z-index: 1;
 }
@@ -451,7 +451,7 @@
   transition: box-shadow .2s, transform .2s, background .15s;
 }
 .exp-tl-card:hover {
-  box-shadow: 0 4px 20px rgba(0,0,0,.09);
+  box-shadow: 0 4px 20px rgba(var(--shadow-rgb),.09);
   transform: translateY(-2px);
   text-decoration: none;
 }

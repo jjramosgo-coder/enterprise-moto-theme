@@ -24,7 +24,7 @@
   transition: box-shadow .2s, transform .2s;
 }
 .ent-trip-collection .trip-card:hover {
-  box-shadow: 0 6px 24px rgba(0,0,0,.09);
+  box-shadow: 0 6px 24px rgba(var(--shadow-rgb),.09);
   transform: translateY(-3px);
 }
 

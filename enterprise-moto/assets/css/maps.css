@@ -77,7 +77,7 @@
   border: 3px solid var(--gold);
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
-  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  box-shadow: 0 2px 8px rgba(var(--shadow-rgb),.3);
   transition: transform .15s;
 }
 .ent-marker:hover { transform: rotate(-45deg) scale(1.15); }

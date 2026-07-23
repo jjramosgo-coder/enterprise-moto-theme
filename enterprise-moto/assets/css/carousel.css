@@ -132,7 +132,7 @@
   transition: box-shadow .2s, transform .2s;
 }
 .ent-card:hover {
-  box-shadow: 0 6px 24px rgba(0,0,0,.1);
+  box-shadow: 0 6px 24px rgba(var(--shadow-rgb),.1);
   transform: translateY(-3px);
   text-decoration: none;
 }
@@ -169,7 +169,7 @@
 }
 .ent-card__cat {
   position: absolute; bottom: 0; left: 0;
-  background: rgba(14,14,14,.7); backdrop-filter: blur(4px);
+  background: rgba(var(--black-rgb),.7); backdrop-filter: blur(4px);
   color: var(--white); font-size: 10px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase;
   padding: 4px 10px;
@@ -263,7 +263,7 @@
   transition: box-shadow .2s, transform .2s;
 }
 .ent-tl-card:hover {
-  box-shadow: 0 4px 20px rgba(0,0,0,.09);
+  box-shadow: 0 4px 20px rgba(var(--shadow-rgb),.09);
   transform: translateY(-2px);
   text-decoration: none;
 }
