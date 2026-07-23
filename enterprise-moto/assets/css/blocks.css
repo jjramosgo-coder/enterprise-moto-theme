@@ -120,13 +120,13 @@
 .wp-block-social-link:hover .wp-block-social-link-anchor { color: var(--white) !important; }
 
 /* ── Colores custom palette ── */
-.has-negro-color  { color: #0e0e0e !important; }
-.has-dorado-color { color: #f2c118 !important; }
-.has-blanco-color { color: #ffffff !important; }
-.has-gris-color   { color: #5a5a5a !important; }
-.has-negro-background-color  { background-color: #0e0e0e !important; }
-.has-dorado-background-color { background-color: #f2c118 !important; }
-.has-crema-background-color  { background-color: #f5f5f2 !important; }
+.has-negro-color  { color: var(--black) !important; }
+.has-dorado-color { color: var(--gold) !important; }
+.has-blanco-color { color: var(--white) !important; }
+.has-gris-color   { color: var(--mid) !important; }
+.has-negro-background-color  { background-color: var(--black) !important; }
+.has-dorado-background-color { background-color: var(--gold) !important; }
+.has-crema-background-color  { background-color: var(--surface) !important; }
 
 /* ── Responsive blocks ── */
 @media (max-width: 640px) {

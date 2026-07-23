@@ -50,7 +50,7 @@
 
 /* Bloque de código */
 .ent-markdown pre {
-  background: #0e0e0e;
+  background: var(--black);
   border: 1px solid #2a2a2a;
   border-radius: 4px;
   padding: 16px 20px;

@@ -66,7 +66,7 @@
   position: absolute;
   bottom: 0; left: 0; right: 0;
   background: linear-gradient(transparent, rgba(0,0,0,.75));
-  color: #fff;
+  color: var(--white);
   font-size: 13px;
   padding: 20px 16px 10px;
   line-height: 1.4;
@@ -78,7 +78,7 @@
   position: absolute;
   top: 50%; transform: translateY(-50%);
   background: rgba(0,0,0,.55);
-  color: #fff;
+  color: var(--white);
   border: none;
   width: 40px; height: 40px;
   border-radius: 50%;
@@ -116,7 +116,7 @@
   position: absolute;
   top: 10px; right: 10px;
   background: rgba(0,0,0,.45);
-  color: #fff;
+  color: var(--white);
   border: none;
   width: 32px; height: 32px;
   border-radius: 50%;
@@ -165,14 +165,14 @@
   position: fixed;
   top: 16px; right: 20px;
   background: none; border: none;
-  color: #fff; font-size: 24px; cursor: pointer; opacity: .7;
+  color: var(--white); font-size: 24px; cursor: pointer; opacity: .7;
 }
 .ent-lb-close:hover { opacity: 1; }
 .ent-lb-prev, .ent-lb-next {
   position: fixed;
   top: 50%; transform: translateY(-50%);
   background: rgba(255,255,255,.1);
-  border: none; color: #fff;
+  border: none; color: var(--white);
   width: 48px; height: 48px;
   border-radius: 50%;
   font-size: 26px; cursor: pointer;
@@ -273,7 +273,7 @@
 .ent-stories-fill {
   height: 100%;
   width: 0%;
-  background: #fff;
+  background: var(--white);
   transition: none; /* controlado por JS */
 }
 .ent-stories-bar.is-done .ent-stories-fill { width: 100%; }
@@ -290,14 +290,14 @@
   padding-top: 8px;
 }
 .ent-stories-label {
-  color: #fff;
+  color: var(--white);
   font-size: 13px;
   font-weight: 600;
   text-shadow: 0 1px 4px rgba(0,0,0,.6);
 }
 .ent-stories-close {
   background: none; border: none;
-  color: #fff; font-size: 22px; cursor: pointer;
+  color: var(--white); font-size: 22px; cursor: pointer;
   opacity: .85; line-height: 1;
 }
 .ent-stories-close:hover { opacity: 1; }
@@ -330,7 +330,7 @@
   position: absolute;
   bottom: 0; left: 0; right: 0;
   background: linear-gradient(transparent, rgba(0,0,0,.8));
-  color: #fff;
+  color: var(--white);
   font-size: 14px;
   padding: 32px 20px 24px;
   text-align: center;
