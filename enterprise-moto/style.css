@@ -30,6 +30,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
   --white-rgb:  255,255,255;   /* canal de --white para rgba() */
   --black-rgb:  14,14,14;   /* canal de --black (#0e0e0e) para rgba() — MARCA */
   --shadow-rgb: 0,0,0;      /* negro puro para sombras y scrims — funcional */
+  --gold-rgb:   242,193,24;   /* canal de --gold (#f2c118) para rgba() — MARCA */
   --ink:        #3a3a3a;   /* texto de cuerpo sobre claro — MARCA */
   --border-dk:  #2a2a2a;   /* borde oscuro (contrapartida de --border) — MARCA */
   --media-bg:   #000;      /* fondo de visor de media — funcional */
@@ -38,7 +39,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
   --ink-lt-2:   #f0f0f0;   /* texto claro sobre oscuro (youtube) — funcional */
   --gold:       #f2c118;
   --gold-dk:    #c9a010;
-  --gold-lt:    rgba(242,193,24,0.10);
+  --gold-lt:    rgba(var(--gold-rgb), 0.10);
 
   --font-display: 'Bebas Neue', sans-serif;
   --font-body:    'DM Sans', sans-serif;
@@ -500,7 +501,7 @@ button { cursor: pointer; }
 .about-image img { width: 100%; height: 100%; object-fit: cover; }
 .about-image-frame {
   position: absolute; top: -12px; right: -12px; bottom: 12px; left: 12px;
-  border: 1.5px solid rgba(242,193,24,.3); pointer-events: none; z-index: 1;
+  border: 1.5px solid rgba(var(--gold-rgb),.3); pointer-events: none; z-index: 1;
 }
 .about-image-badge {
   position: absolute; bottom: 20px; left: -16px;

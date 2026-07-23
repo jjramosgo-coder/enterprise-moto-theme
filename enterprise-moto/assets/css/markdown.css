@@ -42,7 +42,7 @@
 .ent-markdown code {
   font-family: 'Fira Code', 'Cascadia Code', monospace;
   font-size: .88em;
-  background: rgba(242, 193, 24, .1);
+  background: rgba(var(--gold-rgb), .1);
   color: var(--gold);
   padding: .15em .4em;
   border-radius: 3px;
