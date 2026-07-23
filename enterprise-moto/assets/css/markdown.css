@@ -15,7 +15,7 @@
 .ent-markdown h4 {
   font-family: var(--font-display, 'Bebas Neue', sans-serif);
   letter-spacing: .05em;
-  color: var(--gold, #f2c118);
+  color: var(--gold);
   margin: 1.4em 0 .5em;
   line-height: 1.2;
 }
@@ -43,7 +43,7 @@
   font-family: 'Fira Code', 'Cascadia Code', monospace;
   font-size: .88em;
   background: rgba(242, 193, 24, .1);
-  color: var(--gold, #f2c118);
+  color: var(--gold);
   padding: .15em .4em;
   border-radius: 3px;
 }
@@ -67,10 +67,10 @@
 
 /* Citas */
 .ent-markdown blockquote {
-  border-left: 4px solid var(--gold, #f2c118);
+  border-left: 4px solid var(--gold);
   margin: 1em 0;
   padding: .5em 1em;
-  color: var(--mid, #888);
+  color: var(--mid);
   font-style: italic;
 }
 .ent-markdown blockquote p { margin-bottom: 0; }
@@ -91,12 +91,12 @@
 }
 .ent-markdown th {
   background: var(--surface, #1a1a1a);
-  color: var(--gold, #f2c118);
+  color: var(--gold);
   font-family: var(--font-display, 'Bebas Neue', sans-serif);
   letter-spacing: .06em;
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 2px solid var(--gold, #f2c118);
+  border-bottom: 2px solid var(--gold);
 }
 .ent-markdown td {
   padding: 8px 12px;
@@ -107,7 +107,7 @@
 
 /* Enlaces */
 .ent-markdown a {
-  color: var(--gold, #f2c118);
+  color: var(--gold);
   text-decoration: underline;
   text-underline-offset: 3px;
 }

@@ -8,7 +8,7 @@
   font-family: var(--font-display, 'Bebas Neue', sans-serif);
   font-size: clamp(1.4rem, 3vw, 2rem);
   letter-spacing: .06em;
-  color: var(--gold, #f2c118);
+  color: var(--gold);
   margin: 0 0 16px;
 }
 
@@ -38,7 +38,7 @@
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: var(--gold, #f2c118);
+  color: var(--gold);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -223,7 +223,7 @@
 }
 .ent-reels-dot:hover { background: rgba(0,0,0,.45); }
 .ent-reels-dot.is-active {
-  background: var(--gold, #f2c118);
+  background: var(--gold);
   transform: scale(1.4);
 }
 

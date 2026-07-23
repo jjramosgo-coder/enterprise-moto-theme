@@ -952,7 +952,7 @@ button { cursor: pointer; }
   .ent-cursor-dot {
     width:  8px;
     height: 8px;
-    background: var(--gold, #f2c118);
+    background: var(--gold);
     transition: width .15s, height .15s, margin .15s, background .15s;
   }
 
@@ -962,7 +962,7 @@ button { cursor: pointer; }
     height: 36px;
     margin-top:  -18px;
     margin-left: -18px;
-    border: 2px solid var(--gold, #f2c118);
+    border: 2px solid var(--gold);
     background: transparent;
     opacity: 0.85;
     transition: width .2s var(--ease), height .2s var(--ease),
@@ -975,7 +975,7 @@ button { cursor: pointer; }
     height:     4px;
     margin-top: -2px;
     margin-left:-2px;
-    background: var(--black, #0e0e0e);
+    background: var(--black);
   }
 
   .ent-cursor-ring.is-hover {
@@ -983,7 +983,7 @@ button { cursor: pointer; }
     height:      56px;
     margin-top:  -28px;
     margin-left: -28px;
-    border-color: var(--white, #ffffff);
+    border-color: var(--white);
     opacity: 0.95;
   }
 }
