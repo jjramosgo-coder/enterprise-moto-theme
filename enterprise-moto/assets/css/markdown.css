@@ -90,13 +90,13 @@
   margin: 0 0 1em;
 }
 .ent-markdown th {
-  background: var(--surface, #1a1a1a);
-  color: var(--gold);
+  background: var(--surface);
+  color: var(--mid);
   font-family: var(--font-display, 'Bebas Neue', sans-serif);
   letter-spacing: .06em;
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 2px solid var(--gold);
+  border-bottom: 2px solid var(--border);
 }
 .ent-markdown td {
   padding: 8px 12px;
