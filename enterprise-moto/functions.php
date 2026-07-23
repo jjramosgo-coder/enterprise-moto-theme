@@ -10,7 +10,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'ENTERPRISE_VERSION', '2.11.1' );
+define( 'ENTERPRISE_VERSION', '2.11.2' );
 
 /* Tope de nombres distintos en el ticker de la plantilla «Colección de viajes» (#5). */
 if ( ! defined( 'ENTERPRISE_COLECCION_TICKER_MAX' ) ) {
