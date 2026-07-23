@@ -46,49 +46,49 @@
 /* ── Variantes de color ── */
 
 .ent-tip--consejo {
-  background: #E1F5EE;
-  border-color: #1D9E75;
+  background: var(--tip-consejo-bg);
+  border-color: var(--tip-consejo-border);
 }
 .ent-tip--consejo .ent-tip__label,
 .ent-tip--consejo .ent-tip__icon {
-  color: #0F6E56;
+  color: var(--tip-consejo-label);
 }
 .ent-tip--consejo .ent-tip__body {
-  color: #085041;
+  color: var(--tip-consejo-body);
 }
 
 .ent-tip--nota {
-  background: #E6F1FB;
-  border-color: #378ADD;
+  background: var(--tip-nota-bg);
+  border-color: var(--tip-nota-border);
 }
 .ent-tip--nota .ent-tip__label,
 .ent-tip--nota .ent-tip__icon {
-  color: #185FA5;
+  color: var(--tip-nota-label);
 }
 .ent-tip--nota .ent-tip__body {
-  color: #0C447C;
+  color: var(--tip-nota-body);
 }
 
 .ent-tip--atencion {
-  background: #FAEEDA;
-  border-color: #BA7517;
+  background: var(--tip-atencion-bg);
+  border-color: var(--tip-atencion-border);
 }
 .ent-tip--atencion .ent-tip__label,
 .ent-tip--atencion .ent-tip__icon {
-  color: #854F0B;
+  color: var(--tip-atencion-label);
 }
 .ent-tip--atencion .ent-tip__body {
-  color: #633806;
+  color: var(--tip-atencion-body);
 }
 
 .ent-tip--peligro {
-  background: #FCEBEB;
-  border-color: #E24B4A;
+  background: var(--tip-peligro-bg);
+  border-color: var(--tip-peligro-border);
 }
 .ent-tip--peligro .ent-tip__label,
 .ent-tip--peligro .ent-tip__icon {
-  color: #A32D2D;
+  color: var(--tip-peligro-label);
 }
 .ent-tip--peligro .ent-tip__body {
-  color: #791F1F;
+  color: var(--tip-peligro-body);
 }

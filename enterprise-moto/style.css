@@ -41,6 +41,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
   --gold-dk:    #c9a010;
   --gold-lt:    rgba(var(--gold-rgb), 0.10);
 
+  /* tip-box (funcional) */
+  --tip-consejo-bg: #E1F5EE;  --tip-consejo-border: #1D9E75;  --tip-consejo-label: #0F6E56;  --tip-consejo-body: #085041;
+  --tip-nota-bg: #E6F1FB;     --tip-nota-border: #378ADD;     --tip-nota-label: #185FA5;     --tip-nota-body: #0C447C;
+  --tip-atencion-bg: #FAEEDA; --tip-atencion-border: #BA7517; --tip-atencion-label: #854F0B; --tip-atencion-body: #633806;
+  --tip-peligro-bg: #FCEBEB;  --tip-peligro-border: #E24B4A;  --tip-peligro-label: #A32D2D;  --tip-peligro-body: #791F1F;
+
   --font-display: 'Bebas Neue', sans-serif;
   --font-body:    'DM Sans', sans-serif;
   --font-serif:   'DM Serif Display', serif;
