@@ -16,8 +16,16 @@
 
         <!-- Brand -->
         <div>
-          <div class="footer-brand-name"><?php bloginfo( 'name' ); ?></div>
-          <p class="footer-brand-desc"><?php bloginfo( 'description' ); ?></p>
+          <?php
+          $lockup_rel  = 'assets/images/lockup-footer.svg';
+          $lockup_path = get_theme_file_path( $lockup_rel );
+          if ( file_exists( $lockup_path ) ) :
+            $lockup_uri = add_query_arg( 'ver', filemtime( $lockup_path ), get_theme_file_uri( $lockup_rel ) );
+          ?>
+            <img class="footer-brand-lockup" src="<?php echo esc_url( $lockup_uri ); ?>"
+                 alt="<?php esc_attr_e( 'Bitácora Enterprise', 'enterprise-moto' ); ?>">
+          <?php endif; ?>
+          <p class="footer-brand-desc"><?php esc_html_e( 'Viajar en moto por asfalto, disfrutar del camino y contarlo después.', 'enterprise-moto' ); ?></p>
         </div>
 
         <!-- Widget footer 1 -->
