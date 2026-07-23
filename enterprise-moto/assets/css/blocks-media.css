@@ -102,7 +102,7 @@
 .ent-gallery-dot {
   width: 8px; height: 8px;
   border-radius: 50%;
-  background: rgba(255,255,255,.45);
+  background: rgba(var(--white-rgb),.45);
   border: none; cursor: pointer; padding: 0;
   transition: background .2s, transform .2s;
 }
@@ -154,7 +154,7 @@
   border-radius: 3px;
 }
 .ent-lb-caption {
-  color: rgba(255,255,255,.75);
+  color: rgba(var(--white-rgb),.75);
   font-size: 13px;
   margin-top: 10px;
   text-align: center;
@@ -171,7 +171,7 @@
 .ent-lb-prev, .ent-lb-next {
   position: fixed;
   top: 50%; transform: translateY(-50%);
-  background: rgba(255,255,255,.1);
+  background: rgba(var(--white-rgb),.1);
   border: none; color: var(--white);
   width: 48px; height: 48px;
   border-radius: 50%;
@@ -179,7 +179,7 @@
   display: flex; align-items: center; justify-content: center;
   transition: background .2s;
 }
-.ent-lb-prev:hover, .ent-lb-next:hover { background: rgba(255,255,255,.25); }
+.ent-lb-prev:hover, .ent-lb-next:hover { background: rgba(var(--white-rgb),.25); }
 .ent-lb-prev { left: 16px; }
 .ent-lb-next { right: 16px; }
 
@@ -266,7 +266,7 @@
 .ent-stories-bar {
   flex: 1;
   height: 3px;
-  background: rgba(255,255,255,.3);
+  background: rgba(var(--white-rgb),.3);
   border-radius: 2px;
   overflow: hidden;
 }
