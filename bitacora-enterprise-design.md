@@ -2,7 +2,7 @@
 <a id="top"></a>
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Bitácora Enterprise v2.11.3  
+**Tema WordPress:** Bitácora Enterprise v2.12.0  
 **Última revisión:** Julio 2026
 
 ---
@@ -929,6 +929,19 @@ Registro de decisiones de arquitectura del tema. Cada entrada es **autocontenida
 - **Puerta previa sostenida**: se confirmó (comprobación de solo lectura de Juanjo) que **ningún plugin** (Yoast/Rank Math/Jetpack…) emite ya `og:`, de modo que el tema es la fuente y no hay etiquetas duplicadas.
 
 **Consecuencias.** Compartir cualquier URL del blog muestra una tarjeta de marca coherente y controlada por el tema, no una imagen de *fallback* arbitraria; coherente con §13.15 (la marca es código del tema versionado). Principio transferible: la **tarjeta social de marca** es un activo del tema versionado emitido desde `wp_head`, no configuración de instancia ni delegación en un plugin. **Fuera de alcance** (posibles TO-DOs si se piden): `og:image` **por-entrada** (foto de portada de la ruta, con *fallback* a la de marca), `og:url` canónica por-archivo, y schema.org/JSON-LD / etiquetas `article:*`. (#29, v2.11.0)
+
+### 13.18 Tokenización del color del CSS (contrato «ningún literal fuera de `:root`»)
+
+**Contexto.** El CSS del tema (`style.css` + `assets/css/*.css`) tenía color **hardcodeado** de forma extendida: literales que coincidían con tokens ya existentes, *fallbacks* inertes `var(--token, #literal)`, escalas translúcidas `rgba()` sin token y familias funcionales (tip-box, estados, gradientes decorativos) en literal. Surgió al documentar la «Paleta Editorial» del manual de marca (§3.2 del manual). Dato de diagnóstico que corrigió suposiciones previas: el **contenido de artículo es de fondo blanco** (`body { background: var(--white) }`; `.entry-content` = texto oscuro sobre claro); lo oscuro (`#0e0e0e`/`#1a1a1a`) es solo el *chrome* (nav/footer/hero/portal).
+
+**Decisión.** Tokenizar todo el color del CSS bajo un contrato: **ningún literal de color en uso fuera de `:root`** — los valores hex/rgb solo viven en las definiciones de token. Se hizo por **equivalencia** (sin cambiar ningún valor), en dos fases:
+
+- **Lote 1 (mecánico, v2.11.1):** 23 literales puros iguales a un token → su `var(--token)`; retirada de 20 *fallbacks* inertes; retirada del token muerto `--surface-dk`.
+- **Frente b (esquema de tokens, v2.12.0), 8 familias**, con dos técnicas nuevas: (i) **token de canal** `--x-rgb` (p. ej. `--white-rgb: 255,255,255`) para las escalas `rgba()`, dejando el **alfa inline** (la opacidad no es un color a tokenizar); (ii) **token de gradiente-completo** `--grad-*: linear-gradient(…)` para los fondos decorativos (centraliza el valor y deduplica los reutilizados —el degradado *slate* estaba repetido 4×—).
+
+Se aplicó la **distinción rectora marca vs funcional** por familia. **MARCA** (identidad, alineada a la Paleta Editorial §3.2): `--white-rgb`/`--black-rgb`/`--gold-rgb` (canales de colores de marca ya existentes) y **dos colores nuevos**, `--ink` (`#3a3a3a`, texto de cuerpo sobre claro) y `--border-dk` (`#2a2a2a`, borde oscuro). **FUNCIONAL** (del sistema del tema, no identidad): `--shadow-rgb`, `--media-bg`/`--media-bg-2`, `--ink-lt`/`--ink-lt-2`, el set semántico `--tip-*` (16), los colores de estado (`--live`/`--done`/`--youtube-red` + sus canales) y los `--grad-*` (10); el token muerto `--light-mid` se **revivió** como funcional.
+
+**Consecuencias.** El color del tema queda gobernado por `:root`: cambiar un tono es editar una línea. Principio transferible: **el color es un token del sistema de diseño, no un literal disperso**; la frontera marca/funcional decide qué entra en la Paleta Editorial —se reporta al Branding Copilot para incorporar `--ink` y `--border-dk` al manual (§3.2), TO-DO #37— y qué es funcional del tema. **Fuera de alcance** (por acoplamiento conocido, sin tocar y sin cambiar valores): el color en **JS** (pines/rutas de los mapas, *preview* de tip-box en el editor) y la paleta del editor en `functions.php` (`editor-color-palette`, donde `var()` no es usable). Derivaron #33 (CSS muerto `.cuaderno-h-*`), #34 (cabecera de tabla markdown, dorado sobre claro) y #35 (descartado, no-bug). (#32, v2.12.0)
 
 ---
 
