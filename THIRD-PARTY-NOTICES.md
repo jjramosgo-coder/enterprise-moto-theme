@@ -9,6 +9,7 @@ del tema. Se listan aquí para cumplir sus condiciones de atribución.
 | Componente | Ubicación | Licencia | Copyright |
 |---|---|---|---|
 | **Parsedown** | `enterprise-moto/inc/Parsedown.php` | MIT | © Emanuil Rusev, erusev.com |
+| **simplemaps SVG maps** | `enterprise-moto/assets/maps/` | Free for Commercial and Personal Use (attribution appreciated) | © Pareto Software, LLC DBA Simplemaps.com |
 
 > **Estado (verificado, jul 2026):**
 >
@@ -17,6 +18,12 @@ del tema. Se listan aquí para cumplir sus condiciones de atribución.
 >   `setSafeMode(true)`) como conversor de Markdown → HTML. Se mantiene mientras esos
 >   bloques existan; conserva su aviso MIT (© Emanuil Rusev), presente en la cabecera del
 >   propio fichero.
+> - **simplemaps SVG maps — empaquetados.** Los SVG de regiones administrativas de
+>   `enterprise-moto/assets/maps/` (nivel-1 de Europa y subdivisiones de es/it/fr/pt/ad)
+>   respaldan el bloque «Mapa interactivo de regiones» (#41); en esta fase se incorporan como
+>   activos versionados y aún no se encolan. Se conserva **in-file** el comentario de
+>   copyright de simplemaps al inicio de cada fichero por país; la atribución consta también
+>   en `COPYRIGHT.md`.
 
 ## Componentes cargados desde CDN (no empaquetados)
 
