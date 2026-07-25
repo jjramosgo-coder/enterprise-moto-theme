@@ -2,7 +2,7 @@
 <a id="top"></a>
 
 **Blog:** bitacoraenterprise.com  
-**Tema WordPress:** Bitácora Enterprise v2.12.0  
+**Tema WordPress:** Bitácora Enterprise v2.13.0  
 **Última revisión:** Julio 2026
 
 ---
@@ -965,6 +965,8 @@ Se aplicó la **distinción rectora marca vs funcional** por familia. **MARCA** 
 - **Bloque III — Explotación del contenido (depende del Bloque II):** #46 redirect de nivel-3 con nuevo contexto `from_region` (contrato §6/§13.1); #47 UX del editor; #48 globo completo.
 
 **Sin bump de versión:** los bumps se harán al cerrar y validar cada fase, no en este plan. **Riesgos registrados:** (1) estabilidad del **contrato de codificación** entre la herramienta externa y los `id` de los SVG (si la fuente cambiara sus `id`, las keys dejarían de casar); (2) **agregación por tipo de contenido** — las keys viven en la etapa; cómo afloran los viajes (Tipo D) y los listados en el destino es el punto de diseño mayor de #46; (3) peso de admin2 (it 160 KB, fr 176 KB) → carga perezosa; (4) accesibilidad de *paths* irregulares; (5) coordinación de #43 con #39 (categoría de bloques). Brief (planificación, archivado tras diseñar el plan): `claude/requirements/closed/requirements-41-mapa-regiones-interactivo.md`.
+
+**[#42 · Fase I.1 — cerrada, v2.13.0].** Activos del mapa de regiones incorporados al `assets/` versionado en `enterprise-moto/assets/maps/` (9 SVG): `europe.svg` (nivel-1, proyección Robinson, 44 países con `id` ISO alpha-2, incluye `AD`), ES **con islas** (`es-regiones` 19 / `es-provincias` 52), `it-reg` 20 / `it-prov` 107, `fr-reg` 13 / `fr-prov` 96, `pt-prov` (20 distritos) y `ad-prov` (7 parroquias); los contornos `pt.svg`/`ad.svg` (solo país) no se llevaron. **Única normalización aplicada:** `viewbox`→`viewBox` (los ficheros traían el valor pero con la caja mal escrita, que el navegador ignora por ser el atributo sensible a mayúsculas). Se conservan `width`/`height`, así que el escalado intrínseco no cambia: el `viewBox` correcto importa por **conformidad** y porque la **transición de `viewBox` es el mecanismo de «zoom» de #44**, no por efecto visible ahora. Comentario de copyright de simplemaps preservado in-file; atribución en `THIRD-PARTY-NOTICES.md` y `COPYRIGHT.md` (nueva fila para `assets/maps/`). **Lista canónica de códigos congelada** en `assets/maps/region-codes.json` (`level1` = 44 países; `countries` con es/it/fr en `admin1`+`admin2` y pt/ad en `collapsed`/`levels`), fuente del contrato #45; códigos país = ISO alpha-2, región = ISO 3166-2 prefijada por el país. Proyección europe (Robinson) ≠ países (Mercator): el salto nivel-1→país es transición de `viewBox` completa (la continuidad de lienzo solo se garantiza **dentro** de los niveles de un país). Nombres de `level1` en **inglés** (extraídos verbatim de `europe.svg` por §3.6), mientras los de región salen en local (p. ej. `ESAN`→«Andalucía»); una capa de nombres de visualización localizada al español para el globo se aborda en **#49** (alimenta #48). Implementado por el Desarrollador en 2 commits (`cc1cff2` activos; `fbe2d82` licensing + `region-codes.json` fusionados —el mensaje solo refleja el licensing—, historia no reescrita, precedente #33/#20) y validado por Juanjo en WordPress real.
 
 ---
 
