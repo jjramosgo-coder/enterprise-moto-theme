@@ -1,0 +1,16 @@
+/*
+ * Enterprise Moto — interactive-region-map.css
+ * Bloque "Mapa interactivo de regiones" (#43). Solo dimensionado responsive:
+ * evita que el SVG (ancho intrínseco 1000px) desborde en móvil.
+ * El color por región y los tokens editoriales son #47/#48; aquí NO hay tematización.
+ */
+.ent-region-map {
+	max-width: 900px;
+	margin-inline: auto;
+}
+
+.ent-region-map svg {
+	display: block;
+	width: 100%;
+	height: auto;
+}
