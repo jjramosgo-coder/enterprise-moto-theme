@@ -944,6 +944,28 @@ Se aplicó la **distinción rectora marca vs funcional** por familia. **MARCA** 
 
 **Consecuencias.** El color del tema queda gobernado por `:root`: cambiar un tono es editar una línea. Principio transferible: **el color es un token del sistema de diseño, no un literal disperso**; la frontera marca/funcional decide qué entra en la Paleta Editorial —se reporta al Branding Copilot para incorporar `--ink` y `--border-dk` al manual (§3.2), TO-DO #37— y qué es funcional del tema. **Fuera de alcance** (por acoplamiento conocido, sin tocar y sin cambiar valores): el color en **JS** (pines/rutas de los mapas, *preview* de tip-box en el editor) y la paleta del editor en `functions.php` (`editor-color-palette`, donde `var()` no es usable). Derivaron #33 (CSS muerto `.cuaderno-h-*`), #34 (cabecera de tabla markdown, dorado sobre claro) y #35 (descartado, no-bug). (#32, v2.12.0)
 
+### 13.19 Plan del bloque «Mapa interactivo de regiones» (#41)
+
+**Contexto.** #41 encarga un paradigma **alternativo y complementario** a los mapas OpenLayers/OSM (§8): un mapa vectorial cuya unidad es la **región administrativa como `<path>` SVG** (choropleth: clic/hover/color por región), sin *tiles* ni coordenadas reales. **No sustituye ni reutiliza** el motor de los bloques de mapa existentes; `routes-by-location` (§13.12/§13.13) es **caso de referencia**, no algo a reutilizar (invariante «no tomes el todo por la parte»). El encargo era **diseñar un plan** (fases, decisiones, sub-TODOs), no código. Fuente SVG en `claude/res/svg-maps/` (es/pt/it/fr/ad), verificada: cada región es un `<path>` con `id`+`name` (p. ej. `IT52`).
+
+**Decisión (siete decisiones arbitradas con el operador).**
+
+- **Fuente y licencia:** SVG libres de simplemaps ya en disco; atribución **obligatoria** en `THIRD-PARTY-NOTICES.md`/`COPYRIGHT.md` al llevar cualquier activo al `assets/` versionado (GPL-compat; *caveat* «no redistribuir la colección tal cual»).
+- **Motor:** **nativo** — SVG en línea + vanilla JS (delegación de eventos para hover/clic/tooltip; `viewBox`+*pointer-events* para zoom), sin *build*; `svg-pan-zoom` reservado solo a pan/zoom táctil si hace falta. Descartada librería dedicada (jsVectorMap): impondría su formato y descartaría el activo `id`/`name`.
+- **Jerarquía y activos:** **un SVG por nivel**, carga progresiva; «zoom» = transición de `viewBox` al *bounding box* de la región. Los SVG por nivel de un país comparten lienzo (verificado), así que el *swap* entre niveles no rompe la continuidad.
+- **Cobertura y niveles:** modelo **país → región → provincia** (tres niveles administrativos; el clic de provincia redirige). Nivel-1 = **mapa multi-país de Europa** (es·pt·it·fr·ad). Regla de **colapso** para países con activos incompletos (pt sin admin1: 20 distritos; ad: 7 parroquias). Números verificados: es 19/52, it 20/107, fr 13/96, pt —/20, ad 7/—.
+- **Modelo región↔contenido (definición, no solución):** la unidad de asociación es el **track (GPX)** de una etapa (Tipo B/C, §3); un track **pertenece a las unidades por las que pasa** → un **conjunto de keys por nivel** (nivel-1 país [mapeo seguro]; nivel-2 dependiente del país [ES: CC.AA.]; nivel-3 si existe [ES: provincias]). Las keys se **cocinan con herramientas externas** al tema y viajan en un **metadato JSON** de la etapa; el tema solo las **consume**. El **cómo/dónde** viven en el post y la generación externa quedan **fuera del alcance de este plan** (responsabilidad del Arquitecto ejecutor). Contrato clave: las keys usan la **misma codificación** que los `id` de los SVG.
+- **UX del editor:** el autor personaliza por región **color** (por tokens, §13.18) y **descripción** editorial; navegación **automática** (sin URL manual) y sin estado «visitado».
+- **Globo de hover:** nombre + nº de entradas relacionadas + descripción editorial + pista de acción (varía por nivel: «acercar» / «ver entradas»).
+
+**Consecuencias.** El plan se ejecuta en **tres bloques** y **siete fases**, cada una con su sub-TODO y su futuro documento de requisitos Arquitecto→Desarrollador:
+
+- **Bloque I — Infraestructura mínima de renderización:** #42 activos; #43 esqueleto del bloque `enterprise/interactive-region-map` + render estático; #44 navegación (hover, clic-zoom, colapso, táctil, accesibilidad, volver).
+- **Bloque II — Contrato de consumo de keys:** #45 (tras el Bloque I; solo depende del vocabulario de códigos de #42).
+- **Bloque III — Explotación del contenido (depende del Bloque II):** #46 redirect de nivel-3 con nuevo contexto `from_region` (contrato §6/§13.1); #47 UX del editor; #48 globo completo.
+
+**Sin bump de versión:** los bumps se harán al cerrar y validar cada fase, no en este plan. **Riesgos registrados:** (1) estabilidad del **contrato de codificación** entre la herramienta externa y los `id` de los SVG (si la fuente cambiara sus `id`, las keys dejarían de casar); (2) **agregación por tipo de contenido** — las keys viven en la etapa; cómo afloran los viajes (Tipo D) y los listados en el destino es el punto de diseño mayor de #46; (3) peso de admin2 (it 160 KB, fr 176 KB) → carga perezosa; (4) accesibilidad de *paths* irregulares; (5) coordinación de #43 con #39 (categoría de bloques). Brief: `claude/requirements/requirements-41-mapa-regiones-interactivo.md`.
+
 ---
 
 *Documentación generada en Mayo 2026. Para actualizar este documento tras cambios en el tema, revisar especialmente las secciones 3 (tipos de entrada), 4 (cuaderno) y 11 (campos personalizados).*
