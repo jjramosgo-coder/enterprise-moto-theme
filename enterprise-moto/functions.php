@@ -1530,6 +1530,29 @@ function enterprise_register_map_blocks() {
         ),
         'supports' => array( 'html' => false, 'align' => array( 'wide', 'full' ) ),
     ) );
+
+    /* ── Bloque interactive-region-map (#43) ──
+       Mapa coroplético SVG nativo de regiones (nivel-1, Europa). NO reutiliza el
+       motor OpenLayers (§13.19). Fase #43: esqueleto + render inline estático del
+       SVG; sin interactividad (#44) ni personalización por región (#47). Se registra
+       SIN clave 'category' (la agrupación bajo «Enterprise Moto» es #39) y sin
+       'attributes' (los atributos por-región son #47). */
+    require_once get_template_directory() . '/blocks/interactive-region-map/render.php';
+
+    wp_register_script(
+        'enterprise-block-interactive-region-map',
+        get_template_directory_uri() . '/assets/js/block-interactive-region-map.js',
+        array( 'wp-blocks', 'wp-element', 'wp-block-editor' ),
+        filemtime( get_template_directory() . '/assets/js/block-interactive-region-map.js' ),
+        true
+    );
+
+    register_block_type( 'enterprise/interactive-region-map', array(
+        'api_version'     => 3,
+        'editor_script'   => 'enterprise-block-interactive-region-map',
+        'render_callback' => 'enterprise_render_interactive_region_map_block',
+        'supports'        => array( 'html' => false, 'align' => array( 'wide', 'full' ) ),
+    ) );
 }
 add_action( 'init', 'enterprise_register_map_blocks' );
 
@@ -1581,6 +1604,27 @@ function enterprise_map_frontend_assets() {
     );
 }
 add_action( 'wp_enqueue_scripts', 'enterprise_map_frontend_assets' );
+
+/* ─────────────────────────────────────────
+   CSS DEL BLOQUE interactive-region-map (#43)
+   Nativo SVG: NO carga OpenLayers ni comparte enterprise_map_frontend_assets()
+   (§13.19). Solo dimensionado responsive, encolado condicional por has_block.
+───────────────────────────────────────── */
+function enterprise_region_map_assets() {
+    if ( ! is_singular() && ! is_page() ) return;
+    $post = get_queried_object();
+    if ( ! $post || ! isset( $post->post_content ) ) return;
+    if ( ! has_block( 'enterprise/interactive-region-map', $post ) ) return;
+
+    $css_path = get_template_directory() . '/assets/css/interactive-region-map.css';
+    wp_enqueue_style(
+        'enterprise-interactive-region-map',
+        get_template_directory_uri() . '/assets/css/interactive-region-map.css',
+        array( 'enterprise-style' ),
+        file_exists( $css_path ) ? filemtime( $css_path ) : ENTERPRISE_VERSION
+    );
+}
+add_action( 'wp_enqueue_scripts', 'enterprise_region_map_assets' );
 function enterprise_register_blocks() {
     // Cargar el render callback
     require_once get_template_directory() . '/blocks/post-stages/render.php';
