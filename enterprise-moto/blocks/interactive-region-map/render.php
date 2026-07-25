@@ -32,7 +32,7 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 	   nodos <path>. No se pasa por wp_kses_* (eliminaría elementos/atributos SVG). */
 	ob_start();
 	?>
-	<div class="ent-region-map" data-map-level="1">
+	<div class="ent-region-map" data-map-level="1" data-maps-base="<?php echo esc_url( get_template_directory_uri() . '/assets/maps/' ); ?>">
 		<?php echo $svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — activo SVG GPL de confianza, ver nota superior. ?>
 	</div>
 	<?php
