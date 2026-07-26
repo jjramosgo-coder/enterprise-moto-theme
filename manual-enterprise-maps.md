@@ -1,10 +1,10 @@
 # Enterprise Maps — asset manual (for AI agents)
 
 This manual documents the **map data assets** of the Enterprise Moto theme. Its reader is
-**another AI agent**: read this manual first, then you can locate an asset in this folder
+**another AI agent**: read this manual first, then you can locate an asset in the folder
 (`claude/res/`) and **update its content** without breaking the agreed conventions.
 
-- One entry per asset. Assets live **next to this manual**, in `claude/res/`.
+- One entry per asset. Assets live in `claude/res/`.
 - These are **working assets**, not versioned theme code. Like the rest of `claude/`, they are
   not tracked in git. Carrying an asset into the versioned theme (`enterprise-moto/assets/`)
   is a separate step, outside this manual.
