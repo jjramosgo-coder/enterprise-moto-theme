@@ -9,8 +9,8 @@
  * Fases:
  *   C1 (hecho): bootstrap — data-maps-base + region-codes.json + mapa país→fichero.
  *   C2 (hecho): hover — resalte + globo con el nombre (atributo name del <path>).
- *   C3 (esta):  drill-down país→región→provincia + zoom por viewBox (rAF).
- *   C4:         icono volver.
+ *   C3 (hecho): drill-down país→región→provincia + zoom por viewBox (rAF).
+ *   C4 (esta):  icono volver (sube un nivel restaurando el SVG cacheado).
  *
  * Copyright (C) 2026 Juanjo Ramos y María José Moreno
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -111,8 +111,17 @@
   /* ═══════════════════════════════════════════
      SVG: acceso, carga (con caché) e inyección
   ═══════════════════════════════════════════ */
+  /* El SVG del mapa es un HIJO DIRECTO del contenedor. Se busca así, y no con
+     querySelector('svg'), para no capturar el <svg> del icono «volver» (que va
+     anidado dentro del <button>). */
   function currentSvg(state) {
-    return state.container.querySelector('svg');
+    var kids = state.container.children;
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i].tagName && kids[i].tagName.toLowerCase() === 'svg') {
+        return kids[i];
+      }
+    }
+    return null;
   }
 
   function warnLoad(err) {
@@ -270,6 +279,47 @@
     }).catch(function (err) { warnLoad(err); state.loading = false; });
   }
 
+  /* Sube un nivel: restaura el SVG saliente guardado en el historial (sin re-fetch)
+     y recupera con él level/collapsed/country. Sirve por igual al camino regular
+     (3→2→1) y al colapsado (sub-nivel PT/AD → 1), porque cada entrada del historial
+     es exactamente el estado que se dejó. */
+  function goBack(state) {
+    if (state.loading || !state.stack.length) return;
+    var prev = state.stack.pop();
+    var cur  = currentSvg(state);
+    if (cur && cur.parentNode) cur.parentNode.removeChild(cur);
+    state.container.appendChild(prev.svg);
+    state.level     = prev.level;
+    state.collapsed = prev.collapsed;
+    state.country   = prev.country;
+    state.container.setAttribute('data-map-level', String(prev.level));
+    hideBalloon(state);
+    markNavigable(state);
+  }
+
+  /* Control «volver»: <button> con un SVG inline (flecha de retorno curva), sin
+     texto visible, arriba-izquierda. Su visibilidad la gobierna el CSS según
+     data-map-level (oculto en nivel-1). */
+  function createBackButton(state) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ent-region-map__back';
+    btn.setAttribute('aria-label', 'Volver');
+    btn.innerHTML =
+      '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">' +
+        '<path d="M9 6 L4 11 L9 16" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<path d="M4 11 H14 a5 5 0 0 1 5 5 V19" fill="none" stroke="currentColor" ' +
+          'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '</svg>';
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      goBack(state);
+    });
+    state.container.appendChild(btn);
+    state.backButton = btn;
+  }
+
   /* ═══════════════════════════════════════════
      EVENTOS (delegación en el contenedor estable → sirve a cualquier SVG inyectado)
   ═══════════════════════════════════════════ */
@@ -329,13 +379,15 @@
       collapsed: false,  // true en el sub-nivel único de PT/AD
       country: null,     // país en el que se ha entrado (para nivel-2→3)
       balloon: null,
-      stack: [],         // historial de SVG salientes (para #C4 volver)
+      backButton: null,
+      stack: [],         // historial de SVG salientes (para volver, #C4)
       svgCache: {},      // fichero → markup (evita re-fetch al reentrar)
       loading: false
     };
     container._entRegionMap = state;
 
-    bindEvents(state); // delegación en el contenedor estable; inerte hasta tener codes
+    createBackButton(state); // control «volver» (oculto en nivel-1 por CSS)
+    bindEvents(state);       // delegación en el contenedor estable; inerte hasta tener codes
 
     fetch(mapsBase + 'region-codes.json', { cache: 'force-cache' })
       .then(function (r) {
