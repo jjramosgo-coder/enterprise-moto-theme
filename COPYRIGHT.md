@@ -14,7 +14,7 @@ manda la cabecera del fichero.
 |---|---|---|
 | **Código del tema** (PHP, JS, CSS propios) | `enterprise-moto/` | **GPL-3.0-or-later** |
 | **Librerías de terceros empaquetadas** | `enterprise-moto/assets/vendor/`, `enterprise-moto/inc/Parsedown.php` | Su **licencia original** (ver `THIRD-PARTY-NOTICES.md`) |
-| **Mapas SVG de regiones (simplemaps)** | `enterprise-moto/assets/maps/` | Su **licencia original** (ver `THIRD-PARTY-NOTICES.md`) |
+| **Mapas georreferenciados (Natural Earth, dominio público)** | `enterprise-moto/assets/maps/` | **Dominio público** (ver `THIRD-PARTY-NOTICES.md`) |
 | **Imágenes propias** (incl. `screenshot.png`) | `enterprise-moto/assets/images/`, raíz del tema | **© los autores, todos los derechos reservados** |
 | **Documentación** | `docs/`, y los documentos de proyecto en la raíz (`bitacora-enterprise-design.md`, `TODO.md`, `INSTALL.md`, este documento y afines) | **CC BY-NC-SA 4.0** |
 | **Nombre y logotipos «Bitácora Enterprise»** | — | **Reservados** (ver «Marca» abajo) |
