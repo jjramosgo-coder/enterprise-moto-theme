@@ -16,8 +16,8 @@
  * NO reutiliza el motor OpenLayers (§13.19) ni map-frontend.js: es un motor propio.
  * Commits de #51 (sub-fase 3):
  *   C1 (hecho): bootstrap + modelo de visibilidad (ent-active/ent-dimmed/ent-hidden).
- *   C2 (este):  hover con globo bilingüe.
- *   C3: drill + zoom de viewBox + vecinos atenuados + revelar tier.
+ *   C2 (hecho): hover con globo bilingüe.
+ *   C3 (este):  drill + zoom de viewBox + vecinos atenuados + revelar tier.
  *   C4: icono volver (aleja un nivel).
  *
  * Copyright (C) 2026 Juanjo Ramos y María José Moreno
@@ -36,6 +36,17 @@
   var CLS_DIMMED = 'ent-dimmed';
   var CLS_HIDDEN = 'ent-hidden';
   var CLS_NAV    = 'ent-navigable';
+
+  var ZOOM_MS  = 420;   // duración de la animación de viewBox
+  var ZOOM_PAD = 0.08;  // margen alrededor del bbox enfocado (fracción)
+
+  /* Curado del encuadre de país (Decisión E): al enfocar un país, sus territorios
+     alejados se EXCLUYEN del cálculo del bbox para que el zoom encuadre el cuerpo
+     principal (la península para ES, sin Canarias). El activo no trae flag de isla
+     del generador (solo data-admin/parent/name), así que la exclusión es config de
+     presentación que vive con el motor. La región excluida SIGUE siendo navegable:
+     su clic la enfoca en su ubicación real (esquina). */
+  var OUTLIERS = { ES: ['ESCN'] };
 
   /* ═══════════════════════════════════════════
      SVG MAESTRO Y JERARQUÍA (todo del DOM, Decisión H)
@@ -78,6 +89,11 @@
     if (hasChildren(state, pathEl)) {
       pathEl.classList.add(CLS_NAV);
     }
+  }
+
+  function setDimmed(pathEl) {
+    clearVisibility(pathEl);
+    pathEl.classList.add(CLS_DIMMED);
   }
 
   function setHidden(pathEl) {
@@ -169,11 +185,172 @@
   }
 
   /* ═══════════════════════════════════════════
+     ZOOM por viewBox (rAF; viewBox no es transicionable por CSS de forma fiable)
+  ═══════════════════════════════════════════ */
+  function parseViewBox(svg) {
+    var vb = svg.getAttribute('viewBox');
+    if (!vb) return null;
+    var p = vb.split(/[\s,]+/).map(Number);
+    if (p.length !== 4 || p.some(isNaN)) return null;
+    return p;
+  }
+
+  function easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  }
+
+  function animateViewBox(svg, from, to, duration, onDone) {
+    var start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var t = duration > 0 ? Math.min((ts - start) / duration, 1) : 1;
+      var e = easeInOut(t);
+      var vb = [
+        from[0] + (to[0] - from[0]) * e,
+        from[1] + (to[1] - from[1]) * e,
+        from[2] + (to[2] - from[2]) * e,
+        from[3] + (to[3] - from[3]) * e
+      ];
+      svg.setAttribute('viewBox', vb.join(' '));
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else if (onDone) {
+        onDone();
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* Dado un bbox objetivo, calcula un viewBox que lo contiene con margen y
+     CONSERVA la relación de aspecto del lienzo (800×502). Al mantener el aspecto,
+     el alto del <svg> (height:auto) no cambia y el efecto se lee como un zoom
+     limpio, sin que la caja se redimensione. */
+  function zoomViewBox(fromVB, bbox) {
+    var canvasAspect = fromVB[2] / fromVB[3];
+    var pad = Math.max(bbox.width, bbox.height) * ZOOM_PAD;
+    var w = bbox.width + 2 * pad;
+    var h = bbox.height + 2 * pad;
+    if (w / h > canvasAspect) { h = w / canvasAspect; } else { w = h * canvasAspect; }
+    var cx = bbox.x + bbox.width / 2;
+    var cy = bbox.y + bbox.height / 2;
+    return [cx - w / 2, cy - h / 2, w, h];
+  }
+
+  /* getBBox seguro: devuelve {x,y,width,height} o null (elemento no medible). */
+  function bboxOf(el) {
+    var b;
+    try { b = el.getBBox(); } catch (e) { return null; }
+    if (!b || (b.width === 0 && b.height === 0)) return null;
+    return { x: b.x, y: b.y, width: b.width, height: b.height };
+  }
+
+  function unionRect(a, b) {
+    var x1 = Math.min(a.x, b.x);
+    var y1 = Math.min(a.y, b.y);
+    var x2 = Math.max(a.x + a.width, b.x + b.width);
+    var y2 = Math.max(a.y + a.height, b.y + b.height);
+    return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
+  }
+
+  /* Bbox de encuadre de un padre = unión de los bbox de sus hijos (ya visibles),
+     excluyendo los outliers curados. Los hijos deben estar revelados (sin
+     display:none) para que getBBox devuelva medidas válidas. */
+  function childrenBBox(state, parentId, excludeIds) {
+    var kids = getChildren(state, parentId);
+    var box = null;
+    for (var i = 0; i < kids.length; i++) {
+      var id = kids[i].getAttribute('id');
+      if (excludeIds && excludeIds.indexOf(id) !== -1) continue;
+      var b = bboxOf(kids[i]);
+      if (!b) continue;
+      box = box ? unionRect(box, b) : b;
+    }
+    return box;
+  }
+
+  function animateTo(state, bbox) {
+    hideBalloon(state);
+    if (!bbox) return;
+    var fromVB = parseViewBox(state.svg);
+    if (!fromVB) return;
+    var toVB = zoomViewBox(fromVB, bbox);
+    state.animating = true;
+    animateViewBox(state.svg, fromVB, toVB, ZOOM_MS, function () {
+      state.animating = false;
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     DRILL (reasignación de clases + zoom; nunca swap: es un único SVG)
+  ═══════════════════════════════════════════ */
+  /* Enfocar un país: revela sus regiones (tier1 hijas), atenúa los otros países
+     (tier0) como vecinos y oculta el resto; luego encuadra su cuerpo principal
+     (bbox de las hijas, sin outliers). */
+  function focusCountry(state, country) {
+    var countryId = country.getAttribute('id');
+    var list, i;
+
+    list = state.svg.querySelectorAll('#tier0 path');
+    for (i = 0; i < list.length; i++) {
+      if (list[i] === country) setHidden(list[i]);
+      else setDimmed(list[i]);
+    }
+    list = state.svg.querySelectorAll('#tier1 path');
+    for (i = 0; i < list.length; i++) {
+      if (list[i].getAttribute('data-parent') === countryId) setActive(state, list[i]);
+      else setHidden(list[i]);
+    }
+    list = state.svg.querySelectorAll('#tier2 path');
+    for (i = 0; i < list.length; i++) setHidden(list[i]);
+
+    state.focus = country;
+    state.level = 1;
+
+    animateTo(state, childrenBBox(state, countryId, OUTLIERS[countryId]));
+  }
+
+  /* Enfocar una región: revela sus provincias (tier2 hijas), atenúa las regiones
+     hermanas del mismo país y oculta el resto; encuadra el bbox de la región
+     (capturado antes de ocultarla). */
+  function focusRegion(state, region) {
+    var regionId  = region.getAttribute('id');
+    var countryId = region.getAttribute('data-parent');
+    var bbox = bboxOf(region); // región aún visible: su bbox es el objetivo del zoom
+    var list, i;
+
+    list = state.svg.querySelectorAll('#tier0 path');
+    for (i = 0; i < list.length; i++) setHidden(list[i]);
+    list = state.svg.querySelectorAll('#tier1 path');
+    for (i = 0; i < list.length; i++) {
+      if (list[i] === region) setHidden(list[i]);
+      else if (list[i].getAttribute('data-parent') === countryId) setDimmed(list[i]);
+      else setHidden(list[i]);
+    }
+    list = state.svg.querySelectorAll('#tier2 path');
+    for (i = 0; i < list.length; i++) {
+      if (list[i].getAttribute('data-parent') === regionId) setActive(state, list[i]);
+      else setHidden(list[i]);
+    }
+
+    state.focus = region;
+    state.level = 2;
+
+    animateTo(state, bbox);
+  }
+
+  function drill(state, pathEl) {
+    var admin = pathEl.getAttribute('data-admin');
+    if (admin === '0') focusCountry(state, pathEl);
+    else if (admin === '1') focusRegion(state, pathEl);
+    /* admin '2' (provincia) no tiene hijos: nunca llega aquí (guard hasChildren). */
+  }
+
+  /* ═══════════════════════════════════════════
      CONTROL «VOLVER» (creado aquí; su comportamiento —subir un nivel— es C4)
   ═══════════════════════════════════════════ */
   /* <button> con un SVG inline (flecha de retorno curva), sin texto visible,
-     arriba-izquierda. En C1/C2 queda oculto por CSS (solo visible con .is-drilled,
-     que gobierna el motor en C4). */
+     arriba-izquierda. Hasta C4 queda oculto por CSS (solo visible con .is-drilled,
+     que gobernará el motor en C4). */
   function createBackButton(state) {
     var btn = document.createElement('button');
     btn.type = 'button';
@@ -226,12 +403,14 @@
       hideBalloon(state);
     });
 
-    /* Clic delegado. En C2 solo se resuelve el path; el drill (zoom + revelar
-       tier + atenuar vecinos) llega en C3 y las hojas son no-op (#46). */
+    /* Clic delegado: drill sobre un path drilleable (activo + con hijos). Las
+       hojas (sin hijos) son no-op — su redirect a entradas filtradas es #46. */
     c.addEventListener('click', function (e) {
+      if (state.animating) return;
       var p = pathFromEvent(state, e);
-      if (!p) return;
-      /* Drill en C3. */
+      if (!p || !p.classList.contains(CLS_ACTIVE)) return;
+      if (!hasChildren(state, p)) return;
+      drill(state, p);
     });
   }
 
@@ -245,8 +424,9 @@
     var state = {
       container: container,
       svg: svg,
-      focus: null, // null = Europa (nivel-0)
+      focus: null,      // null = Europa (nivel-0)
       level: 0,
+      animating: false,
       backButton: null,
       balloon: null,
       balloonMain: null,
