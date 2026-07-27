@@ -9,9 +9,12 @@
  *
  * DOM-driven (Decisión H): navegabilidad, jerarquía y nombres salen de los
  * data-* del SVG en línea; el motor NO hace fetch de nada (ni region-codes.json
- * ni map-regions-global.json). Un nodo es «drilleable» si tiene hijos (paths con
- * data-parent == su id); sin hijos es una hoja (su clic es no-op aquí — el
- * redirect a entradas filtradas es #46).
+ * ni map-regions-global.json). Un nodo es ENFOCABLE por nivel administrativo
+ * (Commit 7, §8): país (admin-0) y región (admin-1) son enfocables; la provincia
+ * (admin-2) es la hoja, y su clic es no-op aquí (el redirect a entradas filtradas
+ * es #46). Al enfocar, si el nodo tiene hijos se revela su capa interior; si no
+ * los tiene (región TERMINAL: distritos PT, parroquias AD, Ceuta/Melilla) se
+ * enfoca a sí mismo (zoom y queda activo), sin revelar un sub-nivel inexistente.
  *
  * NO reutiliza el motor OpenLayers (§13.19) ni map-frontend.js: es un motor propio.
  * Commits de #51 (sub-fase 3):
@@ -24,11 +27,22 @@
  *               globo en todos los niveles; clic en cualquier unidad visible la
  *               reenfoca según su data-admin (país→sus regiones; región→sus
  *               provincias); la hoja (provincia) sigue siendo no-op (#46).
- *   C6 (este):  saltos región↔región entre países (§7, opción b) — al enfocar una
+ *   C6 (hecho): saltos región↔región entre países (§7, opción b) — al enfocar una
  *               región, TODAS las demás regiones tier1 (incluidas las de otros
  *               países) quedan atenuadas y clicables, para saltar de región a
  *               región cruzando frontera sin «volver». tier0 sigue oculto a nivel
  *               región (las regiones ya representan a los países).
+ *   C7 (este):  enfocar regiones TERMINALES (§8, opción b) — las 27 unidades admin-1
+ *               sin sub-nivel (18 distritos PT, 7 parroquias AD, Ceuta/Melilla) eran
+ *               no-op porque el motor solo actuaba si el path tenía hijos. Ahora la
+ *               enfocabilidad es por nivel admin (país/región enfocables; provincia
+ *               hoja) y focusCountry/focusRegion se ramifican: con hijos → revela la
+ *               capa interior (comportamiento actual); sin hijos → zoom a la unidad
+ *               y la deja ent-active (terminal), atenúa el resto y oculta las capas
+ *               vacías. Las terminales pasan a llevar ent-navigable (cursor honesto).
+ *               Están DUPLICADAS en tier2 con el mismo id y data-parent=país, así que
+ *               getChildren(región)=0 (terminal) y el gemelo tier2 queda oculto: se
+ *               opera siempre sobre la instancia de tier1.
  *
  * Copyright (C) 2026 Juanjo Ramos y María José Moreno
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -86,6 +100,16 @@
     return !!id && getChildren(state, id).length > 0;
   }
 
+  /* Un nodo es ENFOCABLE por nivel administrativo, no por tener hijos (§8.2.1):
+     país (admin-0) y región (admin-1) son enfocables —una región terminal, sin
+     hijos, también—; la provincia (admin-2) es la hoja (clic no-op → #46). Esta es
+     la afordancia y el disparador del clic; que además revele o no una capa interior
+     lo decide hasChildren dentro de focusCountry/focusRegion. */
+  function isFocusable(pathEl) {
+    var admin = pathEl.getAttribute('data-admin');
+    return admin === '0' || admin === '1';
+  }
+
   /* País (tier0) de un id de país. */
   function getCountry(state, countryId) {
     if (!countryId) return null;
@@ -102,18 +126,18 @@
   function setActive(state, pathEl) {
     clearVisibility(pathEl);
     pathEl.classList.add(CLS_ACTIVE);
-    if (hasChildren(state, pathEl)) {
+    if (isFocusable(pathEl)) {
       pathEl.classList.add(CLS_NAV);
     }
   }
 
-  /* Vecino atenuado: visible y clicable (§7). Si tiene hijos recibe además la
-     afordancia de navegable (cursor/resalte), igual que un activo drilleable; una
-     hoja atenuada (sin hijos) no la recibe: su clic es no-op. */
+  /* Vecino atenuado: visible y clicable (§7). Si es enfocable (país o región, incluida
+     una terminal) recibe además la afordancia de navegable (cursor/resalte), §8.2.3;
+     una provincia (hoja) no la recibe: su clic es no-op (#46). */
   function setDimmed(state, pathEl) {
     clearVisibility(pathEl);
     pathEl.classList.add(CLS_DIMMED);
-    if (hasChildren(state, pathEl)) {
+    if (isFocusable(pathEl)) {
       pathEl.classList.add(CLS_NAV);
     }
   }
@@ -324,21 +348,31 @@
     animateVB(state, state.baseVB.slice());
   }
 
-  /* Enfocar un país: revela sus regiones (tier1 hijas), atenúa los otros países
-     (tier0) como vecinos y oculta el resto; luego encuadra su cuerpo principal
-     (bbox de las hijas, sin outliers). */
+  /* Enfocar un país: si tiene regiones (los 5 del maestro actual) revela sus tier1
+     hijas y encuadra su cuerpo principal (bbox de las hijas, sin outliers). Si NO
+     tiene (país terminal admin-0: no ocurre hoy, pero sí en un maestro más amplio,
+     §8.4) se enfoca a sí mismo —queda ent-active y se encuadra su propio bbox— sin
+     revelar una capa vacía. En ambos casos atenúa los otros países (tier0) como
+     vecinos y oculta las capas inferiores no reveladas. Rama genérica: un cambio de
+     mapa no exige tocar código. */
   function focusCountry(state, country) {
     var countryId = country.getAttribute('id');
+    var terminal = !hasChildren(state, country);
+    var bbox = terminal ? bboxOf(country) : null; // país sin regiones: su propio bbox es el objetivo del zoom
     var list, i;
 
     list = state.svg.querySelectorAll('#tier0 path');
     for (i = 0; i < list.length; i++) {
-      if (list[i] === country) setHidden(list[i]);
-      else setDimmed(state, list[i]);
+      if (list[i] === country) {
+        if (terminal) setActive(state, list[i]); // terminal: el país se queda activo
+        else setHidden(list[i]);                 // con regiones: se oculta y se revelan sus tier1
+      } else {
+        setDimmed(state, list[i]);
+      }
     }
     list = state.svg.querySelectorAll('#tier1 path');
     for (i = 0; i < list.length; i++) {
-      if (list[i].getAttribute('data-parent') === countryId) setActive(state, list[i]);
+      if (!terminal && list[i].getAttribute('data-parent') === countryId) setActive(state, list[i]);
       else setHidden(list[i]);
     }
     list = state.svg.querySelectorAll('#tier2 path');
@@ -348,31 +382,42 @@
     state.level = 1;
     state.container.classList.add('is-drilled');
 
-    animateToBBox(state, childrenBBox(state, countryId, OUTLIERS[countryId]));
+    if (terminal) animateToBBox(state, bbox);
+    else animateToBBox(state, childrenBBox(state, countryId, OUTLIERS[countryId]));
   }
 
-  /* Enfocar una región: revela sus provincias (tier2 hijas) y atenúa TODAS las
-     demás regiones tier1 —incluidas las de otros países— dejándolas clicables, para
-     saltar de región a región cruzando frontera sin «volver» (§7, opción b). tier0
-     sigue oculto a nivel región (las regiones ya representan a los países; mostrar
-     ambos duplicaría el dibujo). Encuadra el bbox de la región (capturado antes de
-     ocultarla). */
+  /* Enfocar una región. Ramifica según tenga hijos (§8.2.2):
+       · CON hijos → oculta la región y revela sus provincias (tier2 hijas) activas
+         (comportamiento de §7).
+       · SIN hijos (región TERMINAL: distrito PT, parroquia AD, Ceuta/Melilla) → deja
+         la propia región ent-active y no revela un tier2 inexistente.
+     En ambos casos atenúa TODAS las demás regiones tier1 —incluidas las de otros
+     países— dejándolas clicables, para saltar de región a región cruzando frontera
+     sin «volver» (§7, opción b). tier0 sigue oculto a nivel región (las regiones ya
+     representan a los países; mostrar ambos duplicaría el dibujo). El bbox se captura
+     de la instancia de tier1 (aún visible), no del gemelo de tier2 —que queda oculto—,
+     evitando capturar la instancia equivocada o dibujar dos veces (§8.4). */
   function focusRegion(state, region) {
     var regionId = region.getAttribute('id');
-    var bbox = bboxOf(region); // región aún visible: su bbox es el objetivo del zoom
+    var terminal = !hasChildren(state, region);
+    var bbox = bboxOf(region); // instancia tier1 aún visible: su bbox es el objetivo del zoom
     var list, i;
 
     list = state.svg.querySelectorAll('#tier0 path');
     for (i = 0; i < list.length; i++) setHidden(list[i]);
     list = state.svg.querySelectorAll('#tier1 path');
     for (i = 0; i < list.length; i++) {
-      if (list[i] === region) setHidden(list[i]);
-      else setDimmed(state, list[i]);
+      if (list[i] === region) {
+        if (terminal) setActive(state, list[i]); // terminal: la región enfocada se queda activa
+        else setHidden(list[i]);                 // con hijos: se oculta y se revelan sus provincias
+      } else {
+        setDimmed(state, list[i]);
+      }
     }
     list = state.svg.querySelectorAll('#tier2 path');
     for (i = 0; i < list.length; i++) {
-      if (list[i].getAttribute('data-parent') === regionId) setActive(state, list[i]);
-      else setHidden(list[i]);
+      if (!terminal && list[i].getAttribute('data-parent') === regionId) setActive(state, list[i]);
+      else setHidden(list[i]); // terminal: todo tier2 oculto (incluido el gemelo de la región)
     }
 
     state.focus = region;
@@ -386,7 +431,8 @@
     var admin = pathEl.getAttribute('data-admin');
     if (admin === '0') focusCountry(state, pathEl);
     else if (admin === '1') focusRegion(state, pathEl);
-    /* admin '2' (provincia) no tiene hijos: nunca llega aquí (guard hasChildren). */
+    /* admin '2' (provincia) es hoja: el guard isFocusable del clic la descarta antes
+       de llegar aquí (no-op → #46). */
   }
 
   /* Sube un nivel: región → su país (data-parent), país → Europa. El estado se
@@ -461,17 +507,18 @@
       hideBalloon(state);
     });
 
-    /* Clic delegado: reenfoca cualquier unidad VISIBLE con hijos —activa o
-       atenuada (§7)—. Un vecino atenuado con hijos es un salto directo: clic en un
-       país vecino atenuado entra en él; clic en una región hermana atenuada salta a
-       ella. drill() despacha por data-admin (país→sus regiones; región→sus
-       provincias). Las hojas (sin hijos) son no-op — su redirect es #46. */
+    /* Clic delegado: reenfoca cualquier unidad VISIBLE ENFOCABLE —activa o atenuada
+       (§7)—. Enfocable = país (admin-0) o región (admin-1), tenga hijos o no (§8): un
+       vecino atenuado es un salto directo (clic en país vecino entra en él; clic en
+       región hermana salta a ella, aunque sea terminal). drill() despacha por
+       data-admin (país→focusCountry; región→focusRegion, que ya ramifica terminal).
+       La provincia (admin-2) es la hoja: no-op — su redirect es #46. */
     c.addEventListener('click', function (e) {
       if (state.animating) return;
       var p = pathFromEvent(state, e);
       if (!p) return;
       if (!p.classList.contains(CLS_ACTIVE) && !p.classList.contains(CLS_DIMMED)) return;
-      if (!hasChildren(state, p)) return;
+      if (!isFocusable(p)) return;
       drill(state, p);
     });
   }
