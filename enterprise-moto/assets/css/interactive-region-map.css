@@ -33,28 +33,38 @@
 }
 
 /* ── Modelo de visibilidad del motor (#51 · clases por-path) ──
-   ent-active: visible e interactivo · ent-dimmed: visible, atenuado y no
-   interactivo (vecinos) · ent-hidden: oculto. */
+   ent-active: visible e interactivo · ent-dimmed: visible, atenuado y CLICABLE
+   (vecino: salto directo, §7) · ent-hidden: oculto. */
 .ent-region-map path.ent-hidden {
 	display: none;
 }
 
+/* Vecino atenuado: visible pero apagado. Ahora es interactivo (§7): recibe eventos
+   (sin pointer-events:none) para poder hacerle hover (globo) y clic (salto directo
+   a esa unidad). La afordancia de cursor la aporta .ent-navigable cuando tiene
+   hijos; el resalte de hover está más abajo. */
 .ent-region-map path.ent-dimmed {
 	opacity: 0.25;
-	pointer-events: none;
 }
 
-/* ── Interacción de navegación (#44/#51 · afordancia) ──
-   Estilo mínimo y neutro: cursor sobre lo navegable y resalte al pasar por encima
-   de cualquier área activa (incluidas las hojas reveladas al hacer drill).
-   La tematización final por región (tokens editoriales) es #47/#48, no aquí. */
+/* ── Interacción de navegación (#44/#51/§7 · afordancia) ──
+   Estilo mínimo y neutro: cursor sobre lo navegable (activo o atenuado con hijos)
+   y resalte al pasar por encima de cualquier área visible. Un vecino atenuado
+   además sube a opacidad plena al pasar por encima, para que se lea como clicable
+   sobre el fondo oscuro. La tematización final por región (tokens editoriales) es
+   #47/#48, no aquí. */
 .ent-region-map path.ent-navigable {
 	cursor: pointer;
 }
 
-.ent-region-map path.ent-active:hover {
+.ent-region-map path.ent-active:hover,
+.ent-region-map path.ent-dimmed:hover {
 	fill: #f2c118;
 	fill-opacity: 0.85;
+}
+
+.ent-region-map path.ent-dimmed:hover {
+	opacity: 1;
 }
 
 /* Globo con el nombre del área (#51 · bilingüe). Se añade a <body>, por eso el

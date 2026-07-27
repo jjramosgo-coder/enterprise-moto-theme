@@ -18,7 +18,12 @@
  *   C1 (hecho): bootstrap + modelo de visibilidad (ent-active/ent-dimmed/ent-hidden).
  *   C2 (hecho): hover con globo bilingüe.
  *   C3 (hecho): drill + zoom de viewBox + vecinos atenuados + revelar tier.
- *   C4 (este):  icono volver (aleja un nivel).
+ *   C4 (hecho): icono volver (aleja un nivel).
+ *   C5 (este):  vecinos atenuados clicables (salto directo) — §7, rediseño de la
+ *               navegación de vecinos: ent-dimmed pasa a visible + CLICABLE + con
+ *               globo en todos los niveles; clic en cualquier unidad visible la
+ *               reenfoca según su data-admin (país→sus regiones; región→sus
+ *               provincias); la hoja (provincia) sigue siendo no-op (#46).
  *
  * Copyright (C) 2026 Juanjo Ramos y María José Moreno
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -27,11 +32,11 @@
   'use strict';
 
   /* Clases de estado por-path que gobiernan la visibilidad (las define el CSS):
-       - ent-active:    visible e interactivo.
-       - ent-dimmed:    visible pero atenuado y no interactivo (vecinos).
+       - ent-active:    visible e interactivo (unidad enfocada / capa revelada).
+       - ent-dimmed:    visible, atenuado y CLICABLE (vecino: salto directo, §7).
        - ent-hidden:    oculto (display:none).
-       - ent-navigable: afordancia (cursor pointer + resalte) sobre los activos
-         que además tienen hijos (drilleables). */
+       - ent-navigable: afordancia (cursor pointer + resalte) sobre las unidades
+         visibles —activas o atenuadas— que además tienen hijos (drilleables). */
   var CLS_ACTIVE = 'ent-active';
   var CLS_DIMMED = 'ent-dimmed';
   var CLS_HIDDEN = 'ent-hidden';
@@ -97,9 +102,15 @@
     }
   }
 
-  function setDimmed(pathEl) {
+  /* Vecino atenuado: visible y clicable (§7). Si tiene hijos recibe además la
+     afordancia de navegable (cursor/resalte), igual que un activo drilleable; una
+     hoja atenuada (sin hijos) no la recibe: su clic es no-op. */
+  function setDimmed(state, pathEl) {
     clearVisibility(pathEl);
     pathEl.classList.add(CLS_DIMMED);
+    if (hasChildren(state, pathEl)) {
+      pathEl.classList.add(CLS_NAV);
+    }
   }
 
   function setHidden(pathEl) {
@@ -183,11 +194,12 @@
     if (state.balloon) state.balloon.style.display = 'none';
   }
 
-  /* Hoverable = path visible e interactivo (activo o hoja revelada). Los vecinos
-     atenuados (ent-dimmed) ya no reciben eventos por pointer-events:none, y los
-     ocultos (ent-hidden) no se pueden apuntar. */
+  /* Hoverable = path visible (activo O atenuado): el globo con el nombre aparece
+     también sobre los vecinos atenuados (§7). Solo los ocultos (ent-hidden) no se
+     pueden apuntar (display:none). */
   function isHoverable(pathEl) {
-    return pathEl.classList.contains(CLS_ACTIVE);
+    return pathEl.classList.contains(CLS_ACTIVE) ||
+           pathEl.classList.contains(CLS_DIMMED);
   }
 
   /* ═══════════════════════════════════════════
@@ -317,7 +329,7 @@
     list = state.svg.querySelectorAll('#tier0 path');
     for (i = 0; i < list.length; i++) {
       if (list[i] === country) setHidden(list[i]);
-      else setDimmed(list[i]);
+      else setDimmed(state, list[i]);
     }
     list = state.svg.querySelectorAll('#tier1 path');
     for (i = 0; i < list.length; i++) {
@@ -348,7 +360,7 @@
     list = state.svg.querySelectorAll('#tier1 path');
     for (i = 0; i < list.length; i++) {
       if (list[i] === region) setHidden(list[i]);
-      else if (list[i].getAttribute('data-parent') === countryId) setDimmed(list[i]);
+      else if (list[i].getAttribute('data-parent') === countryId) setDimmed(state, list[i]);
       else setHidden(list[i]);
     }
     list = state.svg.querySelectorAll('#tier2 path');
@@ -443,12 +455,16 @@
       hideBalloon(state);
     });
 
-    /* Clic delegado: drill sobre un path drilleable (activo + con hijos). Las
-       hojas (sin hijos) son no-op — su redirect a entradas filtradas es #46. */
+    /* Clic delegado: reenfoca cualquier unidad VISIBLE con hijos —activa o
+       atenuada (§7)—. Un vecino atenuado con hijos es un salto directo: clic en un
+       país vecino atenuado entra en él; clic en una región hermana atenuada salta a
+       ella. drill() despacha por data-admin (país→sus regiones; región→sus
+       provincias). Las hojas (sin hijos) son no-op — su redirect es #46. */
     c.addEventListener('click', function (e) {
       if (state.animating) return;
       var p = pathFromEvent(state, e);
-      if (!p || !p.classList.contains(CLS_ACTIVE)) return;
+      if (!p) return;
+      if (!p.classList.contains(CLS_ACTIVE) && !p.classList.contains(CLS_DIMMED)) return;
       if (!hasChildren(state, p)) return;
       drill(state, p);
     });
