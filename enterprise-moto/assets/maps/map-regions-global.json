@@ -1,0 +1,1800 @@
+{
+  "_meta": {
+    "purpose": "Árbol de navegación por niveles administrativos (drill-in 0→1→2 y back).",
+    "levels_ref": "Niveles definidos por el estándar ISO 3166-2 vía pycountry.",
+    "node_shape": "code (ISO 3166-2 sin guion; país = alpha-2) · name · admin (base 0) · children.",
+    "source": "ISO 3166-2 (pkg-isocodes / pycountry)."
+  },
+  "tree": [
+    {
+      "code": "ES",
+      "name": "España [España]",
+      "admin": 0,
+      "children": [
+        {
+          "code": "ESML",
+          "name": "Melilla",
+          "admin": 1
+        },
+        {
+          "code": "ESCE",
+          "name": "Ceuta",
+          "admin": 1
+        },
+        {
+          "code": "ESCL",
+          "name": "Castilla y León",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESSO",
+              "name": "Soria",
+              "admin": 2
+            },
+            {
+              "code": "ESSG",
+              "name": "Segovia",
+              "admin": 2
+            },
+            {
+              "code": "ESP",
+              "name": "Palencia",
+              "admin": 2
+            },
+            {
+              "code": "ESAV",
+              "name": "Ávila",
+              "admin": 2
+            },
+            {
+              "code": "ESLE",
+              "name": "León",
+              "admin": 2
+            },
+            {
+              "code": "ESVA",
+              "name": "Valladolid",
+              "admin": 2
+            },
+            {
+              "code": "ESBU",
+              "name": "Burgos",
+              "admin": 2
+            },
+            {
+              "code": "ESZA",
+              "name": "Zamora",
+              "admin": 2
+            },
+            {
+              "code": "ESSA",
+              "name": "Salamanca",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESCM",
+          "name": "Castilla-La Mancha",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESAB",
+              "name": "Albacete",
+              "admin": 2
+            },
+            {
+              "code": "ESGU",
+              "name": "Guadalajara",
+              "admin": 2
+            },
+            {
+              "code": "ESTO",
+              "name": "Toledo",
+              "admin": 2
+            },
+            {
+              "code": "ESCR",
+              "name": "Ciudad Real",
+              "admin": 2
+            },
+            {
+              "code": "ESCU",
+              "name": "Cuenca",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESNC",
+          "name": "Comunidad Foral de Navarra",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESNA",
+              "name": "Navarra",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESAN",
+          "name": "Andalucía",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESAL",
+              "name": "Almería",
+              "admin": 2
+            },
+            {
+              "code": "ESH",
+              "name": "Huelva",
+              "admin": 2
+            },
+            {
+              "code": "ESCO",
+              "name": "Córdoba",
+              "admin": 2
+            },
+            {
+              "code": "ESJ",
+              "name": "Jaén",
+              "admin": 2
+            },
+            {
+              "code": "ESMA",
+              "name": "Málaga",
+              "admin": 2
+            },
+            {
+              "code": "ESCA",
+              "name": "Cádiz",
+              "admin": 2
+            },
+            {
+              "code": "ESSE",
+              "name": "Sevilla",
+              "admin": 2
+            },
+            {
+              "code": "ESGR",
+              "name": "Granada",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESCN",
+          "name": "Canarias",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESTF",
+              "name": "Santa Cruz de Tenerife",
+              "admin": 2
+            },
+            {
+              "code": "ESGC",
+              "name": "Las Palmas",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESAR",
+          "name": "Aragón",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESHU",
+              "name": "Huesca",
+              "admin": 2
+            },
+            {
+              "code": "ESTE",
+              "name": "Teruel",
+              "admin": 2
+            },
+            {
+              "code": "ESZ",
+              "name": "Zaragoza",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESIB",
+          "name": "Illes Balears [Islas Baleares]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESPM",
+              "name": "Illes Balears [Islas Baleares]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESAS",
+          "name": "Principado de Asturias",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESO",
+              "name": "Asturias",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESCT",
+          "name": "Catalunya [Cataluña]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "EST",
+              "name": "Tarragona [Tarragona]",
+              "admin": 2
+            },
+            {
+              "code": "ESL",
+              "name": "Lleida [Lérida]",
+              "admin": 2
+            },
+            {
+              "code": "ESB",
+              "name": "Barcelona [Barcelona]",
+              "admin": 2
+            },
+            {
+              "code": "ESGI",
+              "name": "Girona [Gerona]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESVC",
+          "name": "Comunidad Valenciana",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESV",
+              "name": "Valencia",
+              "admin": 2
+            },
+            {
+              "code": "ESCS",
+              "name": "Castellón",
+              "admin": 2
+            },
+            {
+              "code": "ESA",
+              "name": "Alicante",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESPV",
+          "name": "País Vasco",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESSS",
+              "name": "Gipuzkoa [Guipúzcoa]",
+              "admin": 2
+            },
+            {
+              "code": "ESBI",
+              "name": "Bizkaia [Vizcaya]",
+              "admin": 2
+            },
+            {
+              "code": "ESVI",
+              "name": "Álava",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESMD",
+          "name": "Comunidad de Madrid",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESM",
+              "name": "Madrid",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESEX",
+          "name": "Extremadura",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESCC",
+              "name": "Cáceres",
+              "admin": 2
+            },
+            {
+              "code": "ESBA",
+              "name": "Badajoz",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESRI",
+          "name": "La Rioja",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESLO",
+              "name": "La Rioja",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESGA",
+          "name": "Galicia [Galicia]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESOR",
+              "name": "Ourense [Orense]",
+              "admin": 2
+            },
+            {
+              "code": "ESPO",
+              "name": "Pontevedra [Pontevedra]",
+              "admin": 2
+            },
+            {
+              "code": "ESLU",
+              "name": "Lugo [Lugo]",
+              "admin": 2
+            },
+            {
+              "code": "ESC",
+              "name": "A Coruña [La Coruña]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESMC",
+          "name": "Región de Murcia",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESMU",
+              "name": "Murcia",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESCB",
+          "name": "Cantabria",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESS",
+              "name": "Cantabria",
+              "admin": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "IT",
+      "name": "Italia [Italia]",
+      "admin": 0,
+      "children": [
+        {
+          "code": "IT82",
+          "name": "Sicilia",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITAG",
+              "name": "Agrigento",
+              "admin": 2
+            },
+            {
+              "code": "ITPA",
+              "name": "Palermo",
+              "admin": 2
+            },
+            {
+              "code": "ITRG",
+              "name": "Ragusa",
+              "admin": 2
+            },
+            {
+              "code": "ITCL",
+              "name": "Caltanissetta",
+              "admin": 2
+            },
+            {
+              "code": "ITCT",
+              "name": "Catania",
+              "admin": 2
+            },
+            {
+              "code": "ITSR",
+              "name": "Siracusa",
+              "admin": 2
+            },
+            {
+              "code": "ITEN",
+              "name": "Enna",
+              "admin": 2
+            },
+            {
+              "code": "ITTP",
+              "name": "Trapani",
+              "admin": 2
+            },
+            {
+              "code": "ITME",
+              "name": "Messina [Mesina]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT88",
+          "name": "Sardegna [Cerdeña]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITNU",
+              "name": "Nuoro",
+              "admin": 2
+            },
+            {
+              "code": "ITOR",
+              "name": "Oristano [Oristán]",
+              "admin": 2
+            },
+            {
+              "code": "ITCA",
+              "name": "Cagliari",
+              "admin": 2
+            },
+            {
+              "code": "ITSS",
+              "name": "Sassari",
+              "admin": 2
+            },
+            {
+              "code": "ITSU",
+              "name": "Sud Sardegna [Cerdeña del Sur]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT21",
+          "name": "Piemonte [Piamonte]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITNO",
+              "name": "Novara",
+              "admin": 2
+            },
+            {
+              "code": "ITAL",
+              "name": "Alessandria",
+              "admin": 2
+            },
+            {
+              "code": "ITAT",
+              "name": "Asti",
+              "admin": 2
+            },
+            {
+              "code": "ITBI",
+              "name": "Biella",
+              "admin": 2
+            },
+            {
+              "code": "ITCN",
+              "name": "Cuneo",
+              "admin": 2
+            },
+            {
+              "code": "ITTO",
+              "name": "Torino [Turín]",
+              "admin": 2
+            },
+            {
+              "code": "ITVB",
+              "name": "Verbano-Cusio-Ossola",
+              "admin": 2
+            },
+            {
+              "code": "ITVC",
+              "name": "Vercelli",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT23",
+          "name": "Valle d'Aosta [Valle de Aosta]",
+          "admin": 1
+        },
+        {
+          "code": "IT25",
+          "name": "Lombardia [Lombardía]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITBG",
+              "name": "Bergamo [Bérgamo]",
+              "admin": 2
+            },
+            {
+              "code": "ITPV",
+              "name": "Pavia [Pavía]",
+              "admin": 2
+            },
+            {
+              "code": "ITBS",
+              "name": "Brescia",
+              "admin": 2
+            },
+            {
+              "code": "ITCO",
+              "name": "Como",
+              "admin": 2
+            },
+            {
+              "code": "ITCR",
+              "name": "Cremona",
+              "admin": 2
+            },
+            {
+              "code": "ITSO",
+              "name": "Sondrio",
+              "admin": 2
+            },
+            {
+              "code": "ITVA",
+              "name": "Varese",
+              "admin": 2
+            },
+            {
+              "code": "ITLC",
+              "name": "Lecco",
+              "admin": 2
+            },
+            {
+              "code": "ITLO",
+              "name": "Lodi",
+              "admin": 2
+            },
+            {
+              "code": "ITMB",
+              "name": "Monza e Brianza [Monza y Brianza]",
+              "admin": 2
+            },
+            {
+              "code": "ITMI",
+              "name": "Milano [Milán]",
+              "admin": 2
+            },
+            {
+              "code": "ITMN",
+              "name": "Mantova [Mantua]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT32",
+          "name": "Trentino-Alto Adige [Trentino-Alto Adigio]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITBZ",
+              "name": "Bolzano",
+              "admin": 2
+            },
+            {
+              "code": "ITTN",
+              "name": "Trento [Provincia autónoma de Trento]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT34",
+          "name": "Veneto [Véneto]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITPD",
+              "name": "Padova [Padua]",
+              "admin": 2
+            },
+            {
+              "code": "ITBL",
+              "name": "Belluno",
+              "admin": 2
+            },
+            {
+              "code": "ITRO",
+              "name": "Rovigo",
+              "admin": 2
+            },
+            {
+              "code": "ITTV",
+              "name": "Treviso",
+              "admin": 2
+            },
+            {
+              "code": "ITVE",
+              "name": "Venezia [Venecia]",
+              "admin": 2
+            },
+            {
+              "code": "ITVI",
+              "name": "Vicenza",
+              "admin": 2
+            },
+            {
+              "code": "ITVR",
+              "name": "Verona",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT36",
+          "name": "Friuli Venezia Giulia [Friul-Venecia Julia]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITPN",
+              "name": "Pordenone",
+              "admin": 2
+            },
+            {
+              "code": "ITGO",
+              "name": "Gorizia",
+              "admin": 2
+            },
+            {
+              "code": "ITTS",
+              "name": "Trieste",
+              "admin": 2
+            },
+            {
+              "code": "ITUD",
+              "name": "Udine",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT42",
+          "name": "Liguria",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITSP",
+              "name": "La Spezia",
+              "admin": 2
+            },
+            {
+              "code": "ITSV",
+              "name": "Savona",
+              "admin": 2
+            },
+            {
+              "code": "ITGE",
+              "name": "Genova [Génova]",
+              "admin": 2
+            },
+            {
+              "code": "ITIM",
+              "name": "Imperia",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT45",
+          "name": "Emilia-Romagna [Emilia-Romaña]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITPC",
+              "name": "Piacenza",
+              "admin": 2
+            },
+            {
+              "code": "ITPR",
+              "name": "Parma",
+              "admin": 2
+            },
+            {
+              "code": "ITBO",
+              "name": "Bologna [Bolonia]",
+              "admin": 2
+            },
+            {
+              "code": "ITRA",
+              "name": "Ravenna [Rávena]",
+              "admin": 2
+            },
+            {
+              "code": "ITRE",
+              "name": "Reggio Emilia",
+              "admin": 2
+            },
+            {
+              "code": "ITRN",
+              "name": "Rimini [Rímini]",
+              "admin": 2
+            },
+            {
+              "code": "ITFC",
+              "name": "Forlì-Cesena",
+              "admin": 2
+            },
+            {
+              "code": "ITFE",
+              "name": "Ferrara",
+              "admin": 2
+            },
+            {
+              "code": "ITMO",
+              "name": "Modena [Módena]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT52",
+          "name": "Toscana",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITAR",
+              "name": "Arezzo",
+              "admin": 2
+            },
+            {
+              "code": "ITPI",
+              "name": "Pisa",
+              "admin": 2
+            },
+            {
+              "code": "ITPO",
+              "name": "Prato",
+              "admin": 2
+            },
+            {
+              "code": "ITPT",
+              "name": "Pistoia",
+              "admin": 2
+            },
+            {
+              "code": "ITSI",
+              "name": "Siena",
+              "admin": 2
+            },
+            {
+              "code": "ITFI",
+              "name": "Firenze [Florencia]",
+              "admin": 2
+            },
+            {
+              "code": "ITGR",
+              "name": "Grosseto",
+              "admin": 2
+            },
+            {
+              "code": "ITLI",
+              "name": "Livorno",
+              "admin": 2
+            },
+            {
+              "code": "ITLU",
+              "name": "Lucca",
+              "admin": 2
+            },
+            {
+              "code": "ITMS",
+              "name": "Massa-Carrara [Massa y Carrara]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT55",
+          "name": "Umbria [Umbría]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITPG",
+              "name": "Perugia",
+              "admin": 2
+            },
+            {
+              "code": "ITTR",
+              "name": "Terni",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT57",
+          "name": "Marche [Marcas]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITAN",
+              "name": "Ancona",
+              "admin": 2
+            },
+            {
+              "code": "ITAP",
+              "name": "Ascoli Piceno",
+              "admin": 2
+            },
+            {
+              "code": "ITPU",
+              "name": "Pesaro e Urbino [Pesaro y Urbino]",
+              "admin": 2
+            },
+            {
+              "code": "ITFM",
+              "name": "Fermo",
+              "admin": 2
+            },
+            {
+              "code": "ITMC",
+              "name": "Macerata",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT62",
+          "name": "Lazio [Lacio]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITRI",
+              "name": "Rieti",
+              "admin": 2
+            },
+            {
+              "code": "ITRM",
+              "name": "Roma [Roma Capital]",
+              "admin": 2
+            },
+            {
+              "code": "ITFR",
+              "name": "Frosinone",
+              "admin": 2
+            },
+            {
+              "code": "ITLT",
+              "name": "Latina",
+              "admin": 2
+            },
+            {
+              "code": "ITVT",
+              "name": "Viterbo",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT65",
+          "name": "Abruzzo [Abruzos]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITAQ",
+              "name": "L'Aquila",
+              "admin": 2
+            },
+            {
+              "code": "ITPE",
+              "name": "Pescara",
+              "admin": 2
+            },
+            {
+              "code": "ITCH",
+              "name": "Chieti",
+              "admin": 2
+            },
+            {
+              "code": "ITTE",
+              "name": "Teramo",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT67",
+          "name": "Molise",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITCB",
+              "name": "Campobasso",
+              "admin": 2
+            },
+            {
+              "code": "ITIS",
+              "name": "Isernia",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT72",
+          "name": "Campania",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITNA",
+              "name": "Napoli [Nápoles]",
+              "admin": 2
+            },
+            {
+              "code": "ITAV",
+              "name": "Avellino",
+              "admin": 2
+            },
+            {
+              "code": "ITBN",
+              "name": "Benevento",
+              "admin": 2
+            },
+            {
+              "code": "ITCE",
+              "name": "Caserta",
+              "admin": 2
+            },
+            {
+              "code": "ITSA",
+              "name": "Salerno",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT75",
+          "name": "Puglia [Apulia]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITBA",
+              "name": "Bari",
+              "admin": 2
+            },
+            {
+              "code": "ITBR",
+              "name": "Brindisi",
+              "admin": 2
+            },
+            {
+              "code": "ITBT",
+              "name": "Barletta-Andria-Trani",
+              "admin": 2
+            },
+            {
+              "code": "ITFG",
+              "name": "Foggia",
+              "admin": 2
+            },
+            {
+              "code": "ITTA",
+              "name": "Taranto [Tarento]",
+              "admin": 2
+            },
+            {
+              "code": "ITLE",
+              "name": "Lecce",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT77",
+          "name": "Basilicata",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITMT",
+              "name": "Matera",
+              "admin": 2
+            },
+            {
+              "code": "ITPZ",
+              "name": "Potenza",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT78",
+          "name": "Calabria",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITRC",
+              "name": "Reggio Calabria [Reggio de Calabria]",
+              "admin": 2
+            },
+            {
+              "code": "ITCS",
+              "name": "Cosenza",
+              "admin": 2
+            },
+            {
+              "code": "ITCZ",
+              "name": "Catanzaro",
+              "admin": 2
+            },
+            {
+              "code": "ITKR",
+              "name": "Crotone [Crotona]",
+              "admin": 2
+            },
+            {
+              "code": "ITVV",
+              "name": "Vibo Valentia",
+              "admin": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "FR",
+      "name": "France [Francia]",
+      "admin": 0,
+      "children": [
+        {
+          "code": "FR20R",
+          "name": "Corse [Córcega]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR2A",
+              "name": "Corse-du-Sud [Córcega del Sur]",
+              "admin": 2
+            },
+            {
+              "code": "FR2B",
+              "name": "Haute-Corse [Alta Córcega]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRARA",
+          "name": "Auvergne-Rhône-Alpes [Auvernia-Ródano-Alpes]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR73",
+              "name": "Savoie [Saboya]",
+              "admin": 2
+            },
+            {
+              "code": "FR74",
+              "name": "Haute-Savoie [Alta Saboya]",
+              "admin": 2
+            },
+            {
+              "code": "FR26",
+              "name": "Drôme",
+              "admin": 2
+            },
+            {
+              "code": "FR38",
+              "name": "Isère",
+              "admin": 2
+            },
+            {
+              "code": "FR42",
+              "name": "Loire [Loira]",
+              "admin": 2
+            },
+            {
+              "code": "FR43",
+              "name": "Haute-Loire [Alto Loira]",
+              "admin": 2
+            },
+            {
+              "code": "FR01",
+              "name": "Ain",
+              "admin": 2
+            },
+            {
+              "code": "FR03",
+              "name": "Allier",
+              "admin": 2
+            },
+            {
+              "code": "FR07",
+              "name": "Ardèche [Ardecha]",
+              "admin": 2
+            },
+            {
+              "code": "FR63",
+              "name": "Puy-de-Dôme",
+              "admin": 2
+            },
+            {
+              "code": "FR69",
+              "name": "Rhône",
+              "admin": 2
+            },
+            {
+              "code": "FR15",
+              "name": "Cantal",
+              "admin": 2
+            },
+            {
+              "code": "FR69M",
+              "name": "Métropole de Lyon",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRBFC",
+          "name": "Bourgogne-Franche-Comté [Borgoña-Franco Condado]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR70",
+              "name": "Haute-Saône [Alto Saona]",
+              "admin": 2
+            },
+            {
+              "code": "FR71",
+              "name": "Saône-et-Loire [Saona y Loira]",
+              "admin": 2
+            },
+            {
+              "code": "FR21",
+              "name": "Côte-d'Or [Côte-d’Or]",
+              "admin": 2
+            },
+            {
+              "code": "FR25",
+              "name": "Doubs",
+              "admin": 2
+            },
+            {
+              "code": "FR89",
+              "name": "Yonne",
+              "admin": 2
+            },
+            {
+              "code": "FR90",
+              "name": "Territoire de Belfort",
+              "admin": 2
+            },
+            {
+              "code": "FR39",
+              "name": "Jura",
+              "admin": 2
+            },
+            {
+              "code": "FR58",
+              "name": "Nièvre",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRBRE",
+          "name": "Bretagne [Bretaña]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR22",
+              "name": "Côtes-d'Armor [Costas de Armor]",
+              "admin": 2
+            },
+            {
+              "code": "FR29",
+              "name": "Finistère [Finisterre]",
+              "admin": 2
+            },
+            {
+              "code": "FR35",
+              "name": "Ille-et-Vilaine [Ille y Vilaine]",
+              "admin": 2
+            },
+            {
+              "code": "FR56",
+              "name": "Morbihan",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRCVL",
+          "name": "Centre-Val de Loire [Centro-Valle de Loira]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR18",
+              "name": "Cher",
+              "admin": 2
+            },
+            {
+              "code": "FR28",
+              "name": "Eure-et-Loir [Eure y Loir]",
+              "admin": 2
+            },
+            {
+              "code": "FR36",
+              "name": "Indre",
+              "admin": 2
+            },
+            {
+              "code": "FR37",
+              "name": "Indre-et-Loire [Indre y Loira]",
+              "admin": 2
+            },
+            {
+              "code": "FR41",
+              "name": "Loir-et-Cher [Loir y Cher]",
+              "admin": 2
+            },
+            {
+              "code": "FR45",
+              "name": "Loiret",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRGES",
+          "name": "Grand-Est [Gran Este]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR88",
+              "name": "Vosges [Vosgos]",
+              "admin": 2
+            },
+            {
+              "code": "FR51",
+              "name": "Marne",
+              "admin": 2
+            },
+            {
+              "code": "FR52",
+              "name": "Haute-Marne [Alto Marne]",
+              "admin": 2
+            },
+            {
+              "code": "FR54",
+              "name": "Meurthe-et-Moselle [Meurthe y Mosela]",
+              "admin": 2
+            },
+            {
+              "code": "FR55",
+              "name": "Meuse [Mosa]",
+              "admin": 2
+            },
+            {
+              "code": "FR57",
+              "name": "Moselle [Mosela]",
+              "admin": 2
+            },
+            {
+              "code": "FR08",
+              "name": "Ardennes [Ardenas]",
+              "admin": 2
+            },
+            {
+              "code": "FR10",
+              "name": "Aube",
+              "admin": 2
+            },
+            {
+              "code": "FR6AE",
+              "name": "Alsace [Alsacia]",
+              "admin": 2,
+              "children": [
+                {
+                  "code": "FR67",
+                  "name": "Bas-Rhin [Bajo Rin]",
+                  "admin": 3
+                },
+                {
+                  "code": "FR68",
+                  "name": "Haut-Rhin [Alto Rin]",
+                  "admin": 3
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "FRHDF",
+          "name": "Hauts-de-France [Alta Francia]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR80",
+              "name": "Somme",
+              "admin": 2
+            },
+            {
+              "code": "FR02",
+              "name": "Aisne",
+              "admin": 2
+            },
+            {
+              "code": "FR59",
+              "name": "Nord [Norte]",
+              "admin": 2
+            },
+            {
+              "code": "FR60",
+              "name": "Oise",
+              "admin": 2
+            },
+            {
+              "code": "FR62",
+              "name": "Pas-de-Calais [Paso de Calais]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRIDF",
+          "name": "Île-de-France [Isla de Francia]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR75C",
+              "name": "Paris [París]",
+              "admin": 2
+            },
+            {
+              "code": "FR77",
+              "name": "Seine-et-Marne [Sena y Marne]",
+              "admin": 2
+            },
+            {
+              "code": "FR78",
+              "name": "Yvelines",
+              "admin": 2
+            },
+            {
+              "code": "FR91",
+              "name": "Essonne",
+              "admin": 2
+            },
+            {
+              "code": "FR92",
+              "name": "Hauts-de-Seine [Altos del Sena]",
+              "admin": 2
+            },
+            {
+              "code": "FR93",
+              "name": "Seine-Saint-Denis [Sena-Saint Denis]",
+              "admin": 2
+            },
+            {
+              "code": "FR94",
+              "name": "Val-de-Marne [Valle del Marne]",
+              "admin": 2
+            },
+            {
+              "code": "FR95",
+              "name": "Val-d'Oise [Valle del Oise]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRNAQ",
+          "name": "Nouvelle-Aquitaine [Nueva Aquitania]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR17",
+              "name": "Charente-Maritime [Charente Marítimo]",
+              "admin": 2
+            },
+            {
+              "code": "FR19",
+              "name": "Corrèze",
+              "admin": 2
+            },
+            {
+              "code": "FR23",
+              "name": "Creuse",
+              "admin": 2
+            },
+            {
+              "code": "FR24",
+              "name": "Dordogne [Dordoña]",
+              "admin": 2
+            },
+            {
+              "code": "FR79",
+              "name": "Deux-Sèvres",
+              "admin": 2
+            },
+            {
+              "code": "FR86",
+              "name": "Vienne",
+              "admin": 2
+            },
+            {
+              "code": "FR87",
+              "name": "Haute-Vienne [Alto Vienne]",
+              "admin": 2
+            },
+            {
+              "code": "FR33",
+              "name": "Gironde [Gironda]",
+              "admin": 2
+            },
+            {
+              "code": "FR40",
+              "name": "Landes [Landas]",
+              "admin": 2
+            },
+            {
+              "code": "FR47",
+              "name": "Lot-et-Garonne [Lot y Garona]",
+              "admin": 2
+            },
+            {
+              "code": "FR64",
+              "name": "Pyrénées-Atlantiques [Pirineos Atlánticos]",
+              "admin": 2
+            },
+            {
+              "code": "FR16",
+              "name": "Charente",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRNOR",
+          "name": "Normandie [Normandía]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR76",
+              "name": "Seine-Maritime [Sena Marítimo]",
+              "admin": 2
+            },
+            {
+              "code": "FR27",
+              "name": "Eure",
+              "admin": 2
+            },
+            {
+              "code": "FR50",
+              "name": "Manche [Mancha]",
+              "admin": 2
+            },
+            {
+              "code": "FR61",
+              "name": "Orne",
+              "admin": 2
+            },
+            {
+              "code": "FR14",
+              "name": "Calvados",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FROCC",
+          "name": "Occitanie [Occitania]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR81",
+              "name": "Tarn",
+              "admin": 2
+            },
+            {
+              "code": "FR82",
+              "name": "Tarn-et-Garonne [Tarn y Garona]",
+              "admin": 2
+            },
+            {
+              "code": "FR30",
+              "name": "Gard",
+              "admin": 2
+            },
+            {
+              "code": "FR31",
+              "name": "Haute-Garonne [Alto Garona]",
+              "admin": 2
+            },
+            {
+              "code": "FR32",
+              "name": "Gers",
+              "admin": 2
+            },
+            {
+              "code": "FR34",
+              "name": "Hérault",
+              "admin": 2
+            },
+            {
+              "code": "FR46",
+              "name": "Lot",
+              "admin": 2
+            },
+            {
+              "code": "FR48",
+              "name": "Lozère",
+              "admin": 2
+            },
+            {
+              "code": "FR09",
+              "name": "Ariège",
+              "admin": 2
+            },
+            {
+              "code": "FR65",
+              "name": "Hautes-Pyrénées [Altos Pirineos]",
+              "admin": 2
+            },
+            {
+              "code": "FR11",
+              "name": "Aude",
+              "admin": 2
+            },
+            {
+              "code": "FR66",
+              "name": "Pyrénées-Orientales [Pirineos Orientales]",
+              "admin": 2
+            },
+            {
+              "code": "FR12",
+              "name": "Aveyron",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRPAC",
+          "name": "Provence-Alpes-Côte-d’Azur [Provenza-Alpes-Costa Azul]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR83",
+              "name": "Var",
+              "admin": 2
+            },
+            {
+              "code": "FR84",
+              "name": "Vaucluse",
+              "admin": 2
+            },
+            {
+              "code": "FR04",
+              "name": "Alpes-de-Haute-Provence [Alpes de Alta Provenza]",
+              "admin": 2
+            },
+            {
+              "code": "FR05",
+              "name": "Hautes-Alpes [Altos Alpes]",
+              "admin": 2
+            },
+            {
+              "code": "FR06",
+              "name": "Alpes-Maritimes [Alpes Marítimos]",
+              "admin": 2
+            },
+            {
+              "code": "FR13",
+              "name": "Bouches-du-Rhône [Bocas del Ródano]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FRPDL",
+          "name": "Pays-de-la-Loire [Países del Loira]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR72",
+              "name": "Sarthe",
+              "admin": 2
+            },
+            {
+              "code": "FR85",
+              "name": "Vendée [Vandea]",
+              "admin": 2
+            },
+            {
+              "code": "FR44",
+              "name": "Loire-Atlantique [Loira Atlántico]",
+              "admin": 2
+            },
+            {
+              "code": "FR49",
+              "name": "Maine-et-Loire [Maine y Loira]",
+              "admin": 2
+            },
+            {
+              "code": "FR53",
+              "name": "Mayenne",
+              "admin": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "PT",
+      "name": "Portugal [Portugal]",
+      "admin": 0,
+      "children": [
+        {
+          "code": "PT16",
+          "name": "Viana do Castelo",
+          "admin": 1
+        },
+        {
+          "code": "PT02",
+          "name": "Beja",
+          "admin": 1
+        },
+        {
+          "code": "PT17",
+          "name": "Vila Real",
+          "admin": 1
+        },
+        {
+          "code": "PT03",
+          "name": "Braga",
+          "admin": 1
+        },
+        {
+          "code": "PT18",
+          "name": "Viseu",
+          "admin": 1
+        },
+        {
+          "code": "PT04",
+          "name": "Bragança [Braganza]",
+          "admin": 1
+        },
+        {
+          "code": "PT05",
+          "name": "Castelo Branco",
+          "admin": 1
+        },
+        {
+          "code": "PT06",
+          "name": "Coimbra [Coímbra distrito]",
+          "admin": 1
+        },
+        {
+          "code": "PT07",
+          "name": "Évora",
+          "admin": 1
+        },
+        {
+          "code": "PT08",
+          "name": "Faro",
+          "admin": 1
+        },
+        {
+          "code": "PT09",
+          "name": "Guarda",
+          "admin": 1
+        },
+        {
+          "code": "PT10",
+          "name": "Leiria [Leiría]",
+          "admin": 1
+        },
+        {
+          "code": "PT11",
+          "name": "Lisboa",
+          "admin": 1
+        },
+        {
+          "code": "PT12",
+          "name": "Portalegre",
+          "admin": 1
+        },
+        {
+          "code": "PT13",
+          "name": "Porto [Oporto]",
+          "admin": 1
+        },
+        {
+          "code": "PT14",
+          "name": "Santarém",
+          "admin": 1
+        },
+        {
+          "code": "PT01",
+          "name": "Aveiro",
+          "admin": 1
+        },
+        {
+          "code": "PT15",
+          "name": "Setúbal",
+          "admin": 1
+        }
+      ]
+    },
+    {
+      "code": "AD",
+      "name": "Andorra [Andorra]",
+      "admin": 0,
+      "children": [
+        {
+          "code": "AD07",
+          "name": "Andorra la Vella",
+          "admin": 1
+        },
+        {
+          "code": "AD04",
+          "name": "La Massana",
+          "admin": 1
+        },
+        {
+          "code": "AD08",
+          "name": "Escaldes-Engordany",
+          "admin": 1
+        },
+        {
+          "code": "AD05",
+          "name": "Ordino",
+          "admin": 1
+        },
+        {
+          "code": "AD02",
+          "name": "Canillo",
+          "admin": 1
+        },
+        {
+          "code": "AD06",
+          "name": "Sant Julià de Lòria [San Julián de Loria]",
+          "admin": 1
+        },
+        {
+          "code": "AD03",
+          "name": "Encamp",
+          "admin": 1
+        }
+      ]
+    }
+  ]
+}
