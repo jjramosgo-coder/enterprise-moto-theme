@@ -16,10 +16,10 @@ This manual documents the **map data assets** of the Enterprise Moto theme. Its 
 ## Table of contents
 
 - [Project-wide conventions (locked)](#project-wide-conventions-locked)
-- [Map structure: zoom tiers](#map-structure-zoom-tiers)
+- [Estructura del mapa: zoom tiers](#estructura-del-mapa-zoom-tiers)
 - [The map generator (Colab library)](#the-map-generator-colab-library)
 - [Asset: `map-levels.json`](#asset-map-levelsjson)
-- [Asset: `map-regions.json`](#asset-map-regionsjson)
+- [Modelo de datos: ficheros de regiones](#modelo-de-datos-ficheros-de-regiones)
 - [Asset: `map-style.json`](#asset-map-stylejson)
 
 ---
@@ -65,87 +65,61 @@ reopens it.
 
 ---
 
-## Map structure: zoom tiers
+## Estructura del mapa: zoom tiers
 
-How the interactive map (Phase 51.2, not yet built) is organised, and the vocabulary that
-keeps it unambiguous. Recorded here as the design contract the map generation must follow.
+Cómo se organiza el mapa interactivo y el vocabulario que lo mantiene claro. Es la referencia que la generación del mapa debe respetar.
 
-### Two axes, never conflated: admin level vs zoom tier
+### El nivel de un lugar (`admin`) y el paso de zoom (`tier`)
 
-- **admin level** (`0` / `1` / `2`) — the *canonical, intrinsic* administrative level of a
-  place, defined in [conventions](#project-wide-conventions-locked) and in
-  [`map-levels.json`](#asset-map-levelsjson), and carried by every node of
-  [`map-regions.json`](#asset-map-regionsjson). A Portuguese *distrito* is admin-1, always.
-- **zoom tier** (`tier0` / `tier1` / `tier2`) — a *presentation* concept: which layer (zoom
-  step) a feature is drawn at.
+Conviene no confundir dos cosas:
 
-They usually coincide, but diverge under variable depth (below). Name things by the axis they
-belong to: SVG layers are **tiers**; a feature's level is its **admin**.
+- **`admin`** — *qué es* un lugar administrativamente: país, región o provincia (`0`, `1`, `2`…). Es un hecho fijo: un distrito portugués es admin-1, se mire como se mire.
+- **`tier`** — *cómo se muestra* en el mapa: en qué paso de zoom se dibuja (`tier0`, `tier1`, `tier2`).
 
-### Separation of concerns (the contract)
+Suelen coincidir, pero no siempre (ver «profundidad variable»). Por eso las capas del SVG se nombran por su `tier`, mientras que el nivel real de cada lugar es su `admin`.
 
-- **Geometry** → the SVG.
-- **Hierarchy** (parent/child, drill-in and back) → the tree in
-  [`map-regions.json`](#asset-map-regionsjson). The SVG does **not** nest DOM groups to
-  represent the tree; the JSON is the tree.
-- **Editorial style and interaction** → the theme (CSS/JS), handled by their own TO-DOs. The
-  generated SVG carries only a default colour baseline plus the keys that link each feature to
-  the tree.
+### La navegación: entrar (drill-in) y volver (back)
 
-### SVG layer layout
+El usuario navega **entrando** por niveles (`0→1→2…`) y **volviendo**. Qué contiene qué —y cuál es el ascendiente al que se vuelve— está en el árbol del [modelo de datos de regiones](#modelo-de-datos-ficheros-de-regiones): `children` para entrar, el ascendiente para volver. Cada paso de zoom se corresponde con mostrar el `tier` siguiente. El comportamiento en pantalla (la animación del zoom, el icono de volver…) lo pone el motor del mapa (#51); aquí solo se documenta la estructura sobre la que se apoya.
 
-- One `<g>` layer per zoom tier: `tier0` (countries), `tier1`, `tier2` (flat sibling groups —
-  mapshaper does not nest).
-- Each `<path>` carries:
-  - `id` = the **canonical ISO 3166-2 code without the hyphen**, identical to the node's
-    `code` in [`map-regions.json`](#asset-map-regionsjson). This is the **join key** between
-    geometry and tree.
-  - `data-admin` = the feature's **canonical** admin level.
-  - `data-parent` = its parent's code (back-navigation without walking the tree).
-- Rendering "a level" = showing/hiding a tier layer as the user zooms.
+### Quién se encarga de qué
 
-### Variable depth: a tier is filled with the deepest level available
+- La **geometría** vive en el SVG.
+- La **jerarquía** (padre/hijo, entrar y volver) vive en el árbol del [modelo de datos de regiones](#modelo-de-datos-ficheros-de-regiones). El SVG no representa el árbol anidando grupos; el árbol es el JSON.
+- El **estilo editorial y la interacción** son del tema (CSS/JS), en sus propios TO-DOs. El SVG generado lleva solo un color por defecto y las claves que enlazan cada elemento con el árbol.
 
-Not every country reaches admin-2. A tier layer includes, **per country, the deepest level it
-has at or above that tier** — so zooming in never leaves a hole:
+### Cómo se organizan las capas del SVG
 
-- `ES` / `IT` / `FR`: `tier2` = admin-2 (provinces / province / départements).
-- `PT` / `AD`: `tier2` = admin-1 (distritos / parroquias), the same features as their `tier1`.
+- Una capa `<g>` por `tier`: `tier0` (países), `tier1`, `tier2` (grupos hermanos, planos — mapshaper no anida).
+- Cada `<path>` lleva:
+  - `id` = el código ISO 3166-2 sin guion, igual que el `code` del nodo en el modelo de datos. Es la **clave de join** entre geometría y árbol.
+  - `data-admin` = el `admin` real del elemento.
+  - `data-parent` = el `code` de su padre (para volver sin recorrer el árbol).
+- Mostrar «un nivel» es enseñar u ocultar la capa del `tier` correspondiente según el zoom.
 
-Rules that keep this from corrupting the model:
+### Profundidad variable: cada tier se rellena con el nivel más profundo disponible
 
-- **`data-admin` stays the feature's true canonical level** even when it appears in a higher
-  tier: a PT *distrito* is `data-admin="1"` in both `tier1` and `tier2`. The tier is the layer;
-  the admin is the fact.
-- **Layers are named by tier, never by admin** — precisely because `tier2` may hold admin-1
-  features.
-- **Duplication is generated from a single source** (the country's admin-1 geometry), merely
-  included in two tier layers at export. It is never authored twice and cannot diverge.
-- **Consistent with the tree:** a node that is a leaf in
-  [`map-regions.json`](#asset-map-regionsjson) (no `children`) cannot drill deeper; its
-  appearance in `tier2` is terminal. The renderer must treat "leaf at this tier" as the end of
-  drill-in.
+No todos los países llegan a admin-2. Una capa de `tier` incluye, **por país, el nivel más profundo que ese país tiene en ese `tier` o por encima**, para que al acercarse no quede un hueco:
 
-### How the SVG is generated (mapshaper)
+- `ES` / `IT` / `FR`: `tier2` = admin-2 (provincias / province / départements).
+- `PT` / `AD`: `tier2` = admin-1 (distritos / parroquias), los mismos elementos que su `tier1`.
 
-mapshaper emits one `<g>` per data layer, sets the path `id` from `id-field`, emits `data-*`
-from `svg-data`, computes fields with `-each`, and attaches external attributes by key with
-`-join`. Pipeline: source admin-0/1/2 geometry → `-join`
-[`map-regions.json`](#asset-map-regionsjson) attributes (code, admin, parent, name) on the ISO
-code → split into tier layers → export with `id-field=code svg-data=admin,parent,name`.
+Detalles que lo mantienen coherente:
 
-**Join-key requirement:** the geometry source's codes must be normalised to our canonical
-ISO 3166-2 (no hyphen) before the join. Watch Natural Earth's hyphenated `iso_3166_2` and its
-`-99` placeholders.
+- El `data-admin` sigue siendo el nivel real del elemento aunque aparezca en un `tier` superior: un distrito de PT es `data-admin="1"` tanto en `tier1` como en `tier2`. El `tier` es la capa; el `admin` es el hecho.
+- Las capas se nombran por `tier`, nunca por `admin`, precisamente porque un `tier2` puede contener elementos admin-1.
+- La duplicación sale de una única fuente (la geometría admin-1 del país), incluida en dos capas al exportar; no se crea dos veces.
+- Un elemento que es hoja en el árbol (sin `children`) no profundiza más: su aparición en `tier2` es el final del recorrido.
 
-### Default colours
+### Cómo se genera el SVG (mapshaper)
 
-Raw mapshaper SVG renders **all-black** (it writes no `fill`, so the browser default applies).
-Set a default palette at generation with **`-style`** (`fill`, `stroke`, `stroke-width`,
-`opacity`; per-tier with `where=`). Because these are SVG **presentation attributes**, they are
-only defaults: the theme's later styling overrides them via CSS **without regenerating the
-map** (a CSS rule beats a presentation attribute). Align the baseline with the project palette
-(backgrounds `#0e0e0e` / `#1a1a1a`, gold accent `#f2c118`).
+La generación usa mapshaper: emite un `<g>` por capa, fija el `id` de cada path desde `id-field`, escribe los `data-*` desde `svg-data`, calcula campos con `-each` y añade atributos externos por clave con `-join`. En resumen: geometría de origen admin-0/1/2 → `-join` de los atributos del modelo de datos (`code`, `admin`, `parent`, `name`) por el código ISO → separar en capas de `tier` → exportar con `id-field=code svg-data=admin,parent,name`.
+
+**Importante para el join:** los códigos de la geometría de origen hay que normalizarlos a nuestro ISO 3166-2 (sin guion) antes del join. Ojo con el `iso_3166_2` con guion de Natural Earth y sus placeholders `-99`.
+
+### Colores por defecto
+
+En crudo, mapshaper saca el SVG **todo negro** (no escribe `fill`, así que se aplica el del navegador). Para darle una paleta por defecto se usa `-style` en la generación (`fill`, `stroke`, `stroke-width`, `opacity`; por `tier` con `where=`). Son solo defaults: al ser atributos de presentación, el estilado del tema los sobreescribe por CSS sin regenerar el mapa. El baseline se alinea con la paleta del proyecto (fondos `#0e0e0e` / `#1a1a1a`, acento dorado `#f2c118`).
 
 [↑ Back to top](#table-of-contents)
 
@@ -257,76 +231,39 @@ countries currently in scope: `ES`, `IT`, `FR`, `PT`, `AD`. `PT` and `AD` carry 
 
 ---
 
-## Asset: `map-regions.json`
+## Modelo de datos: ficheros de regiones
 
-### Purpose
+### Qué es
 
-The actual **navigation tree**: the concrete admin-0/1/2 nodes the map drills through. Where
-`map-levels.json` defines *what each level is*, this asset holds *the nodes themselves* and
-their parent→child nesting, so the map can drill in (`children`) and go back (ancestor in the
-tree).
+El **árbol de navegación** del mapa: los lugares (un país, sus regiones, sus provincias…) y su anidamiento padre→hijo, para que el mapa pueda entrar (`children`) y volver (ascendiente en el árbol).
 
-### Location & format
+Estos ficheros son **output** de la herramienta de BE Map Studio que construye el árbol a partir de la **lista de países**, e **input** de la herramienta que genera el SVG. Por eso aquí se documenta su **estructura**, no un fichero concreto: cualquier fichero que la respete puede ser el activo de producción del mapa. No se editan a mano; los produce BE Map Studio.
 
-- File: [`map-regions.json`](claude/res/map-regions.json)
-- Format: JSON (`json_decode` in PHP, `fetch` / `import` in JS — no build step).
+### Cómo está hecho por dentro
 
-### Provenance
+Dos claves de primer nivel: `_meta` y `tree`.
 
-Populated from **ISO 3166-2** (official authority: ISO Online Browsing Platform), the same
-code system the nodes use. ISO 3166-2 is what supplies the parent→child link (each admin-2
-declares its admin-1 parent). Names are in Spanish (Castilian). Validated on load:
-counts per country match ISO 3166-2, no duplicate codes, every admin-2 nested under an
-existing admin-1.
+- **`_meta`** — información sobre el propio fichero (`purpose`, `levels_ref`, `node_shape`, `source`). No se usa en ejecución.
+- **`tree`** — la lista de países (nodos admin-0). Todo nodo, a cualquier nivel, tiene la misma forma:
+  - `code` — el identificador. País = ISO 3166-1 alpha-2 (`ES`); subdivisiones = ISO 3166-2 **sin el guion** (`ES-AN` → `ESAN`). Es la **clave de join** con la geometría del SVG.
+  - `name` — el nombre a mostrar (ver Notas).
+  - `admin` — el nivel, base 0. Va repetido con la profundidad del árbol a propósito, para poder aplanarlo con facilidad.
+  - `children` — los nodos hijo. Se omite en las hojas (no se deja un `[]` vacío).
 
-### Schema
+**Profundidad variable:** cada país baja tanto como ISO 3166-2 tenga para él (se ha visto hasta **admin-3**); un país sin subdivisiones sería una hoja admin-0.
 
-Top-level keys: `_meta`, `tree`.
+### De dónde salen los datos
 
-- **`_meta`** — self-documentation (`purpose`, `levels_ref`, `node_shape`, `source`). Not
-  consumed at runtime.
-- **`tree`** — ordered array of **admin-0 (country) nodes**. Every node — at any level — has
-  the **same shape**:
-  - `code` *(string, required)* — identifier. Country = ISO 3166-1 alpha-2 (`ES`);
-    sub-national = ISO 3166-2 **without the hyphen** (`ES-AN` → `ESAN`, `ES-SE` → `ESSE`).
-  - `name` *(string, required)* — Spanish name.
-  - `admin` *(number, required)* — canonical level, base 0 (see conventions). Redundant with
-    tree depth on purpose: it makes the tree trivially **flattenable** (depth-first traversal
-    → `[{code, name, admin, parent}]`, with `parent` taken from the ancestor).
-  - `children` *(array, optional)* — child nodes. **Omitted** on leaves (never an empty `[]`).
+Se pueblan desde **ISO 3166-2** (vía `pycountry`), el mismo sistema de códigos que usan los nodos; de ahí sale también el enlace padre→hijo.
 
-Depth is data, not schema: `ES`/`IT`/`FR` go to admin-2; `PT`/`AD` stop at admin-1; a country
-with no sub-national data would be an admin-0 leaf.
+### Notas
 
-### How to update
+- **Nombre bilingüe (nivel país).** El nombre del país viene en dos idiomas: el del propio país y el español (`Nombre [Español]`, p. ej. `France [Francia]`). Cómo se usan los dos se concretará en los TO-DOs pendientes.
+- **Territorios de ultramar.** El pipeline de generación de BE Map Studio tiene un flag para que decidas si se incluyen o no.
 
-- **Add a country:** append an admin-0 node to `tree` (`code` = alpha-2, `admin: 0`), with its
-  `children` if it has sub-national data.
-- **Add / move a sub-national node:** place it inside its parent's `children`, set its `admin`
-  (`parent.admin + 1`), and give it `children` only if it drills deeper.
-- **Source of truth for codes and parent links is ISO 3166-2.** Do not invent a parent from a
-  code's shape; confirm it against ISO 3166-2 (ISO OBP, or a faithful derivative).
-- **Autonomous cities / single-node cases** (e.g. `ESCE` Ceuta, `ESML` Melilla): admin-1 with
-  no `children`.
-- **Validate** after editing: (1) valid JSON; (2) every node's `admin` equals its tree depth;
-  (3) leaves have no `children` key (not an empty array); (4) no duplicate `code` anywhere;
-  (5) codes are ISO 3166-2 without the hyphen (country in alpha-2).
+### Alcance actual
 
-### Do not
-
-- Do not store `parent` on nodes — it is redundant with nesting and is recovered on flatten.
-- Do not use hyphenated ISO codes (`ES-AN`) or reintroduce `level`/`nivel` numbering.
-- Do not nest a node deeper than its real admin level, nor leave an empty `children: []`.
-- Do not assign a parent by guessing from the code; verify against ISO 3166-2.
-
-### Current contents
-
-Five admin-0 countries — `ES`, `IT`, `FR`, `PT`, `AD` (337 nodes total). `ES`/`IT`/`FR` drill
-to admin-2 (provinces / province / départements); `PT`/`AD` stop at admin-1. Counts verified
-against ISO 3166-2: `ES` 19/50, `IT` 20/107, `FR` 13/96 (metropolitan France, Corsica
-included, overseas excluded), `PT` 20 admin-1, `AD` 7 admin-1. Residual: exhaustive
-parent→child correctness across all ~255 second-level nodes was not machine-verified (counts
-and sampling give high confidence).
+Cinco países: `ES`, `IT`, `FR`, `PT`, `AD`. Se amplía cambiando la lista de países de entrada y regenerando con BE Map Studio.
 
 [↑ Back to top](#table-of-contents)
 
