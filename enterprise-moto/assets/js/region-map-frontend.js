@@ -19,11 +19,16 @@
  *   C2 (hecho): hover con globo bilingüe.
  *   C3 (hecho): drill + zoom de viewBox + vecinos atenuados + revelar tier.
  *   C4 (hecho): icono volver (aleja un nivel).
- *   C5 (este):  vecinos atenuados clicables (salto directo) — §7, rediseño de la
+ *   C5 (hecho): vecinos atenuados clicables (salto directo) — §7, rediseño de la
  *               navegación de vecinos: ent-dimmed pasa a visible + CLICABLE + con
  *               globo en todos los niveles; clic en cualquier unidad visible la
  *               reenfoca según su data-admin (país→sus regiones; región→sus
  *               provincias); la hoja (provincia) sigue siendo no-op (#46).
+ *   C6 (este):  saltos región↔región entre países (§7, opción b) — al enfocar una
+ *               región, TODAS las demás regiones tier1 (incluidas las de otros
+ *               países) quedan atenuadas y clicables, para saltar de región a
+ *               región cruzando frontera sin «volver». tier0 sigue oculto a nivel
+ *               región (las regiones ya representan a los países).
  *
  * Copyright (C) 2026 Juanjo Ramos y María José Moreno
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -346,12 +351,14 @@
     animateToBBox(state, childrenBBox(state, countryId, OUTLIERS[countryId]));
   }
 
-  /* Enfocar una región: revela sus provincias (tier2 hijas), atenúa las regiones
-     hermanas del mismo país y oculta el resto; encuadra el bbox de la región
-     (capturado antes de ocultarla). */
+  /* Enfocar una región: revela sus provincias (tier2 hijas) y atenúa TODAS las
+     demás regiones tier1 —incluidas las de otros países— dejándolas clicables, para
+     saltar de región a región cruzando frontera sin «volver» (§7, opción b). tier0
+     sigue oculto a nivel región (las regiones ya representan a los países; mostrar
+     ambos duplicaría el dibujo). Encuadra el bbox de la región (capturado antes de
+     ocultarla). */
   function focusRegion(state, region) {
-    var regionId  = region.getAttribute('id');
-    var countryId = region.getAttribute('data-parent');
+    var regionId = region.getAttribute('id');
     var bbox = bboxOf(region); // región aún visible: su bbox es el objetivo del zoom
     var list, i;
 
@@ -360,8 +367,7 @@
     list = state.svg.querySelectorAll('#tier1 path');
     for (i = 0; i < list.length; i++) {
       if (list[i] === region) setHidden(list[i]);
-      else if (list[i].getAttribute('data-parent') === countryId) setDimmed(state, list[i]);
-      else setHidden(list[i]);
+      else setDimmed(state, list[i]);
     }
     list = state.svg.querySelectorAll('#tier2 path');
     for (i = 0; i < list.length; i++) {
