@@ -17,6 +17,7 @@ This manual documents the **map data assets** of the Enterprise Moto theme. Its 
 
 - [Project-wide conventions (locked)](#project-wide-conventions-locked)
 - [Map structure: zoom tiers](#map-structure-zoom-tiers)
+- [The map generator (Colab library)](#the-map-generator-colab-library)
 - [Asset: `map-levels.json`](#asset-map-levelsjson)
 - [Asset: `map-regions.json`](#asset-map-regionsjson)
 - [Asset: `map-style.json`](#asset-map-stylejson)
@@ -145,6 +146,48 @@ Set a default palette at generation with **`-style`** (`fill`, `stroke`, `stroke
 only defaults: the theme's later styling overrides them via CSS **without regenerating the
 map** (a CSS rule beats a presentation attribute). Align the baseline with the project palette
 (backgrounds `#0e0e0e` / `#1a1a1a`, gold accent `#f2c118`).
+
+[↑ Back to top](#table-of-contents)
+
+---
+
+## The map generator (Colab library)
+
+A **model-driven** Python library, run in Google Colab, that reads the map model assets and generates the SVG defined by [Map structure: zoom tiers](#map-structure-zoom-tiers) using mapshaper. That section is the contract; this library is what produces an SVG that satisfies it. It is a **working generator**, not versioned theme code.
+
+### Configuration: model and output paths
+
+The library holds its input and output paths in **module-level global variables**, so a Colab cell can point it at the model assets and the output file without editing the library's body:
+
+- one global for each **data-model file** it reads — `map-regions.json` (the navigation tree: `code`, `name`, `admin`, `parent`) and `map-style.json` (per-tier default colours);
+- one global for the **output SVG** file to write.
+
+The library exposes functions to set these globals:
+
+- a function to set the **data-model file paths**;
+- a function to set the **output SVG path**;
+- `run()`, which executes the whole pipeline using whatever the globals currently hold.
+
+Defaults assume the files sit in the notebook's working directory.
+
+### What `run()` does (the pipeline)
+
+1. **Ensure mapshaper** is available.
+2. **Load the model.** Read the regions file and flatten the tree depth-first into records of `code`, `name`, `admin`, `parent` (parent from the ancestor). Read the style file.
+3. **Fetch public-domain geometry** (Natural Earth admin-0/1/2).
+4. **Normalise the source codes to the join key.** Convert Natural Earth's `iso_3166_2` and resolve its `-99` / missing-code placeholders into our `code`, **before** the join; countries key on ISO 3166-1 alpha-2.
+5. **Join our attributes.** Join the flattened tree onto the geometry by `code`, so `name`, `admin` and `parent` come from the model, not from Natural Earth's own fields.
+6. **Resolve variable depth.** Where a country's canonical level is coarser than the source geometry, derive that level rather than relabelling finer geometry; `data-admin` always stays the feature's true canonical level.
+7. **Split into tier layers** `tier0` / `tier1` / `tier2`, filling each tier per country with the deepest level available at or above it, so zoom-in never leaves a hole.
+8. **Apply default style.** For each tier, merge the style file's `defaults` with that tier's overrides and pass the result to mapshaper `-style`; apply `canvas.background` as the backdrop.
+9. **Export SVG** with `id-field=code svg-data=admin,parent,name` → one `<g>` per tier; each `<path>` carries `id` (= `code`), `data-admin`, `data-parent`, `data-name`.
+10. **Verify and download.** Report the viewBox, the tier layers and their counts, flag any feature with an empty `code`, render inline, and trigger the Colab download of the output file.
+
+### Contract (must hold)
+
+- Layers named by **tier** (`tier0/1/2`), never by admin.
+- Each `<path>`: `id` = the tree's `code`; `data-admin` = the feature's canonical level; `data-parent` = parent code.
+- Colours are defaults only, overridable later by the theme's CSS without regenerating the map.
 
 [↑ Back to top](#table-of-contents)
 
