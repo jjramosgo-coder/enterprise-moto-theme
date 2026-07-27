@@ -14,6 +14,12 @@
 	display: block;
 	width: 100%;
 	height: auto;
+	/* El fondo lo lleva el <svg>, no el <rect width="100%" height="100%"> del
+	   activo: los % del rect se resuelven contra el viewBox, así que al hacer
+	   zoom (viewBox recortado) el rect queda fuera del área visible y el fondo se
+	   descuadra. El background del elemento es independiente del viewBox y cubre
+	   siempre el área renderizada. Mismo color que el rect del maestro (#51). */
+	background-color: #0e0e0e;
 }
 
 /* ── Fallback sin-JS (#51 · sub-fase render + motor) ──
