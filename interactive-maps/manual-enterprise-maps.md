@@ -152,6 +152,7 @@ Con el fichero de estilo controlas el aspecto del mapa: colores, grosor de las l
 
 - **Color de fondo** — `canvas.background`: el fondo del mapa, en HEX, RGB o HSL.
 - **Proyección** — `projection.type`: cómo se representa el mundo en el plano. Elige uno de los valores de la tabla «Proyecciones disponibles».
+- **optimization**: permite ajustar el equilibrio entre **precisión visual**, **rendimiento de renderizado** y **peso en disco** del archivo SVG generado.
 - **Estilo base de todo el mapa** — `defaults`:
   - `fill`: color de relleno de cada zona.
   - `stroke`: color de la línea (el borde de cada zona).
@@ -207,5 +208,71 @@ Con estos valores verás un mapa con la proyección oficial de la UE, fondo casi
 1. Abre tu fichero de estilo.
 2. Edita el HEX (color) o el número (grosor) en `defaults`, o en el `tier` concreto si solo quieres cambiar ese paso de zoom.
 3. Regenera el mapa con BE Map Studio para ver el cambio.
+
+### Optimización de SVG (`optimization`)
+
+El bloque `"optimization"` dentro de `map-style.json` permite ajustar el equilibrio entre **precisión visual**, **rendimiento de renderizado** y **peso en disco** del archivo SVG generado.
+
+```json
+"optimization": {
+  "simplify_percent": "20%",
+  "min_island_area": "10km2",
+  "svg_precision": 0.1
+}
+```
+
+#### 1. `simplify_percent`
+
+Reducción de la densidad de vértices que componen las fronteras y bordes costeros (mediante el algoritmo de simplificación de Visvalingam).
+
+- **Valores aceptados:**
+- Cadena de texto con porcentaje: `"5%"` a `"100%"`.
+- `null`: Desactiva la simplificación (mantiene el 100% de los detalles del GeoJSON original).
+
+**Implicación de los valores:**
+
+- **`15%` – `30%` (Recomendado):** Reduce el peso entre un **50% y un 80%**. Elimina ruido e imperfecciones no perceptibles en pantalla conservando la forma reconocible de los países.
+- **`< 10%` (Agresivo):** Genera geometrías muy esquemáticas o "poligonales". Ideal solo para mapas estilizados o vistas muy lejanas.
+- **`> 50%` (Ligero):** Mantiene casi todo el detalle técnico original, produciendo archivos de gran tamaño.
+
+#### 2. `min_island_area`
+
+Eliminación de pequeñas islas, islotes o polígonos aislados cuya superficie real sea inferior al valor especificado.
+
+- **Valores aceptados:**
+- Cadena de texto con valor y unidad de superficie: `"5km2"`, `"10km2"`, `"50km2"`, etc.
+- `null`: Conserva todos los polígonos sin importar su tamaño.
+
+**Implicación de los valores:**
+
+- **`10km2` (Recomendado):** Elimina miles de nodos `<path>` imperceptibles que ralentizan la carga del SVG en el navegador, reduciendo el tamaño en un **20% – 40% adicional**.
+- **`1km2` – `5km2`:** Mantiene archipiélagos y detalles insulares finos.
+- **`> 50km2`:** Puede hacer desaparecer islas o provincias pequeñas completas (ej. Ibiza, Malta o pequeñas islas del Egeo).
+
+#### 3. `svg_precision`
+
+Paso de redondeo absoluto para las coordenadas numéricas dentro del atributo `d="..."` del trazado SVG.
+
+**Valores aceptados:**
+
+- Número flotante positivo: `0.01`, `0.1`, `0.5`, `1.0`.
+- `null`: Exporta las coordenadas con la precisión por defecto de Mapshaper (múltiples decimales).
+
+
+**Implicación de los valores:**
+
+- **`0.1` (Recomendado):** Redondea las coordenadas a 1 decimal (ej. `12.3`). Reduce el peso en bytes entre un **20% y un 30%** simplemente eliminando caracteres de texto sobrantes sin impacto visual perceptible.
+- **`0.01` (Alta Fidelidad):** Útil para renders pensados para pantallas 4K/Retina o aplicaciones que permitan hacer gran nivel de zoom.
+- **`>= 0.5` (Reducción agresiva):** Puede producir escalonamiento visible en las líneas curvas o pequeñas holguras entre fronteras adyacentes.
+
+
+#### Perfiles de Configuración Recomendados
+
+| Perfil | `simplify_percent` | `min_island_area` | `svg_precision` | Peso aprox. del SVG | Uso recomendado |
+| --- | --- | --- | --- | --- | --- |
+| **Balanceado (Por defecto)** | `"20%"` | `"10km2"` | `0.1` | **300 KB – 600 KB** | Entornos web, dashboards y apps empresariales. |
+| **Ultra-ligero** | `"10%"` | `"25km2"` | `0.5` | **100 KB – 250 KB** | Listados móviles, miniaturas o carga en conexiones lentas. |
+| **Alta Fidelidad** | `"50%"` | `"2km2"` | `0.01` | **1.5 MB – 3 MB** | Impresión de gran formato o mapas interactivos con zoom profundo. |
+| **Sin Optimizar** | `null` | `null` | `null` | **5 MB – 10 MB** | Archivo maestro para trabajo cartográfico posterior. |
 
 [↑ Volver al índice](#índice)

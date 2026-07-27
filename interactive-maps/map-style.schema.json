@@ -39,6 +39,27 @@
         }
       }
     },
+    "optimization": {
+      "type": "object",
+      "description": "Reglas de optimización de tamaño y densidad de vértices para la exportación SVG.",
+      "additionalProperties": false,
+      "properties": {
+        "simplify_percent": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9]+%$",
+          "description": "Porcentaje de vértices a conservar (ej: '20%'). Usa null para desactivar."
+        },
+        "min_island_area": {
+          "type": ["string", "null"],
+          "description": "Área mínima para conservar polígonos e islas (ej: '10km2'). Usa null para desactivar."
+        },
+        "svg_precision": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Precisión decimal de coordenadas SVG (ej: 0.1 o 0.01). Usa null para desactivar."
+        }
+      }
+    },
     "defaults": {
       "type": "object",
       "properties": {
