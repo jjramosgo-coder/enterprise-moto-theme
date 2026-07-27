@@ -39,20 +39,22 @@
 }
 
 /* ── Interacción de navegación (#44/#51 · afordancia) ──
-   Estilo mínimo y neutro: cursor sobre lo navegable y resalte al pasar por encima.
+   Estilo mínimo y neutro: cursor sobre lo navegable y resalte al pasar por encima
+   de cualquier área activa (incluidas las hojas reveladas al hacer drill).
    La tematización final por región (tokens editoriales) es #47/#48, no aquí. */
 .ent-region-map path.ent-navigable {
 	cursor: pointer;
 }
 
-.ent-region-map path.ent-navigable:hover {
+.ent-region-map path.ent-active:hover {
 	fill: #f2c118;
 	fill-opacity: 0.85;
 }
 
-/* Globo con el nombre del área. Se añade a <body>, por eso el selector no está
-   anidado. El CSS solo se encola donde hay bloque, así que la clase no se filtra
-   a otras páginas. */
+/* Globo con el nombre del área (#51 · bilingüe). Se añade a <body>, por eso el
+   selector no está anidado. El CSS solo se encola donde hay bloque, así que la
+   clase no se filtra a otras páginas. Línea principal = nombre en español; línea
+   secundaria (cursiva, menor y atenuada) = nombre nativo, oculta si coinciden. */
 .ent-region-map__balloon {
 	position: fixed;
 	z-index: 1000;
@@ -65,6 +67,17 @@
 	white-space: nowrap;
 	border-radius: 4px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.ent-region-map__balloon-name {
+	display: block;
+}
+
+.ent-region-map__balloon-native {
+	display: block;
+	font-style: italic;
+	font-size: 11px;
+	opacity: 0.7;
 }
 
 /* ── Control «volver» (#44/#51) ──
