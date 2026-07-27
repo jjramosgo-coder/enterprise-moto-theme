@@ -1606,9 +1606,10 @@ function enterprise_map_frontend_assets() {
 add_action( 'wp_enqueue_scripts', 'enterprise_map_frontend_assets' );
 
 /* ─────────────────────────────────────────
-   CSS DEL BLOQUE interactive-region-map (#43)
+   CSS + JS DEL BLOQUE interactive-region-map (#43 / #51)
    Nativo SVG: NO carga OpenLayers ni comparte enterprise_map_frontend_assets()
-   (§13.19). Solo dimensionado responsive, encolado condicional por has_block.
+   (§13.19). Dimensionado responsive + motor de navegación (SVG único, DOM-driven,
+   sin fetch). Encolado condicional por has_block, cache-busting por filemtime.
 ───────────────────────────────────────── */
 function enterprise_region_map_assets() {
     if ( ! is_singular() && ! is_page() ) return;
@@ -1622,6 +1623,15 @@ function enterprise_region_map_assets() {
         get_template_directory_uri() . '/assets/css/interactive-region-map.css',
         array( 'enterprise-style' ),
         file_exists( $css_path ) ? filemtime( $css_path ) : ENTERPRISE_VERSION
+    );
+
+    $js_path = get_template_directory() . '/assets/js/region-map-frontend.js';
+    wp_enqueue_script(
+        'enterprise-region-map-frontend',
+        get_template_directory_uri() . '/assets/js/region-map-frontend.js',
+        array(),
+        file_exists( $js_path ) ? filemtime( $js_path ) : ENTERPRISE_VERSION,
+        true
     );
 }
 add_action( 'wp_enqueue_scripts', 'enterprise_region_map_assets' );

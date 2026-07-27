@@ -1,13 +1,13 @@
 /*
  * Enterprise Moto — interactive-region-map.css
- * Bloque "Mapa interactivo de regiones" (#43). Solo dimensionado responsive:
- * evita que el SVG (ancho intrínseco 1000px) desborde en móvil.
+ * Bloque "Mapa interactivo de regiones" (#43 / #51). Dimensionado responsive +
+ * modelo de visibilidad del motor de navegación (SVG único, DOM-driven).
  * El color por región y los tokens editoriales son #47/#48; aquí NO hay tematización.
  */
 .ent-region-map {
 	max-width: 900px;
 	margin-inline: auto;
-	position: relative; /* ancla el control «volver» (#44) */
+	position: relative; /* ancla el control «volver» (#44/#51) */
 }
 
 .ent-region-map svg {
@@ -16,18 +16,30 @@
 	height: auto;
 }
 
-/* ── Render estático e inerte (#51 · sub-fase render) ──
+/* ── Fallback sin-JS (#51 · sub-fase render + motor) ──
    El maestro georreferenciado trae tres capas (tier0 países / tier1 regiones /
-   tier2 provincias). En el render estático se muestra solo la capa de países;
-   las capas interiores se ocultan para un mapa limpio. El motor interactivo
-   (sub-fase siguiente de #51) gestionará la visibilidad de tiers al hacer zoom. */
-.ent-region-map svg #tier1,
-.ent-region-map svg #tier2 {
+   tier2 provincias). Sin motor (contenedor sin .is-ready) se muestra solo la capa
+   de países ocultando las interiores, igual que el render estático. Con el motor
+   activo (.is-ready) la visibilidad la gobiernan las clases por-path de más abajo. */
+.ent-region-map:not(.is-ready) svg #tier1,
+.ent-region-map:not(.is-ready) svg #tier2 {
 	display: none;
 }
 
-/* ── Interacción de navegación (#44 · hover) ──
-   Estilo mínimo y neutro: afordancia (cursor) y resalte al pasar por encima.
+/* ── Modelo de visibilidad del motor (#51 · clases por-path) ──
+   ent-active: visible e interactivo · ent-dimmed: visible, atenuado y no
+   interactivo (vecinos) · ent-hidden: oculto. */
+.ent-region-map path.ent-hidden {
+	display: none;
+}
+
+.ent-region-map path.ent-dimmed {
+	opacity: 0.25;
+	pointer-events: none;
+}
+
+/* ── Interacción de navegación (#44/#51 · afordancia) ──
+   Estilo mínimo y neutro: cursor sobre lo navegable y resalte al pasar por encima.
    La tematización final por región (tokens editoriales) es #47/#48, no aquí. */
 .ent-region-map path.ent-navigable {
 	cursor: pointer;
@@ -38,9 +50,9 @@
 	fill-opacity: 0.85;
 }
 
-/* Globo con el nombre del área (solo texto). Se añade a <body>, por eso el
-   selector no está anidado. El CSS solo se encola donde hay bloque, así que la
-   clase no se filtra a otras páginas. */
+/* Globo con el nombre del área. Se añade a <body>, por eso el selector no está
+   anidado. El CSS solo se encola donde hay bloque, así que la clase no se filtra
+   a otras páginas. */
 .ent-region-map__balloon {
 	position: fixed;
 	z-index: 1000;
@@ -55,9 +67,11 @@
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
-/* ── Control «volver» (#44) ──
-   Botón con icono inline (sin texto), arriba-izquierda. Oculto en nivel-1; visible
-   en cualquier nivel más profundo. Estilo mínimo con el dorado del tema. */
+/* ── Control «volver» (#44/#51) ──
+   Botón con icono inline (sin texto), arriba-izquierda. Oculto por defecto; visible
+   solo cuando el motor marca el contenedor como drilleado (.is-drilled, en C4).
+   El antiguo selector [data-map-level] queda retirado: render.php ya no emite ese
+   atributo, así que la visibilidad la gobierna ahora una clase del motor. */
 .ent-region-map__back {
 	position: absolute;
 	top: 8px;
@@ -77,7 +91,7 @@
 	cursor: pointer;
 }
 
-.ent-region-map:not([data-map-level="1"]) .ent-region-map__back {
+.ent-region-map.is-drilled .ent-region-map__back {
 	display: flex;
 }
 
