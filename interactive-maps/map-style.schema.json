@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BEMapStyleConfig",
+  "description": "Esquema de validación para la configuración de estilos y proyección del generador de mapas.",
+  "type": "object",
+  "required": ["canvas", "projection", "defaults", "tiers"],
+  "properties": {
+    "_meta": {
+      "type": "object",
+      "description": "Metadatos informativos sobre el uso del JSON."
+    },
+    "canvas": {
+      "type": "object",
+      "required": ["background"],
+      "properties": {
+        "background": {
+          "type": "string",
+          "description": "Color de fondo del canvas en formato HEX, RGB o HSL."
+        }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "none",
+            "europe_official",
+            "albers",
+            "mercator",
+            "lambert",
+            "robinson",
+            "ortho"
+          ],
+          "description": "Identificador de la proyección registrada en el diccionario de la librería."
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "fill": { "type": "string" },
+        "stroke": { "type": "string" },
+        "stroke-width": { "type": "number" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "tiers": {
+      "type": "object",
+      "patternProperties": {
+        "^tier[0-2]+$": {
+          "type": "object",
+          "properties": {
+            "fill": { "type": "string" },
+            "stroke": { "type": "string" },
+            "stroke-width": { "type": "number" },
+            "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    }
+  }
+}

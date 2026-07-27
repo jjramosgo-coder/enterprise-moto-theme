@@ -1,0 +1,26 @@
+{
+  "$schema": "./map-style.schema.json",
+  "_meta": {
+    "purpose": "Decoración por defecto para la generación del mapa (no cartográfico). Base de estilo que hornea el generador.",
+    "consumer": "Generador de mapas (Gemini/mapshaper -style) + backdrop. Sobrescribible luego por el CSS del tema.",
+    "tier_ref": "Tiers definidos en la sección 'Map structure: zoom tiers' del manual (tier0/tier1/tier2).",
+    "extensible": "Home de datos no cartográficos de generación; añadir secciones de primer nivel, no sobrecargar 'tiers'."
+  },
+  "projection": {
+    "type": "europe_official"
+  },
+  "canvas": {
+    "background": "#0e0e0e"
+  },
+  "defaults": {
+    "fill": "#1a1a1a",
+    "stroke": "#0e0e0e",
+    "stroke-width": 0.5,
+    "opacity": 1
+  },
+  "tiers": {
+    "tier0": { "stroke": "#f2c118", "stroke-width": 0.8 },
+    "tier1": { "stroke": "#3a3a3a", "stroke-width": 0.5 },
+    "tier2": { "stroke": "#2a2a2a", "stroke-width": 0.3 }
+  }
+}

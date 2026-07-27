@@ -1,67 +1,19 @@
-# Enterprise Maps — asset manual (for AI agents)
+# Mapas interactivos de Bitácora Enterprise — manual de usuario
 
-This manual documents the **map data assets** of the Enterprise Moto theme. Its reader is
-**another AI agent**: read this manual first, then you can locate an asset in the folder
-(`claude/res/`) and **update its content** without breaking the agreed conventions.
+Este manual explica los **mapas interactivos** del tema: cómo se estructuran y cómo manejar los ficheros con los que se generan. Está pensado para una persona.
 
-- One entry per asset. Assets live in `claude/res/`.
-- These are **working assets**, not versioned theme code. Like the rest of `claude/`, they are
-  not tracked in git. Carrying an asset into the versioned theme (`enterprise-moto/assets/`)
-  is a separate step, outside this manual.
-- **Golden rule:** the manual is the method; the asset is the data. When you change an asset,
-  keep it consistent with the conventions below and with the asset's own `_meta` block.
+Los mapas los genera **BE Map Studio** (una toolbox en notebooks de Google Colab) a partir de dos ingredientes: un fichero de **datos** (el árbol de regiones por el que se navega) y un fichero de **estilo** (colores, líneas, proyección…). Este manual documenta esos ficheros —qué son, cómo se estructuran y cómo tocarlos— junto con el vocabulario del mapa.
+
+- Los activos versionados de los mapas (este manual, el esquema de estilo y su ejemplo) están en `interactive-maps/`. Los ficheros de datos que produce BE Map Studio son ficheros de trabajo en `claude/res/`.
 
 ---
 
-## Table of contents
+## Índice
 
-- [Project-wide conventions (locked)](#project-wide-conventions-locked)
 - [Estructura del mapa: zoom tiers](#estructura-del-mapa-zoom-tiers)
-- [The map generator (Colab library)](#the-map-generator-colab-library)
-- [Asset: `map-levels.json`](#asset-map-levelsjson)
+- [El generador de mapas (BE Map Studio)](#el-generador-de-mapas-be-map-studio)
 - [Modelo de datos: ficheros de regiones](#modelo-de-datos-ficheros-de-regiones)
-- [Asset: `map-style.json`](#asset-map-stylejson)
-
----
-
-## Project-wide conventions (locked)
-
-These apply to every level-based asset. They exist to kill a real ambiguity that appeared
-in the legacy `region-codes.json`, where the word "level" meant two different things.
-
-### Canonical level numbering: `admin`, base 0
-
-The **only** valid level numbering is the canonical GIS one, base 0, as used by
-Natural Earth and GADM:
-
-| `admin` | `key`       | What it is                | Example (ES)         |
-|--------:|-------------|---------------------------|----------------------|
-| `0`     | `country`   | Country (national border) | Spain                |
-| `1`     | `region`    | 1st sub-national division | Comunidad autónoma   |
-| `2`     | `subregion` | 2nd sub-national division | Provincia            |
-
-- **`admin`** is the machine identity of a level. It is a number, base 0.
-- **`key`** is a stable text identifier (`country` / `region` / `subregion`). Prefer it in
-  code so logic does not depend on the number.
-
-### Forbidden
-
-- **Never** use `levelN` / `nivelN` as a **data** identifier. That homonymy (legacy
-  `level1` = country vs `admin1` = región) is exactly what this model removes.
-- Do not introduce a second, competing numbering alongside `admin`.
-
-### UI ordinal (presentation only)
-
-If the interface needs to show "nivel 1 / 2 / 3", that is a **navigation ordinal**, derived
-at presentation time as `admin + 1`. It is **never stored** in an asset.
-
-### Supra-national scope
-
-Continent is out of the model for now (decided: not relevant). The hierarchy starts at
-`admin: 0` (country). Do not add a continent field to these assets unless a future decision
-reopens it.
-
-[↑ Back to top](#table-of-contents)
+- [Asset: estilo del mapa](#asset-estilo-del-mapa)
 
 ---
 
@@ -121,113 +73,28 @@ La generación usa mapshaper: emite un `<g>` por capa, fija el `id` de cada path
 
 En crudo, mapshaper saca el SVG **todo negro** (no escribe `fill`, así que se aplica el del navegador). Para darle una paleta por defecto se usa `-style` en la generación (`fill`, `stroke`, `stroke-width`, `opacity`; por `tier` con `where=`). Son solo defaults: al ser atributos de presentación, el estilado del tema los sobreescribe por CSS sin regenerar el mapa. El baseline se alinea con la paleta del proyecto (fondos `#0e0e0e` / `#1a1a1a`, acento dorado `#f2c118`).
 
-[↑ Back to top](#table-of-contents)
+[↑ Volver al índice](#índice)
 
 ---
 
-## The map generator (Colab library)
+## El generador de mapas (BE Map Studio)
 
-A **model-driven** Python library, run in Google Colab, that reads the map model assets and generates the SVG defined by [Map structure: zoom tiers](#map-structure-zoom-tiers) using mapshaper. That section is the contract; this library is what produces an SVG that satisfies it. It is a **working generator**, not versioned theme code.
+BE Map Studio es la toolbox (notebooks de Google Colab) que genera el SVG del mapa a partir de dos ficheros: el de **datos de regiones** (el árbol de navegación) y el de **estilo**. Vive en tu Colab y no se versiona con el tema; el prompt para (re)generar la librería está en `claude/res/svg-generator-library.md`. El SVG que produce cumple lo que describe la sección [Estructura del mapa: zoom tiers](#estructura-del-mapa-zoom-tiers).
 
-The Gemini prompt that pilots the generation of this library lives in [`svg-generator-library.md`](claude/res/svg-generator-library.md).
+### Generar un mapa
 
-### Configuration: model and output paths
+1. Indícale tu **fichero de datos de regiones** y tu **fichero de estilo**.
+2. Indícale **dónde guardar** el SVG.
+3. Ejecútalo (`run()`).
+4. Al terminar, revisa el resumen que muestra (viewBox, capas y recuentos) y **descarga** el SVG.
 
-The library holds its input and output paths in **module-level global variables**, so a Colab cell can point it at the model assets and the output file without editing the library's body:
+Por defecto busca los ficheros en el directorio de trabajo del notebook; las rutas se fijan con las funciones de configuración que expone la librería.
 
-- one global for each **data-model file** it reads — `map-regions.json` (the navigation tree: `code`, `name`, `admin`, `parent`) and `map-style.json` (per-tier default colours);
-- one global for the **output SVG** file to write.
+### Qué hace por dentro (resumen)
 
-The library exposes functions to set these globals:
+Toma tu árbol de regiones y tu estilo, trae geometría de dominio público (Natural Earth), **normaliza sus códigos a los nuestros** (ISO 3166-2 sin guion), une tus datos (`code`, `name`, `admin`, `parent`) con la geometría, arma las capas por `tier` —rellenando la profundidad variable para que al acercarse no queden huecos— y aplica tus colores por defecto. El resultado es un SVG con las capas `tier0` / `tier1` / `tier2`, y cada zona con su `id` (= `code`), `data-admin`, `data-parent` y `data-name`.
 
-- a function to set the **data-model file paths**;
-- a function to set the **output SVG path**;
-- `run()`, which executes the whole pipeline using whatever the globals currently hold.
-
-Defaults assume the files sit in the notebook's working directory.
-
-### What `run()` does (the pipeline)
-
-1. **Ensure mapshaper** is available.
-2. **Load the model.** Read the regions file and flatten the tree depth-first into records of `code`, `name`, `admin`, `parent` (parent from the ancestor). Read the style file.
-3. **Fetch public-domain geometry** (Natural Earth admin-0/1/2).
-4. **Normalise the source codes to the join key.** Convert Natural Earth's `iso_3166_2` and resolve its `-99` / missing-code placeholders into our `code`, **before** the join; countries key on ISO 3166-1 alpha-2.
-5. **Join our attributes.** Join the flattened tree onto the geometry by `code`, so `name`, `admin` and `parent` come from the model, not from Natural Earth's own fields.
-6. **Resolve variable depth.** Where a country's canonical level is coarser than the source geometry, derive that level rather than relabelling finer geometry; `data-admin` always stays the feature's true canonical level.
-7. **Split into tier layers** `tier0` / `tier1` / `tier2`, filling each tier per country with the deepest level available at or above it, so zoom-in never leaves a hole.
-8. **Apply default style.** For each tier, merge the style file's `defaults` with that tier's overrides and pass the result to mapshaper `-style`; apply `canvas.background` as the backdrop.
-9. **Export SVG** with `id-field=code svg-data=admin,parent,name` → one `<g>` per tier; each `<path>` carries `id` (= `code`), `data-admin`, `data-parent`, `data-name`.
-10. **Verify and download.** Report the viewBox, the tier layers and their counts, flag any feature with an empty `code`, render inline, and trigger the Colab download of the output file.
-
-### Contract (must hold)
-
-- Layers named by **tier** (`tier0/1/2`), never by admin.
-- Each `<path>`: `id` = the tree's `code`; `data-admin` = the feature's canonical level; `data-parent` = parent code.
-- Colours are defaults only, overridable later by the theme's CSS without regenerating the map.
-
-[↑ Back to top](#table-of-contents)
-
----
-
-## Asset: `map-levels.json`
-
-### Purpose
-
-Canonical dictionary of the map's navigation levels: **what each level is**, its stable
-identifiers, and **its concrete name per country**. It is the single source of truth other
-map assets and the theme's map code refer to when they need to name or order a level.
-
-### Location & format
-
-- File: [`map-levels.json`](claude/res/map-levels.json)
-- Format: JSON (loaded with `json_decode` in PHP, `fetch` / `import` in JS — no build step).
-
-### Schema
-
-Top-level keys: `_meta`, `levels`, `names_by_country`.
-
-- **`_meta`** — self-documentation of the asset. Not consumed at runtime.
-  - `purpose` — one line, what the asset is for.
-  - `glossary` — meaning of each field (`admin`, `key`, `label`, `names_by_country`).
-  - `conventions` — the locked rules (`forbidden`, `ui_ordinal`) restated inside the asset.
-- **`levels`** — ordered array, one object per level. Each object:
-  - `admin` *(number, required)* — canonical level, base 0.
-  - `key` *(string, required)* — stable text id: `country` / `region` / `subregion`.
-  - `label` *(string, required)* — generic UI name in Spanish (e.g. `"Región"`).
-- **`names_by_country`** — per-country concrete names. Key = ISO 3166-1 alpha-2 country
-  code (uppercase). Value = object mapping a level `key` to its concrete Spanish name in
-  that country. `country` (admin-0) is not repeated here; only the sub-national levels.
-
-### How to update
-
-- **Add / edit a per-country name:** under `names_by_country`, add or edit the country's
-  entry, keyed by level `key`. Example — adding Germany's regional name:
-  `"DE": { "region": "Bundesland" }`.
-- **A country with only one sub-national level:** include only `region`, omit `subregion`.
-  This is how the asset encodes that a country's depth stops at admin-1 (e.g. `PT`
-  distritos, `AD` parroquias, which have no admin-2 in this model).
-- **Country codes** must be ISO 3166-1 alpha-2, uppercase, to stay consistent with
-  `region-codes.json`.
-- **Spanish literals** (`label`, `names_by_country` values) are interface text: write them
-  in Spanish, correctly accented.
-- **Validate** after editing: (1) the file is valid JSON; (2) every `key` used in
-  `names_by_country` exists in `levels`; (3) `admin` values stay base-0 and contiguous
-  (`0, 1, 2`); (4) `levels` stays ordered by `admin`.
-
-### Do not
-
-- Do not reintroduce `level` / `nivel` numbering, nor rename `admin` to a 1-based scheme.
-- Do not store a UI ordinal (`admin + 1`) in the file.
-- Do not add levels deeper than the country actually has (no empty `subregion`).
-- Do not add a continent / supra-national field (see conventions).
-
-### Current contents
-
-Levels `country` / `region` / `subregion` (admin 0/1/2) and per-country names for the five
-countries currently in scope: `ES`, `IT`, `FR`, `PT`, `AD`. `PT` and `AD` carry only
-`region` (single sub-national level). Extend as new countries or specifications arrive.
-
-[↑ Back to top](#table-of-contents)
+[↑ Volver al índice](#índice)
 
 ---
 
@@ -265,69 +132,80 @@ Se pueblan desde **ISO 3166-2** (vía `pycountry`), el mismo sistema de códigos
 
 Cinco países: `ES`, `IT`, `FR`, `PT`, `AD`. Se amplía cambiando la lista de países de entrada y regenerando con BE Map Studio.
 
-[↑ Back to top](#table-of-contents)
+[↑ Volver al índice](#índice)
 
 ---
 
-## Asset: `map-style.json`
+## Asset: estilo del mapa
 
-### Purpose
+Con el fichero de estilo controlas el aspecto del mapa: colores, grosor de las líneas, opacidad, color de fondo y la proyección. Al lado tienes un **esquema** (`map-style.schema.json`), que lista las opciones válidas y valida el fichero mientras lo escribes, y un **ejemplo** listo para copiar (`map-style.json`); ambos en `interactive-maps/`.
 
-Non-cartographic **decoration input** for map generation: the default colours and stroke
-weights the generator bakes into the SVG so it does not come out all-black (see
-[Default colours](#map-structure-zoom-tiers)). Also the home for any future non-cartographic
-generation data, kept separate from geometry and from the tree. Exchanged with the map
-generator (Gemini / mapshaper) as structured data.
+### Crear tu fichero de estilo
 
-### Location & format
+1. Copia `map-style.json` y renómbralo a tu gusto.
+2. Comprueba que la primera línea enlaza el esquema (así tu editor te avisa de errores):
+   - si el fichero está en la misma carpeta que el esquema: `"$schema": "./map-style.schema.json"`;
+   - si está en otra carpeta, ajusta la ruta (p. ej. `"$schema": "../interactive-maps/map-style.schema.json"`).
+3. Cambia los valores (ver abajo) y regenera el mapa con BE Map Studio: verás aplicados esos colores, grosores y la proyección elegida.
 
-- File: [`map-style.json`](claude/res/map-style.json)
-- Format: JSON.
+### Qué puedes ajustar
 
-### Consumer contract (how the generator applies it)
+- **Color de fondo** — `canvas.background`: el fondo del mapa, en HEX, RGB o HSL.
+- **Proyección** — `projection.type`: cómo se representa el mundo en el plano. Elige uno de los valores de la tabla «Proyecciones disponibles».
+- **Estilo base de todo el mapa** — `defaults`:
+  - `fill`: color de relleno de cada zona.
+  - `stroke`: color de la línea (el borde de cada zona).
+  - `stroke-width`: grosor de la línea (un número).
+  - `opacity`: opacidad, de `0` (transparente) a `1` (opaco).
+- **Estilo por paso de zoom** — `tiers` (`tier0`, `tier1`, `tier2`): en cada uno escribe solo lo que quieras que se vea distinto del estilo base.
+- `_meta` es opcional: notas para ti; no cambia el mapa.
 
-- For each zoom tier (see [Map structure: zoom tiers](#map-structure-zoom-tiers)), merge
-  `defaults` with that tier's overrides in `tiers`, and pass the result to mapshaper `-style`
-  on the tier's layer. Keys map 1:1 to SVG presentation attributes (`fill`, `stroke`,
-  `stroke-width`, `opacity`).
-- `canvas.background` is the intended backdrop — applied as a background `<rect>` at
-  generation, or by the theme container.
-- Everything here is a **default baseline**: presentation attributes, overridable by the
-  theme's CSS at runtime **without regenerating the map**.
+Para los colores puedes usar la paleta editorial del tema (tabla abajo) o tus propios valores.
 
-### Schema
+### Proyecciones disponibles
 
-Top-level keys: `_meta`, `canvas`, `defaults`, `tiers`.
+| Valor (`type`) | Nombre | Qué hace |
+|---|---|---|
+| `none` | Sin proyección (WGS84 / Geográfica) | Estado original por defecto. Mapea grados directamente a coordenadas X/Y (Plate Carrée). Produce esa sensación de curvatura o inclinación. |
+| `europe_official` | Oficial Unión Europea (ETRS89-extended / LAEA) | Estándar técnico de Eurostat. Preserva el área real de los países (visión cenital equilibrada). |
+| `albers` | Albers Equal Area Conic | Proyección cónica. Muy estilizada y limpia para mapas continentales. |
+| `mercator` | Web Mercator | Vista plana cartesiana recta, idéntica a Google Maps u OpenStreetMap. |
+| `lambert` | Lambert Conformal Conic | Proyección cónica conforme que mantiene fielmente la forma local de las fronteras. |
+| `robinson` | Robinson | Curva los bordes para ofrecer una perspectiva global o de gran escala. |
+| `ortho` | Ortográfica (efecto globo 3D) | Representa el mapa como si se observara el planeta desde el espacio. |
 
-- **`_meta`** — self-documentation. Not consumed at generation.
-- **`canvas.background`** *(string)* — page backdrop colour (hex).
-- **`defaults`** *(object)* — base style applied to every feature. Keys are **exact SVG
-  presentation-attribute names**: `fill`, `stroke`, `stroke-width`, `opacity`.
-- **`tiers.tierN`** *(object)* — per-tier overrides of the same keys, keyed by zoom tier
-  (`tier0` = countries, `tier1`, `tier2`). Merged **over** `defaults`; only list what differs.
+### La paleta editorial
 
-### How to update
+| Color | HEX | Dónde se usa |
+|---|---|---|
+| Negro (fondo) | `#0e0e0e` | fondo del mapa (`canvas.background`) y borde base |
+| Negro suave (superficie) | `#1a1a1a` | relleno de las zonas (`defaults.fill`) |
+| Dorado (acento de marca) | `#f2c118` | borde de los países (`tier0`) |
+| Gris oscuro | `#3a3a3a` | borde del nivel intermedio (`tier1`) |
+| Gris muy oscuro | `#2a2a2a` | borde del nivel más fino (`tier2`) |
 
-- **Change a colour / weight:** edit the hex or number under `defaults` or a specific
-  `tiers.tierN`.
-- **Add a styleable property:** use its **exact SVG presentation-attribute name** (e.g.
-  `fill-opacity`) so it maps straight to mapshaper `-style`.
-- **Tier keys** stay `tier0` / `tier1` / `tier2` — never `admin0/1/2` (see
-  [Map structure: zoom tiers](#map-structure-zoom-tiers)).
-- **Non-style generation data:** add a new top-level section; do not overload `tiers`.
+### Ejemplo
 
-### Do not
+```json
+{
+  "$schema": "./map-style.schema.json",
+  "projection": { "type": "europe_official" },
+  "canvas":     { "background": "#0e0e0e" },
+  "defaults":   { "fill": "#1a1a1a", "stroke": "#0e0e0e", "stroke-width": 0.5, "opacity": 1 },
+  "tiers": {
+    "tier0": { "stroke": "#f2c118", "stroke-width": 0.8 },
+    "tier1": { "stroke": "#3a3a3a", "stroke-width": 0.5 },
+    "tier2": { "stroke": "#2a2a2a", "stroke-width": 0.3 }
+  }
+}
+```
 
-- Do not put interaction states (hover / active) here — those are runtime theme styling (their
-  own TO-DOs), not generation defaults.
-- Do not put cartographic / geometry parameters here (projection, `simplify`, clip bbox):
-  those belong with the generation geometry, not with decoration.
-- Do not key styles by admin level; key by tier.
+Con estos valores verás un mapa con la proyección oficial de la UE, fondo casi negro, zonas gris oscuro, los países con el borde dorado algo grueso y los niveles interiores con líneas grises cada vez más finas.
 
-### Current contents
+### Cambiar un color o un grosor
 
-Dark editorial baseline aligned to the project palette: backdrop `#0e0e0e`, land fill
-`#1a1a1a`, country outline (`tier0`) in gold `#f2c118`, sub-national tiers with progressively
-finer grey strokes. Values are a starting default, meant to be tuned.
+1. Abre tu fichero de estilo.
+2. Edita el HEX (color) o el número (grosor) en `defaults`, o en el `tier` concreto si solo quieres cambiar ese paso de zoom.
+3. Regenera el mapa con BE Map Studio para ver el cambio.
 
-[↑ Back to top](#table-of-contents)
+[↑ Volver al índice](#índice)
