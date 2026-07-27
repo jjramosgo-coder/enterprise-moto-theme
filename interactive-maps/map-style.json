@@ -9,6 +9,11 @@
   "projection": {
     "type": "europe_official"
   },
+  "optimization": {
+    "simplify_percent": "20%",
+    "min_island_area": "10km2",
+    "svg_precision": 0.1
+  },
   "canvas": {
     "background": "#0e0e0e"
   },
