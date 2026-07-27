@@ -17,8 +17,8 @@
  * Commits de #51 (sub-fase 3):
  *   C1 (hecho): bootstrap + modelo de visibilidad (ent-active/ent-dimmed/ent-hidden).
  *   C2 (hecho): hover con globo bilingüe.
- *   C3 (este):  drill + zoom de viewBox + vecinos atenuados + revelar tier.
- *   C4: icono volver (aleja un nivel).
+ *   C3 (hecho): drill + zoom de viewBox + vecinos atenuados + revelar tier.
+ *   C4 (este):  icono volver (aleja un nivel).
  *
  * Copyright (C) 2026 Juanjo Ramos y María José Moreno
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -74,6 +74,12 @@
   function hasChildren(state, pathEl) {
     var id = pathEl.getAttribute('id');
     return !!id && getChildren(state, id).length > 0;
+  }
+
+  /* País (tier0) de un id de país. */
+  function getCountry(state, countryId) {
+    if (!countryId) return null;
+    return state.svg.querySelector('#tier0 [id="' + countryId + '"]');
   }
 
   /* ═══════════════════════════════════════════
@@ -268,21 +274,39 @@
     return box;
   }
 
-  function animateTo(state, bbox) {
+  /* Anima el viewBox actual → toVB (array [x,y,w,h]). */
+  function animateVB(state, toVB) {
     hideBalloon(state);
-    if (!bbox) return;
+    if (!toVB) return;
     var fromVB = parseViewBox(state.svg);
     if (!fromVB) return;
-    var toVB = zoomViewBox(fromVB, bbox);
     state.animating = true;
     animateViewBox(state.svg, fromVB, toVB, ZOOM_MS, function () {
       state.animating = false;
     });
   }
 
+  /* Anima el viewBox para encuadrar un bbox (con margen y aspecto del lienzo). */
+  function animateToBBox(state, bbox) {
+    if (!bbox) { hideBalloon(state); return; }
+    var fromVB = parseViewBox(state.svg);
+    if (!fromVB) { hideBalloon(state); return; }
+    animateVB(state, zoomViewBox(fromVB, bbox));
+  }
+
   /* ═══════════════════════════════════════════
-     DRILL (reasignación de clases + zoom; nunca swap: es un único SVG)
+     ENFOQUE (reasignación de clases + zoom; nunca swap: es un único SVG)
   ═══════════════════════════════════════════ */
+  /* Nivel-0: Europa completa. Restablece visibilidad de países y aleja el viewBox
+     al lienzo maestro; oculta el control «volver» (quita .is-drilled). */
+  function focusEurope(state) {
+    applyLevel0(state);
+    state.focus = null;
+    state.level = 0;
+    state.container.classList.remove('is-drilled');
+    animateVB(state, state.baseVB.slice());
+  }
+
   /* Enfocar un país: revela sus regiones (tier1 hijas), atenúa los otros países
      (tier0) como vecinos y oculta el resto; luego encuadra su cuerpo principal
      (bbox de las hijas, sin outliers). */
@@ -305,8 +329,9 @@
 
     state.focus = country;
     state.level = 1;
+    state.container.classList.add('is-drilled');
 
-    animateTo(state, childrenBBox(state, countryId, OUTLIERS[countryId]));
+    animateToBBox(state, childrenBBox(state, countryId, OUTLIERS[countryId]));
   }
 
   /* Enfocar una región: revela sus provincias (tier2 hijas), atenúa las regiones
@@ -334,8 +359,9 @@
 
     state.focus = region;
     state.level = 2;
+    state.container.classList.add('is-drilled');
 
-    animateTo(state, bbox);
+    animateToBBox(state, bbox);
   }
 
   function drill(state, pathEl) {
@@ -345,12 +371,27 @@
     /* admin '2' (provincia) no tiene hijos: nunca llega aquí (guard hasChildren). */
   }
 
+  /* Sube un nivel: región → su país (data-parent), país → Europa. El estado se
+     deriva del DOM (no hay pila de historial); cada re-enfoque recalcula la
+     visibilidad y anima el viewBox al encuadre del padre. */
+  function goBack(state) {
+    if (state.animating) return;
+    if (state.level === 2 && state.focus) {
+      var country = getCountry(state, state.focus.getAttribute('data-parent'));
+      if (country) focusCountry(state, country);
+      else focusEurope(state);
+    } else if (state.level === 1) {
+      focusEurope(state);
+    }
+    /* nivel-0: no-op (el control está oculto). */
+  }
+
   /* ═══════════════════════════════════════════
-     CONTROL «VOLVER» (creado aquí; su comportamiento —subir un nivel— es C4)
+     CONTROL «VOLVER»
   ═══════════════════════════════════════════ */
   /* <button> con un SVG inline (flecha de retorno curva), sin texto visible,
-     arriba-izquierda. Hasta C4 queda oculto por CSS (solo visible con .is-drilled,
-     que gobernará el motor en C4). */
+     arriba-izquierda. Su visibilidad la gobierna el CSS por la clase .is-drilled
+     del contenedor (oculto en nivel-0). */
   function createBackButton(state) {
     var btn = document.createElement('button');
     btn.type = 'button';
@@ -363,10 +404,9 @@
         '<path d="M4 11 H14 a5 5 0 0 1 5 5 V19" fill="none" stroke="currentColor" ' +
           'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
       '</svg>';
-    /* El comportamiento (goBack) y el toggle de .is-drilled llegan en C4;
-       stopPropagation ya evita que el clic escale al contenedor. */
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
+      goBack(state);
     });
     state.container.appendChild(btn);
     state.backButton = btn;
@@ -424,6 +464,7 @@
     var state = {
       container: container,
       svg: svg,
+      baseVB: parseViewBox(svg) || [0, 0, 800, 502], // viewBox maestro (Europa)
       focus: null,      // null = Europa (nivel-0)
       level: 0,
       animating: false,
