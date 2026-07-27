@@ -155,6 +155,8 @@ map** (a CSS rule beats a presentation attribute). Align the baseline with the p
 
 A **model-driven** Python library, run in Google Colab, that reads the map model assets and generates the SVG defined by [Map structure: zoom tiers](#map-structure-zoom-tiers) using mapshaper. That section is the contract; this library is what produces an SVG that satisfies it. It is a **working generator**, not versioned theme code.
 
+The Gemini prompt that pilots the generation of this library lives in [`svg-generator-library.md`](claude/res/svg-generator-library.md).
+
 ### Configuration: model and output paths
 
 The library holds its input and output paths in **module-level global variables**, so a Colab cell can point it at the model assets and the output file without editing the library's body:
@@ -203,7 +205,7 @@ map assets and the theme's map code refer to when they need to name or order a l
 
 ### Location & format
 
-- File: `claude/res/map-levels.json`
+- File: [`map-levels.json`](claude/res/map-levels.json)
 - Format: JSON (loaded with `json_decode` in PHP, `fetch` / `import` in JS — no build step).
 
 ### Schema
@@ -266,7 +268,7 @@ tree).
 
 ### Location & format
 
-- File: `claude/res/map-regions.json`
+- File: [`map-regions.json`](claude/res/map-regions.json)
 - Format: JSON (`json_decode` in PHP, `fetch` / `import` in JS — no build step).
 
 ### Provenance
@@ -342,7 +344,7 @@ generator (Gemini / mapshaper) as structured data.
 
 ### Location & format
 
-- File: `claude/res/map-style.json`
+- File: [`map-style.json`](claude/res/map-style.json)
 - Format: JSON.
 
 ### Consumer contract (how the generator applies it)
