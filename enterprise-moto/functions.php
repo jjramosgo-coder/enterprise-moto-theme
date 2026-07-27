@@ -1623,18 +1623,6 @@ function enterprise_region_map_assets() {
         array( 'enterprise-style' ),
         file_exists( $css_path ) ? filemtime( $css_path ) : ENTERPRISE_VERSION
     );
-
-    /* Motor de navegación vanilla del mapa (#44). Sin dependencia JS, en el footer.
-       Lee el SVG inline del DOM y hace fetch progresivo de los niveles 2-3 desde
-       data-maps-base (patrón data-* + fetch de map-frontend.js, §1.5 de #44). */
-    $js_path = get_template_directory() . '/assets/js/region-map-frontend.js';
-    wp_enqueue_script(
-        'enterprise-region-map-frontend',
-        get_template_directory_uri() . '/assets/js/region-map-frontend.js',
-        array(),
-        file_exists( $js_path ) ? filemtime( $js_path ) : ENTERPRISE_VERSION,
-        true
-    );
 }
 add_action( 'wp_enqueue_scripts', 'enterprise_region_map_assets' );
 function enterprise_register_blocks() {
