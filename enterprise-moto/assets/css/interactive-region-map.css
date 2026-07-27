@@ -16,6 +16,16 @@
 	height: auto;
 }
 
+/* ── Render estático e inerte (#51 · sub-fase render) ──
+   El maestro georreferenciado trae tres capas (tier0 países / tier1 regiones /
+   tier2 provincias). En el render estático se muestra solo la capa de países;
+   las capas interiores se ocultan para un mapa limpio. El motor interactivo
+   (sub-fase siguiente de #51) gestionará la visibilidad de tiers al hacer zoom. */
+.ent-region-map svg #tier1,
+.ent-region-map svg #tier2 {
+	display: none;
+}
+
 /* ── Interacción de navegación (#44 · hover) ──
    Estilo mínimo y neutro: afordancia (cursor) y resalte al pasar por encima.
    La tematización final por región (tokens editoriales) es #47/#48, no aquí. */
