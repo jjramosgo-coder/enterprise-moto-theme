@@ -39,7 +39,8 @@ El usuario navega **entrando** por niveles (`0→1→2…`) y **volviendo**. Qu�
 
 - La **geometría** vive en el SVG.
 - La **jerarquía** (padre/hijo, entrar y volver) vive en el árbol del [modelo de datos de regiones](#modelo-de-datos-ficheros-de-regiones). El SVG no representa el árbol anidando grupos; el árbol es el JSON.
-- El **estilo editorial y la interacción** son del tema (CSS/JS), en sus propios TO-DOs. El SVG generado lleva solo un color por defecto y las claves que enlazan cada elemento con el árbol.
+- El **estilo editorial** es del tema y llega al mapa **inyectado a través del fichero de estilo** (`map-style.json`): la paleta del tema viaja en ese JSON y el generador la hornea en el SVG como estilo por defecto (ver «Colores del mapa» y «Asset: estilo del mapa»).
+- La **navegación e interacción** (zoom, entrar/volver, globo) es del tema a través de su **JS en tiempo de ejecución** sobre el SVG.
 
 ### Cómo se organizan las capas del SVG
 
@@ -72,7 +73,9 @@ La generación usa mapshaper: emite un `<g>` por capa, fija el `id` de cada path
 
 ### Colores por defecto
 
-En crudo, mapshaper saca el SVG **todo negro** (no escribe `fill`, así que se aplica el del navegador). Para darle una paleta por defecto se usa `-style` en la generación (`fill`, `stroke`, `stroke-width`, `opacity`; por `tier` con `where=`). Son solo defaults: al ser atributos de presentación, el estilado del tema los sobreescribe por CSS sin regenerar el mapa. El baseline se alinea con la paleta del proyecto (fondos `#0e0e0e` / `#1a1a1a`, acento dorado `#f2c118`).
+En crudo, mapshaper saca el SVG **todo negro** (no escribe `fill`, así que se aplica el del navegador). Darle color es una característica del generador: con `-style` escribe una paleta en el propio SVG (`fill`, `stroke`, `stroke-width`, `opacity`; por `tier` con `where=`).
+
+Esa paleta no es arbitraria: **es la paleta editorial del tema, que viaja hasta el generador a través del fichero de estilo** (`map-style.json`; ver «Asset: estilo del mapa»). Escribes la paleta del tema en el JSON, se lo das al generador, y el mapa se genera **ya con ella horneada**.
 
 [↑ Volver al índice](#índice)
 
@@ -230,26 +233,28 @@ Los colores definidos en el JSON se aplican en **tres capas estructurales**. El 
 
 **Cómo se aplica:** Mapshaper asigna estos valores directamente como atributos SVG (`fill="#1a1a1a"`) a cada elemento `<path>` del mapa.
 
-### 3. Jerarquía y grosor de fronteras (`tiers`)
+### 3. Estilo por nivel de zoom (`tiers`)
 
-**Dónde se usa:** Para diferenciar visualmente la importancia geopolítica de las fronteras (nivel país vs. nivel regi´ón/comunidad/provincia). Formalmente niveles admin 0/1/2
+**Dónde se usa:** Para dar a cada nivel de zoom (`tier0`, `tier1`, `tier2`) su propio estilo. El uso habitual es diferenciar las fronteras según su importancia (país vs. región/comunidad/provincia — formalmente niveles admin 0/1/2), pero un nivel puede redefinir **cualquier** propiedad de estilo, no solo el borde.
 
-**Claves JSON:**
+**Claves JSON (valores de ejemplo):**
 
-- `"tier0"` (Países / Fronteras nacionales): `"stroke": "#f2c118"` (Línea dorada/amarilla).
-- `"tier1"` (Comunidades / Estados / Regiones): `"stroke": "#3a3a3a"` (Gris intermedio).
-- `"tier2"` (Provincias / Comarcas): `"stroke": "#2a2a2a"` (Gris más tenue).
+- `"tier0"` (países / fronteras nacionales): `"stroke": "#f2c118"` (línea dorada).
+- `"tier1"` (comunidades / estados / regiones): `"stroke": "#3a3a3a"` (gris intermedio).
+- `"tier2"` (provincias / comarcas): `"stroke": "#2a2a2a"` (gris más tenue).
 
-**Cómo se aplica:** Funciona por **herencia con sobrescritura**. El script combina las propiedades predeterminadas de `defaults` con las específicas de cada nivel:
+**Cómo se aplica:** Funciona por **herencia con sobrescritura**. El script combina el estilo base (`defaults`) con lo que declare cada nivel:
 
 ```python
 merged_style = {**style_defaults, **tier_overrides.get(t, {})}
 ```
 
-Esto significa que el relleno (`fill: "#1a1a1a"`) se mantiene igual para todo el mapa, pero el color y el grosor del borde (`stroke` y `stroke-width`) cambian según la importancia de la frontera:
+Cada nivel **sobrescribe solo las propiedades que declara** y **hereda del estilo base todo lo demás**. Es sobrescribible **cualquier** propiedad: `stroke` y `stroke-width` (borde), y también `fill` (relleno) y `opacity`.
 
-- Las fronteras internacionales (`tier0`) resaltarán en amarillo (`#f2c118`) con mayor grosor (`0.8`).
-- Las fronteras internas (`tier1` y `tier2`) usarán tonos grises más oscuros y trazos más finos (`0.5` y `0.3`) para no recargar la vista.
+En los valores de ejemplo, los tres niveles solo redefinen el borde —heredan `fill` de `defaults`— y por eso el relleno sale igual en todo el mapa. Es una decisión de esos valores, **no un límite**: si un nivel declara su propio `fill` u `opacity`, ese nivel se dibuja con ellos.
+
+- En el ejemplo, las fronteras internacionales (`tier0`) resaltan en dorado (`#f2c118`) con mayor grosor (`0.8`).
+- Las fronteras internas (`tier1`, `tier2`) usan grises más oscuros y trazos más finos (`0.5` y `0.3`).
 
 [↑ Volver al índice](#índice)
 
@@ -294,7 +299,7 @@ Para los colores puedes usar la paleta editorial del tema (tabla abajo) o tus pr
 | `robinson` | Robinson | Curva los bordes para ofrecer una perspectiva global o de gran escala. |
 | `ortho` | Ortográfica (efecto globo 3D) | Representa el mapa como si se observara el planeta desde el espacio. |
 
-### La paleta editorial
+### Ejemplo de codificación de la paleta de color
 
 | Color | HEX | Dónde se usa |
 |---|---|---|
@@ -314,8 +319,8 @@ Para los colores puedes usar la paleta editorial del tema (tabla abajo) o tus pr
   "defaults":   { "fill": "#1a1a1a", "stroke": "#0e0e0e", "stroke-width": 0.5, "opacity": 1 },
   "tiers": {
     "tier0": { "stroke": "#f2c118", "stroke-width": 0.8 },
-    "tier1": { "stroke": "#3a3a3a", "stroke-width": 0.5 },
-    "tier2": { "stroke": "#2a2a2a", "stroke-width": 0.3 }
+    "tier1": { "fill": "#3a3a3a", "stroke": "#3a3a3a", "stroke-width": 0.5 },
+    "tier2": { "fill": "#2a2a2a", "stroke": "#2a2a2a", "stroke-width": 0.3 }
   }
 }
 ```
