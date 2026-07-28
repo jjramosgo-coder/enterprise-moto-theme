@@ -13,6 +13,7 @@ Los mapas los genera **BE Map Studio** (una toolbox en notebooks de Google Colab
 - [Estructura del mapa: zoom tiers](#estructura-del-mapa-zoom-tiers)
 - [El generador de mapas (BE Map Studio)](#el-generador-de-mapas-be-map-studio)
 - [Modelo de datos: ficheros de regiones](#modelo-de-datos-ficheros-de-regiones)
+- [Colores del mapa](#colores-del-mapa)
 - [Asset: estilo del mapa](#asset-estilo-del-mapa)
 
 ---
@@ -195,6 +196,60 @@ Se pueblan desde **ISO 3166-2** (vía `pycountry`), el mismo sistema de códigos
 ### Alcance actual
 
 Cinco países: `ES`, `IT`, `FR`, `PT`, `AD`. Se amplía cambiando la lista de países de entrada y regenerando con BE Map Studio.
+
+[↑ Volver al índice](#índice)
+
+---
+
+## Colores del mapa
+
+Los colores definidos en el JSON se aplican en **tres capas estructurales**. El script `map_svg.py` (librería BE Interactive maps) lee estas claves y las traduce directamente a atributos nativos de SVG (`fill`, `stroke`) o a elementos de fondo.
+
+### 1. Fondo del mapa (`canvas`)
+
+- **Dónde se usa:** En el fondo global del lienzo SVG.
+- **Clave JSON:** `"canvas": { "background": "#e2e2de" }`.
+
+**Cómo se aplica:** Tras generar las geometrías con Mapshaper, el script inyecta automáticamente una etiqueta de fondo al principio del SVG:
+
+```xml
+<rect width="100%" height="100%" fill="#e2e2de" />
+```
+
+**Uso práctico:** Representa el agua/océano o el lienzo base sobre el que flotan las masas de tierra.
+
+### 2. Relleno y bordes generales (`defaults`)
+
+**Dónde se usa:** Como plantilla de color predeterminada para **todos** los polígonos/países/regiones dibujados.
+
+**Claves JSON:**
+
+- `"fill": "#1a1a1a"`: Color de relleno interior de la tierra.
+- `"stroke": "#0e0e0e"`: Color base por defecto para las líneas de frontera.
+- `"opacity": 1`: Opacidad general del polígono.
+
+**Cómo se aplica:** Mapshaper asigna estos valores directamente como atributos SVG (`fill="#1a1a1a"`) a cada elemento `<path>` del mapa.
+
+### 3. Jerarquía y grosor de fronteras (`tiers`)
+
+**Dónde se usa:** Para diferenciar visualmente la importancia geopolítica de las fronteras (nivel país vs. nivel regi´ón/comunidad/provincia). Formalmente niveles admin 0/1/2
+
+**Claves JSON:**
+
+- `"tier0"` (Países / Fronteras nacionales): `"stroke": "#f2c118"` (Línea dorada/amarilla).
+- `"tier1"` (Comunidades / Estados / Regiones): `"stroke": "#3a3a3a"` (Gris intermedio).
+- `"tier2"` (Provincias / Comarcas): `"stroke": "#2a2a2a"` (Gris más tenue).
+
+**Cómo se aplica:** Funciona por **herencia con sobrescritura**. El script combina las propiedades predeterminadas de `defaults` con las específicas de cada nivel:
+
+```python
+merged_style = {**style_defaults, **tier_overrides.get(t, {})}
+```
+
+Esto significa que el relleno (`fill: "#1a1a1a"`) se mantiene igual para todo el mapa, pero el color y el grosor del borde (`stroke` y `stroke-width`) cambian según la importancia de la frontera:
+
+- Las fronteras internacionales (`tier0`) resaltarán en amarillo (`#f2c118`) con mayor grosor (`0.8`).
+- Las fronteras internas (`tier1` y `tier2`) usarán tonos grises más oscuros y trazos más finos (`0.5` y `0.3`) para no recargar la vista.
 
 [↑ Volver al índice](#índice)
 
