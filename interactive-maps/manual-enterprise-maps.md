@@ -67,7 +67,7 @@ Detalles que lo mantienen coherente:
 
 La generación usa mapshaper: emite un `<g>` por capa, fija el `id` de cada path desde `id-field`, escribe los `data-*` desde `svg-data`, calcula campos con `-each` y añade atributos externos por clave con `-join`. En resumen: geometría de origen admin-0/1/2 → `-join` de los atributos del modelo de datos (`code`, `admin`, `parent`, `name`) por el código ISO → separar en capas de `tier` → exportar con `id-field=code svg-data=admin,parent,name`.
 
-**Importante para el join:** los códigos de la geometría de origen hay que normalizarlos a nuestro ISO 3166-2 (sin guion) antes del join. Ojo con el `iso_3166_2` con guion de Natural Earth y sus placeholders `-99`.
+**Importante para el join:** los códigos de la geometría de origen hay que normalizarlos a nuestro ISO 3166-2 (sin guion) antes del join. Ojo con el `iso_3166_2` con guion de Natural Earth y sus placeholders `-99`. Cuando la discrepancia no es de formato sino de código —una unidad que un país reorganizó o que Natural Earth etiqueta distinto—, se resuelve con un diccionario de alias; ver «Asincronía ISO↔geometría: el diccionario de alias» en [El generador de mapas](#el-generador-de-mapas-be-map-studio).
 
 ### Colores por defecto
 
@@ -93,6 +93,70 @@ Por defecto busca los ficheros en el directorio de trabajo del notebook; las rut
 ### Qué hace por dentro (resumen)
 
 Toma tu árbol de regiones y tu estilo, trae geometría de dominio público (Natural Earth), **normaliza sus códigos a los nuestros** (ISO 3166-2 sin guion), une tus datos (`code`, `name`, `admin`, `parent`) con la geometría, arma las capas por `tier` —rellenando la profundidad variable para que al acercarse no queden huecos— y aplica tus colores por defecto. El resultado es un SVG con las capas `tier0` / `tier1` / `tier2`, y cada zona con su `id` (= `code`), `data-admin`, `data-parent` y `data-name`.
+
+### Asincronía ISO↔geometría: el diccionario de alias
+
+El árbol de regiones se puebla de ISO 3166-2 (vía `pycountry`), que está **al día**: en cuanto un país aprueba una reforma administrativa, el código cambia de inmediato. La geometría de Natural Earth va **por detrás** —trazar y validar las fronteras nuevas lleva tiempo—, así que a veces el mapa trae para una zona un código que ya no coincide con el del árbol, y el `-join` no le encuentra pareja. **No es un fallo del pipeline:** es el desajuste clásico entre un estándar tabular, que cambia rápido, y una geometría vectorial, que cambia despacio (le ocurre a cualquiera que cruce ISO con Natural Earth, OSM o GADM). En el documento de diseño se recoge como nota para las fases que consumen el árbol (§13.19): el motor del mapa es *content-agnostic* y la coherencia de códigos se garantiza **aquí, en la generación**, no en el tema.
+
+La solución es una **capa de traducción** (*crosswalk*): el diccionario `NATURAL_EARTH_ALIASES`, que reemplaza el código que trae Natural Earth por **nuestro** código ISO vigente **antes** del `-join`, de modo que el polígono se una al nodo correcto del árbol. Es el patrón estándar en GIS, no un parche temporal. Vive en BE Map Studio (aguas arriba), no en el tema.
+
+Conviene distinguir **dos tipos** de desajuste, porque se mantienen de forma distinta:
+
+- **Asincronía temporal** — Natural Earth conserva unidades que ISO ya **abolió**; se remapea la vieja a la vigente. Ejemplos: la reforma de Cerdeña de 2016 (`ITOT`→`ITSS`, `ITOG`→`ITNU`, `ITVS`/`ITCI`→`ITSU`) o la fusión de regiones francesas de 2016 (`FRA1`/`FRB4`/`FRC1`→`FRGES`, `FRM1`/`FRL1`→`FROCC`).
+- **Variante de esquema o de nivel** — el mismo territorio, pero Natural Earth lo etiqueta con un código distinto del que usa nuestro árbol: provincia frente a comunidad (`ESNA`→`ESNC`, `ESPM`→`ESIB`), región frente a provincia (`ITAO`→`IT23`) o departamento frente a colectividad especial (`FR69`→`FR69M`, `FR75`→`FR75C`).
+
+Un apunte que evita un malentendido: cuando el alias colapsa una unidad uniprovincial, su geometría se dibuja **una sola vez** bajo el código canónico y se incluye en dos capas por la [profundidad variable](#estructura-del-mapa-zoom-tiers) (p. ej. Navarra sale como `ESNC` tanto en `tier1` como en `tier2`). Por eso **que un `code` del árbol no aparezca como `id` en el SVG no significa que le falte geometría**: puede estar representado bajo su código canónico.
+
+El diccionario vigente (solo Europa y **no exhaustivo**):
+
+```python
+# ---------------------------------------------------------------------
+# MAPEO DE EQUIVALENCIAS Y ALIAS EUROPA (Natural Earth GeoJSON -> ISO 3166-2)
+# Reemplaza códigos extintos o erróneos de Natural Earth por el código ISO vigente
+# ---------------------------------------------------------------------
+NATURAL_EARTH_ALIASES = {
+    # -----------------------------------------------------------------
+    # ITALIA (Reforma de Cerdeña de 2016)
+    # -----------------------------------------------------------------
+    "ITOT": "ITSS",  # Olbia-Tempio        -> Reabsorbida en Sassari (IT-SS)
+    "ITOG": "ITNU",  # Ogliastra           -> Reabsorbida en Nuoro (IT-NU)
+    "ITVS": "ITSU",  # Medio Campidano     -> Consolidada en Sud Sardegna (IT-SU)
+    "ITCI": "ITSU",  # Carbonia-Iglesias   -> Consolidada en Sud Sardegna (IT-SU)
+
+    # -----------------------------------------------------------------
+    # ITALIA (Regiones NUTS vs Provincias ISO)
+    # -----------------------------------------------------------------
+    "ITAO": "IT23",   # IT-AO (Natural Earth Aosta)   -> IT23 (Árbol: NUTS Valle d'Aosta)
+
+    # -----------------------------------------------------------------
+    # ESPAÑA (Variantes de código ISO regional en GeoJSONs de Natural Earth)
+    # -----------------------------------------------------------------
+    "ESPM": "ESIB",  # Palma / Baleares (PM -> Iles Balears IB)
+    "ESNA": "ESNC",  # Navarra (Variante de código provincial vs autonómico)
+
+    # -----------------------------------------------------------------
+    # FRANCIA (Consolidación de regiones históricas a regiones ISO NUTS-2)
+    # -----------------------------------------------------------------
+    "FRA1": "FRGES", # Alsacia            -> Grand Est
+    "FRB4": "FRGES", # Lorena             -> Grand Est
+    "FRC1": "FRGES", # Champaña-Ardenas   -> Grand Est
+    "FRM1": "FROCC", # Midi-Pyrénées      -> Occitania
+    "FRL1": "FROCC", # Languedoc-Roussillon -> Occitania
+
+    # -----------------------------------------------------------------
+    # FRANCIA (Departamentos / Colectividades especiales)
+    # -----------------------------------------------------------------
+    "FR69": "FR69M",  # FR-69 (Natural Earth Ródano)  -> FR69M (Árbol: Métropole de Lyon)
+    "FR75": "FR75C",  # FR-75 (Natural Earth París)   -> FR75C (Árbol: París Collectivité)
+
+    # -----------------------------------------------------------------
+    # GRECIA (Reformas administrativas Kallikratis)
+    # -----------------------------------------------------------------
+    "GRA":  "GRAI",  # Ática / Attica
+}
+```
+
+**Cómo ampliarlo.** Es solo-Europa y no cubre todos los casos posibles; se amplía cuando aparece una zona sin representar. Los pasos: (1) identifica la unidad que quedó sin dibujar —el resumen que muestra BE Map Studio al generar marca las *features* con `code` vacío o sin geometría—; (2) averigua con qué código la trae Natural Earth para ese territorio; (3) añade la entrada `"CÓDIGO_NATURAL_EARTH": "NUESTRO_ISO_VIGENTE"` en la categoría que corresponda (temporal o de esquema), con un comentario que explique la equivalencia.
 
 [↑ Volver al índice](#índice)
 
