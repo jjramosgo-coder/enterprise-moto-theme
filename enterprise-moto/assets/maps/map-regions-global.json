@@ -12,210 +12,6 @@
       "admin": 0,
       "children": [
         {
-          "code": "ESML",
-          "name": "Melilla",
-          "admin": 1
-        },
-        {
-          "code": "ESCE",
-          "name": "Ceuta",
-          "admin": 1
-        },
-        {
-          "code": "ESCL",
-          "name": "Castilla y León",
-          "admin": 1,
-          "children": [
-            {
-              "code": "ESSO",
-              "name": "Soria",
-              "admin": 2
-            },
-            {
-              "code": "ESSG",
-              "name": "Segovia",
-              "admin": 2
-            },
-            {
-              "code": "ESP",
-              "name": "Palencia",
-              "admin": 2
-            },
-            {
-              "code": "ESAV",
-              "name": "Ávila",
-              "admin": 2
-            },
-            {
-              "code": "ESLE",
-              "name": "León",
-              "admin": 2
-            },
-            {
-              "code": "ESVA",
-              "name": "Valladolid",
-              "admin": 2
-            },
-            {
-              "code": "ESBU",
-              "name": "Burgos",
-              "admin": 2
-            },
-            {
-              "code": "ESZA",
-              "name": "Zamora",
-              "admin": 2
-            },
-            {
-              "code": "ESSA",
-              "name": "Salamanca",
-              "admin": 2
-            }
-          ]
-        },
-        {
-          "code": "ESCM",
-          "name": "Castilla-La Mancha",
-          "admin": 1,
-          "children": [
-            {
-              "code": "ESAB",
-              "name": "Albacete",
-              "admin": 2
-            },
-            {
-              "code": "ESGU",
-              "name": "Guadalajara",
-              "admin": 2
-            },
-            {
-              "code": "ESTO",
-              "name": "Toledo",
-              "admin": 2
-            },
-            {
-              "code": "ESCR",
-              "name": "Ciudad Real",
-              "admin": 2
-            },
-            {
-              "code": "ESCU",
-              "name": "Cuenca",
-              "admin": 2
-            }
-          ]
-        },
-        {
-          "code": "ESNC",
-          "name": "Comunidad Foral de Navarra",
-          "admin": 1,
-          "children": [
-            {
-              "code": "ESNA",
-              "name": "Navarra",
-              "admin": 2
-            }
-          ]
-        },
-        {
-          "code": "ESAN",
-          "name": "Andalucía",
-          "admin": 1,
-          "children": [
-            {
-              "code": "ESAL",
-              "name": "Almería",
-              "admin": 2
-            },
-            {
-              "code": "ESH",
-              "name": "Huelva",
-              "admin": 2
-            },
-            {
-              "code": "ESCO",
-              "name": "Córdoba",
-              "admin": 2
-            },
-            {
-              "code": "ESJ",
-              "name": "Jaén",
-              "admin": 2
-            },
-            {
-              "code": "ESMA",
-              "name": "Málaga",
-              "admin": 2
-            },
-            {
-              "code": "ESCA",
-              "name": "Cádiz",
-              "admin": 2
-            },
-            {
-              "code": "ESSE",
-              "name": "Sevilla",
-              "admin": 2
-            },
-            {
-              "code": "ESGR",
-              "name": "Granada",
-              "admin": 2
-            }
-          ]
-        },
-        {
-          "code": "ESCN",
-          "name": "Canarias",
-          "admin": 1,
-          "children": [
-            {
-              "code": "ESTF",
-              "name": "Santa Cruz de Tenerife",
-              "admin": 2
-            },
-            {
-              "code": "ESGC",
-              "name": "Las Palmas",
-              "admin": 2
-            }
-          ]
-        },
-        {
-          "code": "ESAR",
-          "name": "Aragón",
-          "admin": 1,
-          "children": [
-            {
-              "code": "ESHU",
-              "name": "Huesca",
-              "admin": 2
-            },
-            {
-              "code": "ESTE",
-              "name": "Teruel",
-              "admin": 2
-            },
-            {
-              "code": "ESZ",
-              "name": "Zaragoza",
-              "admin": 2
-            }
-          ]
-        },
-        {
-          "code": "ESIB",
-          "name": "Illes Balears [Islas Baleares]",
-          "admin": 1,
-          "children": [
-            {
-              "code": "ESPM",
-              "name": "Illes Balears [Islas Baleares]",
-              "admin": 2
-            }
-          ]
-        },
-        {
           "code": "ESAS",
           "name": "Principado de Asturias",
           "admin": 1,
@@ -233,11 +29,6 @@
           "admin": 1,
           "children": [
             {
-              "code": "EST",
-              "name": "Tarragona [Tarragona]",
-              "admin": 2
-            },
-            {
               "code": "ESL",
               "name": "Lleida [Lérida]",
               "admin": 2
@@ -251,6 +42,11 @@
               "code": "ESGI",
               "name": "Girona [Gerona]",
               "admin": 2
+            },
+            {
+              "code": "EST",
+              "name": "Tarragona [Tarragona]",
+              "admin": 2
             }
           ]
         },
@@ -260,13 +56,13 @@
           "admin": 1,
           "children": [
             {
-              "code": "ESV",
-              "name": "Valencia",
+              "code": "ESCS",
+              "name": "Castellón",
               "admin": 2
             },
             {
-              "code": "ESCS",
-              "name": "Castellón",
+              "code": "ESV",
+              "name": "Valencia",
               "admin": 2
             },
             {
@@ -282,11 +78,6 @@
           "admin": 1,
           "children": [
             {
-              "code": "ESSS",
-              "name": "Gipuzkoa [Guipúzcoa]",
-              "admin": 2
-            },
-            {
               "code": "ESBI",
               "name": "Bizkaia [Vizcaya]",
               "admin": 2
@@ -295,17 +86,10 @@
               "code": "ESVI",
               "name": "Álava",
               "admin": 2
-            }
-          ]
-        },
-        {
-          "code": "ESMD",
-          "name": "Comunidad de Madrid",
-          "admin": 1,
-          "children": [
+            },
             {
-              "code": "ESM",
-              "name": "Madrid",
+              "code": "ESSS",
+              "name": "Gipuzkoa [Guipúzcoa]",
               "admin": 2
             }
           ]
@@ -316,13 +100,13 @@
           "admin": 1,
           "children": [
             {
-              "code": "ESCC",
-              "name": "Cáceres",
+              "code": "ESBA",
+              "name": "Badajoz",
               "admin": 2
             },
             {
-              "code": "ESBA",
-              "name": "Badajoz",
+              "code": "ESCC",
+              "name": "Cáceres",
               "admin": 2
             }
           ]
@@ -389,6 +173,195 @@
               "admin": 2
             }
           ]
+        },
+        {
+          "code": "ESMD",
+          "name": "Comunidad de Madrid",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESM",
+              "name": "Madrid",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESCL",
+          "name": "Castilla y León",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESP",
+              "name": "Palencia",
+              "admin": 2
+            },
+            {
+              "code": "ESAV",
+              "name": "Ávila",
+              "admin": 2
+            },
+            {
+              "code": "ESLE",
+              "name": "León",
+              "admin": 2
+            },
+            {
+              "code": "ESVA",
+              "name": "Valladolid",
+              "admin": 2
+            },
+            {
+              "code": "ESBU",
+              "name": "Burgos",
+              "admin": 2
+            },
+            {
+              "code": "ESZA",
+              "name": "Zamora",
+              "admin": 2
+            },
+            {
+              "code": "ESSA",
+              "name": "Salamanca",
+              "admin": 2
+            },
+            {
+              "code": "ESSG",
+              "name": "Segovia",
+              "admin": 2
+            },
+            {
+              "code": "ESSO",
+              "name": "Soria",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESCM",
+          "name": "Castilla-La Mancha",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESTO",
+              "name": "Toledo",
+              "admin": 2
+            },
+            {
+              "code": "ESCR",
+              "name": "Ciudad Real",
+              "admin": 2
+            },
+            {
+              "code": "ESCU",
+              "name": "Cuenca",
+              "admin": 2
+            },
+            {
+              "code": "ESGU",
+              "name": "Guadalajara",
+              "admin": 2
+            },
+            {
+              "code": "ESAB",
+              "name": "Albacete",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESNC",
+          "name": "Comunidad Foral de Navarra",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESNA",
+              "name": "Navarra",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESAN",
+          "name": "Andalucía",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESCO",
+              "name": "Córdoba",
+              "admin": 2
+            },
+            {
+              "code": "ESJ",
+              "name": "Jaén",
+              "admin": 2
+            },
+            {
+              "code": "ESMA",
+              "name": "Málaga",
+              "admin": 2
+            },
+            {
+              "code": "ESCA",
+              "name": "Cádiz",
+              "admin": 2
+            },
+            {
+              "code": "ESSE",
+              "name": "Sevilla",
+              "admin": 2
+            },
+            {
+              "code": "ESGR",
+              "name": "Granada",
+              "admin": 2
+            },
+            {
+              "code": "ESH",
+              "name": "Huelva",
+              "admin": 2
+            },
+            {
+              "code": "ESAL",
+              "name": "Almería",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESIB",
+          "name": "Illes Balears [Islas Baleares]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESPM",
+              "name": "Illes Balears [Islas Baleares]",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "ESAR",
+          "name": "Aragón",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ESZ",
+              "name": "Zaragoza",
+              "admin": 2
+            },
+            {
+              "code": "ESHU",
+              "name": "Huesca",
+              "admin": 2
+            },
+            {
+              "code": "ESTE",
+              "name": "Teruel",
+              "admin": 2
+            }
+          ]
         }
       ]
     },
@@ -398,104 +371,10 @@
       "admin": 0,
       "children": [
         {
-          "code": "IT82",
-          "name": "Sicilia",
-          "admin": 1,
-          "children": [
-            {
-              "code": "ITAG",
-              "name": "Agrigento",
-              "admin": 2
-            },
-            {
-              "code": "ITPA",
-              "name": "Palermo",
-              "admin": 2
-            },
-            {
-              "code": "ITRG",
-              "name": "Ragusa",
-              "admin": 2
-            },
-            {
-              "code": "ITCL",
-              "name": "Caltanissetta",
-              "admin": 2
-            },
-            {
-              "code": "ITCT",
-              "name": "Catania",
-              "admin": 2
-            },
-            {
-              "code": "ITSR",
-              "name": "Siracusa",
-              "admin": 2
-            },
-            {
-              "code": "ITEN",
-              "name": "Enna",
-              "admin": 2
-            },
-            {
-              "code": "ITTP",
-              "name": "Trapani",
-              "admin": 2
-            },
-            {
-              "code": "ITME",
-              "name": "Messina [Mesina]",
-              "admin": 2
-            }
-          ]
-        },
-        {
-          "code": "IT88",
-          "name": "Sardegna [Cerdeña]",
-          "admin": 1,
-          "children": [
-            {
-              "code": "ITNU",
-              "name": "Nuoro",
-              "admin": 2
-            },
-            {
-              "code": "ITOR",
-              "name": "Oristano [Oristán]",
-              "admin": 2
-            },
-            {
-              "code": "ITCA",
-              "name": "Cagliari",
-              "admin": 2
-            },
-            {
-              "code": "ITSS",
-              "name": "Sassari",
-              "admin": 2
-            },
-            {
-              "code": "ITSU",
-              "name": "Sud Sardegna [Cerdeña del Sur]",
-              "admin": 2
-            }
-          ]
-        },
-        {
           "code": "IT21",
           "name": "Piemonte [Piamonte]",
           "admin": 1,
           "children": [
-            {
-              "code": "ITNO",
-              "name": "Novara",
-              "admin": 2
-            },
-            {
-              "code": "ITAL",
-              "name": "Alessandria",
-              "admin": 2
-            },
             {
               "code": "ITAT",
               "name": "Asti",
@@ -524,6 +403,16 @@
             {
               "code": "ITVC",
               "name": "Vercelli",
+              "admin": 2
+            },
+            {
+              "code": "ITNO",
+              "name": "Novara",
+              "admin": 2
+            },
+            {
+              "code": "ITAL",
+              "name": "Alessandria",
               "admin": 2
             }
           ]
@@ -953,11 +842,6 @@
           "admin": 1,
           "children": [
             {
-              "code": "ITNA",
-              "name": "Napoli [Nápoles]",
-              "admin": 2
-            },
-            {
               "code": "ITAV",
               "name": "Avellino",
               "admin": 2
@@ -975,6 +859,11 @@
             {
               "code": "ITSA",
               "name": "Salerno",
+              "admin": 2
+            },
+            {
+              "code": "ITNA",
+              "name": "Napoli [Nápoles]",
               "admin": 2
             }
           ]
@@ -1022,13 +911,13 @@
           "admin": 1,
           "children": [
             {
-              "code": "ITMT",
-              "name": "Matera",
+              "code": "ITPZ",
+              "name": "Potenza",
               "admin": 2
             },
             {
-              "code": "ITPZ",
-              "name": "Potenza",
+              "code": "ITMT",
+              "name": "Matera",
               "admin": 2
             }
           ]
@@ -1064,6 +953,90 @@
               "admin": 2
             }
           ]
+        },
+        {
+          "code": "IT82",
+          "name": "Sicilia",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITPA",
+              "name": "Palermo",
+              "admin": 2
+            },
+            {
+              "code": "ITRG",
+              "name": "Ragusa",
+              "admin": 2
+            },
+            {
+              "code": "ITCL",
+              "name": "Caltanissetta",
+              "admin": 2
+            },
+            {
+              "code": "ITCT",
+              "name": "Catania",
+              "admin": 2
+            },
+            {
+              "code": "ITSR",
+              "name": "Siracusa",
+              "admin": 2
+            },
+            {
+              "code": "ITEN",
+              "name": "Enna",
+              "admin": 2
+            },
+            {
+              "code": "ITTP",
+              "name": "Trapani",
+              "admin": 2
+            },
+            {
+              "code": "ITME",
+              "name": "Messina [Mesina]",
+              "admin": 2
+            },
+            {
+              "code": "ITAG",
+              "name": "Agrigento",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "IT88",
+          "name": "Sardegna [Cerdeña]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "ITOR",
+              "name": "Oristano [Oristán]",
+              "admin": 2
+            },
+            {
+              "code": "ITCA",
+              "name": "Cagliari",
+              "admin": 2
+            },
+            {
+              "code": "ITSS",
+              "name": "Sassari",
+              "admin": 2
+            },
+            {
+              "code": "ITSU",
+              "name": "Sud Sardegna [Cerdeña del Sur]",
+              "admin": 2
+            },
+            {
+              "code": "ITNU",
+              "name": "Nuoro",
+              "admin": 2
+            }
+          ]
         }
       ]
     },
@@ -1073,32 +1046,10 @@
       "admin": 0,
       "children": [
         {
-          "code": "FR20R",
-          "name": "Corse [Córcega]",
-          "admin": 1,
-          "children": [
-            {
-              "code": "FR2A",
-              "name": "Corse-du-Sud [Córcega del Sur]",
-              "admin": 2
-            },
-            {
-              "code": "FR2B",
-              "name": "Haute-Corse [Alta Córcega]",
-              "admin": 2
-            }
-          ]
-        },
-        {
           "code": "FRARA",
           "name": "Auvergne-Rhône-Alpes [Auvernia-Ródano-Alpes]",
           "admin": 1,
           "children": [
-            {
-              "code": "FR73",
-              "name": "Savoie [Saboya]",
-              "admin": 2
-            },
             {
               "code": "FR74",
               "name": "Haute-Savoie [Alta Saboya]",
@@ -1158,6 +1109,11 @@
               "code": "FR69M",
               "name": "Métropole de Lyon",
               "admin": 2
+            },
+            {
+              "code": "FR73",
+              "name": "Savoie [Saboya]",
+              "admin": 2
             }
           ]
         },
@@ -1166,21 +1122,6 @@
           "name": "Bourgogne-Franche-Comté [Borgoña-Franco Condado]",
           "admin": 1,
           "children": [
-            {
-              "code": "FR70",
-              "name": "Haute-Saône [Alto Saona]",
-              "admin": 2
-            },
-            {
-              "code": "FR71",
-              "name": "Saône-et-Loire [Saona y Loira]",
-              "admin": 2
-            },
-            {
-              "code": "FR21",
-              "name": "Côte-d'Or [Côte-d’Or]",
-              "admin": 2
-            },
             {
               "code": "FR25",
               "name": "Doubs",
@@ -1204,6 +1145,21 @@
             {
               "code": "FR58",
               "name": "Nièvre",
+              "admin": 2
+            },
+            {
+              "code": "FR70",
+              "name": "Haute-Saône [Alto Saona]",
+              "admin": 2
+            },
+            {
+              "code": "FR71",
+              "name": "Saône-et-Loire [Saona y Loira]",
+              "admin": 2
+            },
+            {
+              "code": "FR21",
+              "name": "Côte-d'Or [Côte-d’Or]",
               "admin": 2
             }
           ]
@@ -1241,11 +1197,6 @@
           "admin": 1,
           "children": [
             {
-              "code": "FR18",
-              "name": "Cher",
-              "admin": 2
-            },
-            {
               "code": "FR28",
               "name": "Eure-et-Loir [Eure y Loir]",
               "admin": 2
@@ -1268,6 +1219,11 @@
             {
               "code": "FR45",
               "name": "Loiret",
+              "admin": 2
+            },
+            {
+              "code": "FR18",
+              "name": "Cher",
               "admin": 2
             }
           ]
@@ -1421,16 +1377,6 @@
           "admin": 1,
           "children": [
             {
-              "code": "FR17",
-              "name": "Charente-Maritime [Charente Marítimo]",
-              "admin": 2
-            },
-            {
-              "code": "FR19",
-              "name": "Corrèze",
-              "admin": 2
-            },
-            {
               "code": "FR23",
               "name": "Creuse",
               "admin": 2
@@ -1478,6 +1424,16 @@
             {
               "code": "FR16",
               "name": "Charente",
+              "admin": 2
+            },
+            {
+              "code": "FR17",
+              "name": "Charente-Maritime [Charente Marítimo]",
+              "admin": 2
+            },
+            {
+              "code": "FR19",
+              "name": "Corrèze",
               "admin": 2
             }
           ]
@@ -1629,11 +1585,6 @@
           "admin": 1,
           "children": [
             {
-              "code": "FR72",
-              "name": "Sarthe",
-              "admin": 2
-            },
-            {
               "code": "FR85",
               "name": "Vendée [Vandea]",
               "admin": 2
@@ -1652,6 +1603,28 @@
               "code": "FR53",
               "name": "Mayenne",
               "admin": 2
+            },
+            {
+              "code": "FR72",
+              "name": "Sarthe",
+              "admin": 2
+            }
+          ]
+        },
+        {
+          "code": "FR20R",
+          "name": "Corse [Córcega]",
+          "admin": 1,
+          "children": [
+            {
+              "code": "FR2A",
+              "name": "Corse-du-Sud [Córcega del Sur]",
+              "admin": 2
+            },
+            {
+              "code": "FR2B",
+              "name": "Haute-Corse [Alta Córcega]",
+              "admin": 2
             }
           ]
         }
@@ -1662,41 +1635,6 @@
       "name": "Portugal [Portugal]",
       "admin": 0,
       "children": [
-        {
-          "code": "PT16",
-          "name": "Viana do Castelo",
-          "admin": 1
-        },
-        {
-          "code": "PT02",
-          "name": "Beja",
-          "admin": 1
-        },
-        {
-          "code": "PT17",
-          "name": "Vila Real",
-          "admin": 1
-        },
-        {
-          "code": "PT03",
-          "name": "Braga",
-          "admin": 1
-        },
-        {
-          "code": "PT18",
-          "name": "Viseu",
-          "admin": 1
-        },
-        {
-          "code": "PT04",
-          "name": "Bragança [Braganza]",
-          "admin": 1
-        },
-        {
-          "code": "PT05",
-          "name": "Castelo Branco",
-          "admin": 1
-        },
         {
           "code": "PT06",
           "name": "Coimbra [Coímbra distrito]",
@@ -1751,6 +1689,41 @@
           "code": "PT15",
           "name": "Setúbal",
           "admin": 1
+        },
+        {
+          "code": "PT16",
+          "name": "Viana do Castelo",
+          "admin": 1
+        },
+        {
+          "code": "PT02",
+          "name": "Beja",
+          "admin": 1
+        },
+        {
+          "code": "PT17",
+          "name": "Vila Real",
+          "admin": 1
+        },
+        {
+          "code": "PT03",
+          "name": "Braga",
+          "admin": 1
+        },
+        {
+          "code": "PT18",
+          "name": "Viseu",
+          "admin": 1
+        },
+        {
+          "code": "PT04",
+          "name": "Bragança [Braganza]",
+          "admin": 1
+        },
+        {
+          "code": "PT05",
+          "name": "Castelo Branco",
+          "admin": 1
         }
       ]
     },
@@ -1759,16 +1732,6 @@
       "name": "Andorra [Andorra]",
       "admin": 0,
       "children": [
-        {
-          "code": "AD07",
-          "name": "Andorra la Vella",
-          "admin": 1
-        },
-        {
-          "code": "AD04",
-          "name": "La Massana",
-          "admin": 1
-        },
         {
           "code": "AD08",
           "name": "Escaldes-Engordany",
@@ -1792,6 +1755,16 @@
         {
           "code": "AD03",
           "name": "Encamp",
+          "admin": 1
+        },
+        {
+          "code": "AD07",
+          "name": "Andorra la Vella",
+          "admin": 1
+        },
+        {
+          "code": "AD04",
+          "name": "La Massana",
           "admin": 1
         }
       ]
