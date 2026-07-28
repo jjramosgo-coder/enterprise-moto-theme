@@ -32,9 +32,20 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 	   inline, para que el motor interactivo (sub-fase siguiente de #51) pueda acceder
 	   directamente a los nodos <path>. No se pasa por wp_kses_* (eliminaría
 	   elementos/atributos SVG). */
+	/* Fondo (canvas) de fuente única (§13.19): el color lo declara el activo —el
+	   <rect> del maestro— y lo aplica el tema. Se extrae el fill del primer <rect>
+	   y se expone como custom property en el contenedor; el CSS lo consume en el
+	   <svg> como background-color, que cubre el área renderizada bajo cualquier
+	   viewBox (a diferencia del <rect>, cuyos % se recortan al hacer zoom). Si no
+	   se puede leer, el contenedor sale sin la propiedad y el CSS cae al fallback. */
+	$canvas = '';
+	if ( preg_match( '/<rect\b[^>]*\bfill\s*=\s*"([^"]+)"/i', $svg, $m ) ) {
+		$canvas = $m[1];
+	}
+
 	ob_start();
 	?>
-	<div class="ent-region-map">
+	<div class="ent-region-map"<?php if ( '' !== $canvas ) : ?> style="--ent-region-canvas: <?php echo esc_attr( $canvas ); ?>;"<?php endif; ?>>
 		<?php echo $svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — activo SVG GPL de confianza, ver nota superior. ?>
 	</div>
 	<?php

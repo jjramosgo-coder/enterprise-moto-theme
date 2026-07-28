@@ -19,7 +19,7 @@
 	   zoom (viewBox recortado) el rect queda fuera del área visible y el fondo se
 	   descuadra. El background del elemento es independiente del viewBox y cubre
 	   siempre el área renderizada. Mismo color que el rect del maestro (#51). */
-	background-color: #0e0e0e;
+	background-color: var(--ent-region-canvas, var(--white));
 }
 
 /* ── Fallback sin-JS (#51 · sub-fase render + motor) ──
