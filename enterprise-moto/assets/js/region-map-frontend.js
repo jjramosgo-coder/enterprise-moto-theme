@@ -64,14 +64,6 @@
   var ZOOM_MS  = 420;   // duración de la animación de viewBox
   var ZOOM_PAD = 0.08;  // margen alrededor del bbox enfocado (fracción)
 
-  /* Curado del encuadre de país (Decisión E): al enfocar un país, sus territorios
-     alejados se EXCLUYEN del cálculo del bbox para que el zoom encuadre el cuerpo
-     principal (la península para ES, sin Canarias). El activo no trae flag de isla
-     del generador (solo data-admin/parent/name), así que la exclusión es config de
-     presentación que vive con el motor. La región excluida SIGUE siendo navegable:
-     su clic la enfoca en su ubicación real (esquina). */
-  var OUTLIERS = { ES: ['ESCN'] };
-
   /* ═══════════════════════════════════════════
      SVG MAESTRO Y JERARQUÍA (todo del DOM, Decisión H)
   ═══════════════════════════════════════════ */
@@ -299,15 +291,13 @@
     return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
   }
 
-  /* Bbox de encuadre de un padre = unión de los bbox de sus hijos (ya visibles),
-     excluyendo los outliers curados. Los hijos deben estar revelados (sin
-     display:none) para que getBBox devuelva medidas válidas. */
-  function childrenBBox(state, parentId, excludeIds) {
+  /* Bbox de encuadre de un padre = unión de los bbox de sus hijos (ya visibles).
+     Los hijos deben estar revelados (sin display:none) para que getBBox devuelva
+     medidas válidas. */
+  function childrenBBox(state, parentId) {
     var kids = getChildren(state, parentId);
     var box = null;
     for (var i = 0; i < kids.length; i++) {
-      var id = kids[i].getAttribute('id');
-      if (excludeIds && excludeIds.indexOf(id) !== -1) continue;
       var b = bboxOf(kids[i]);
       if (!b) continue;
       box = box ? unionRect(box, b) : b;
@@ -349,7 +339,7 @@
   }
 
   /* Enfocar un país: si tiene regiones (los 5 del maestro actual) revela sus tier1
-     hijas y encuadra su cuerpo principal (bbox de las hijas, sin outliers). Si NO
+     hijas y encuadra su cuerpo principal (bbox de las hijas). Si NO
      tiene (país terminal admin-0: no ocurre hoy, pero sí en un maestro más amplio,
      §8.4) se enfoca a sí mismo —queda ent-active y se encuadra su propio bbox— sin
      revelar una capa vacía. En ambos casos atenúa los otros países (tier0) como
@@ -383,7 +373,7 @@
     state.container.classList.add('is-drilled');
 
     if (terminal) animateToBBox(state, bbox);
-    else animateToBBox(state, childrenBBox(state, countryId, OUTLIERS[countryId]));
+    else animateToBBox(state, childrenBBox(state, countryId));
   }
 
   /* Enfocar una región. Ramifica según tenga hijos (§8.2.2):
