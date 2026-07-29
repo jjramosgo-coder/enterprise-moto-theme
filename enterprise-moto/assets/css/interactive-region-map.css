@@ -22,6 +22,48 @@
 	background-color: var(--ent-region-canvas, var(--white));
 }
 
+/* ── Colores configurables (nivel 2, #54) ──
+   El autor re-tiñe el mapa por custom properties (modo «Personalizar»). Cada
+   propiedad cae al valor horneado del activo como fallback, así que en modo «Los
+   del propio mapa» (sin overrides) el render es idéntico al activo. Modelo =
+   defaults + override por nivel (map-style.json): la regla base pone los defaults
+   y cada tier sobrescribe lo suyo (tier0 hereda fill/opacidad de la base).
+
+   Notas de cascada (deliberadas):
+   · El grupo se selecciona por [id="tierN"] (NO #tierN) para no introducir
+     especificidad de id: así el resalte de hover y el atenuado de vecino
+     (.ent-dimmed), que son por clase, siguen ganando. Estas reglas van ANTES del
+     bloque de interacción de abajo para que, a igualdad de especificidad, la
+     opacidad de .ent-dimmed gane sobre la de nivel.
+   · La regla base se limita a «.ent-region-map > svg path» para no alcanzar el
+     <path> del icono del botón «volver» (cuelga del botón, no del <svg> del mapa).
+   · El fondo (canvas) NO se toca aquí: es invariante (§13.19). Las clases
+     is-color-theme / palette-* son marcadores de estado que emite render.php; el
+     re-tinte lo gobiernan las custom properties, no esas clases. */
+.ent-region-map > svg path {
+	fill: var(--ent-land-fill, #1a1a1a);
+	stroke: var(--ent-base-stroke, #0e0e0e);
+	stroke-width: var(--ent-base-sw, 0.5);
+	opacity: var(--ent-base-opacity, 1);
+}
+.ent-region-map [id="tier0"] path {
+	stroke: var(--ent-t0-stroke, #f2c118);
+	stroke-width: var(--ent-t0-sw, 0.8);
+	opacity: var(--ent-t0-opacity, 1);
+}
+.ent-region-map [id="tier1"] path {
+	fill: var(--ent-region-fill, #2a2a2a);
+	stroke: var(--ent-region-stroke, #3a3a3a);
+	stroke-width: var(--ent-t1-sw, 0.5);
+	opacity: var(--ent-t1-opacity, 1);
+}
+.ent-region-map [id="tier2"] path {
+	fill: var(--ent-province-fill, #5a5a5a);
+	stroke: var(--ent-province-stroke, #2a2a2a);
+	stroke-width: var(--ent-t2-sw, 0.3);
+	opacity: var(--ent-t2-opacity, 1);
+}
+
 /* ── Fallback sin-JS (#51 · sub-fase render + motor) ──
    El maestro georreferenciado trae tres capas (tier0 países / tier1 regiones /
    tier2 provincias). Sin motor (contenedor sin .is-ready) se muestra solo la capa

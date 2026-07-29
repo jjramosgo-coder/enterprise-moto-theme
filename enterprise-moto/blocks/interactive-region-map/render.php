@@ -1,11 +1,15 @@
 <?php
 /**
  * Bitácora Enterprise — blocks/interactive-region-map/render.php
- * Mapa interactivo de regiones — render estático e inerte del maestro georreferenciado
+ * Mapa interactivo de regiones — render del maestro georreferenciado
  * (assets/maps/enterprise-eu.svg). Solo HTML: el SVG se emite inline en el DOM.
  * Sin <script> inline.
- * (El motor interactivo —hover, zoom, drill-down— es la sub-fase siguiente de #51;
- *  el color/descripción por región y la UX de editor son #47.)
+ *
+ * #54 — Colores configurables (nivel 2). En modo 'theme' («Personalizar») el tema
+ *   re-tiñe el mapa mediante custom properties inline sobre .ent-region-map, que el
+ *   CSS consume con el valor horneado del activo como fallback. En modo 'asset'
+ *   («Los del propio mapa») no se emite ningún override y manda el activo (nivel 1).
+ *   El fondo (canvas) es invariante (§13.19): siempre lo declara el activo.
  *
  * Copyright (C) 2026 Juanjo Ramos y María José Moreno
  *
@@ -28,10 +32,8 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 		return '';
 	}
 
-	/* El SVG es un activo GPL de confianza y de origen propio: se emite tal cual,
-	   inline, para que el motor interactivo (sub-fase siguiente de #51) pueda acceder
-	   directamente a los nodos <path>. No se pasa por wp_kses_* (eliminaría
-	   elementos/atributos SVG). */
+	if ( ! is_array( $attributes ) ) $attributes = array();
+
 	/* Fondo (canvas) de fuente única (§13.19): el color lo declara el activo —el
 	   <rect> del maestro— y lo aplica el tema. Se extrae el fill del primer <rect>
 	   y se expone como custom property en el contenedor; el CSS lo consume en el
@@ -43,9 +45,72 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 		$canvas = $m[1];
 	}
 
+	$classes     = array( 'ent-region-map' );
+	$style_parts = array();
+	if ( '' !== $canvas ) {
+		$style_parts[] = '--ent-region-canvas: ' . $canvas;
+	}
+
+	/* #54 — Modo 'theme': marcadores de estado + custom properties de color/grosor/
+	   opacidad por nivel. Colores saneados a hex; numéricos acotados. El acento de
+	   hover y el botón «volver» son del siguiente commit; aquí no se emiten. */
+	$is_theme = isset( $attributes['colorSource'] ) && 'theme' === $attributes['colorSource'];
+	if ( $is_theme ) {
+		$classes[] = 'is-color-theme';
+		$palette   = isset( $attributes['palette'] ) ? preg_replace( '/[^a-z0-9_-]/', '', (string) $attributes['palette'] ) : '';
+		if ( '' !== $palette ) {
+			$classes[] = 'palette-' . $palette;
+		}
+
+		$color_map = array(
+			'landFill'       => '--ent-land-fill',
+			'baseStroke'     => '--ent-base-stroke',
+			'countryStroke'  => '--ent-t0-stroke',
+			'regionFill'     => '--ent-region-fill',
+			'regionStroke'   => '--ent-region-stroke',
+			'provinceFill'   => '--ent-province-fill',
+			'provinceStroke' => '--ent-province-stroke',
+		);
+		foreach ( $color_map as $attr => $prop ) {
+			if ( ! isset( $attributes[ $attr ] ) ) continue;
+			$hex = sanitize_hex_color( (string) $attributes[ $attr ] );
+			if ( $hex ) {
+				$style_parts[] = $prop . ': ' . $hex;
+			}
+		}
+
+		/* prop => [ custom property, min, max ] */
+		$num_map = array(
+			'baseStrokeWidth' => array( '--ent-base-sw',      0, 20 ),
+			't0StrokeWidth'   => array( '--ent-t0-sw',        0, 20 ),
+			't1StrokeWidth'   => array( '--ent-t1-sw',        0, 20 ),
+			't2StrokeWidth'   => array( '--ent-t2-sw',        0, 20 ),
+			'baseOpacity'     => array( '--ent-base-opacity', 0, 1 ),
+			't0Opacity'       => array( '--ent-t0-opacity',   0, 1 ),
+			't1Opacity'       => array( '--ent-t1-opacity',   0, 1 ),
+			't2Opacity'       => array( '--ent-t2-opacity',   0, 1 ),
+		);
+		foreach ( $num_map as $attr => $cfg ) {
+			if ( ! isset( $attributes[ $attr ] ) ) continue;
+			$v = (float) $attributes[ $attr ];
+			if ( $v < $cfg[1] ) $v = $cfg[1];
+			if ( $v > $cfg[2] ) $v = $cfg[2];
+			$style_parts[] = $cfg[0] . ': ' . $v;
+		}
+	}
+
+	$class_attr = esc_attr( implode( ' ', $classes ) );
+	$style_attr = '';
+	if ( ! empty( $style_parts ) ) {
+		$style_attr = ' style="' . esc_attr( implode( '; ', $style_parts ) . ';' ) . '"';
+	}
+
+	/* El SVG es un activo GPL de confianza y de origen propio: se emite tal cual,
+	   inline, para que el motor interactivo pueda acceder a los nodos <path>. No se
+	   pasa por wp_kses_* (eliminaría elementos/atributos SVG). */
 	ob_start();
 	?>
-	<div class="ent-region-map"<?php if ( '' !== $canvas ) : ?> style="--ent-region-canvas: <?php echo esc_attr( $canvas ); ?>;"<?php endif; ?>>
+	<div class="<?php echo $class_attr; ?>"<?php echo $style_attr; ?>>
 		<?php echo $svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — activo SVG GPL de confianza, ver nota superior. ?>
 	</div>
 	<?php
