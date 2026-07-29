@@ -10,10 +10,14 @@
 	position: relative; /* ancla el control «volver» (#44/#51) */
 }
 
-.ent-region-map svg {
+.ent-region-map > svg {
 	display: block;
 	width: 100%;
 	height: auto;
+	/* Combinador de HIJO DIRECTO (> svg) a propósito: solo el <svg> del mapa, NO el
+	   <svg> del icono del botón «volver» (que cuelga del <button>, no de este div).
+	   Con el descendiente «.ent-region-map svg» esta regla también estiraba el icono
+	   (width:100%) y le pintaba el fondo del lienzo (crema) por detrás de la flecha. */
 	/* El fondo lo lleva el <svg>, no el <rect width="100%" height="100%"> del
 	   activo: los % del rect se resuelven contra el viewBox, así que al hacer
 	   zoom (viewBox recortado) el rect queda fuera del área visible y el fondo se
@@ -99,9 +103,13 @@
 	cursor: pointer;
 }
 
+/* Acento al pasar el ratón (#54): configurable por --ent-hover-accent. Por defecto
+   #c9a010 (dorado oscuro), NO el dorado #f2c118 anterior; se aplica también en modo
+   «Los del propio mapa» (el fallback cubre ese caso, render.php no emite override).
+   En «Personalizar» lo emite render.php desde el atributo «Resalte al pasar el ratón». */
 .ent-region-map path.ent-active:hover,
 .ent-region-map path.ent-dimmed:hover {
-	fill: #f2c118;
+	fill: var(--ent-hover-accent, #c9a010);
 	fill-opacity: 0.85;
 }
 
@@ -138,11 +146,17 @@
 	opacity: 0.7;
 }
 
-/* ── Control «volver» (#44/#51) ──
+/* ── Control «volver» (#44/#51/#54) ──
    Botón con icono inline (sin texto), arriba-izquierda. Oculto por defecto; visible
-   solo cuando el motor marca el contenedor como drilleado (.is-drilled, en C4).
-   El antiguo selector [data-map-level] queda retirado: render.php ya no emite ese
-   atributo, así que la visibilidad la gobierna ahora una clase del motor. */
+   solo cuando el motor marca el contenedor como drilleado (.is-drilled).
+   Estructura común aquí; los COLORES los dan dos presets sólidos según el tipo de
+   lienzo declarado por el autor (#54). El color del lienzo lo fija el nivel 1 y no
+   se re-hornea aquí (invariante §13.19); el autor solo declara si es claro u oscuro
+   y el botón se adapta para CONTRASTAR con él. Por eso .back-light (para lienzo
+   claro — por defecto) es pastilla OSCURA con icono claro (resalta sobre el crema),
+   y .back-dark (para lienzo oscuro) es pastilla CLARA con flecha negra.
+   El motor pinta el icono con stroke="currentColor", así que basta fijar `color`.
+   Se abandona la pastilla translúcida anterior (rgba), casi ilegible sobre crema. */
 .ent-region-map__back {
 	position: absolute;
 	top: 8px;
@@ -155,9 +169,6 @@
 	height: 36px;
 	padding: 0;
 	line-height: 0;
-	color: #f5f5f5;
-	background: rgba(26, 26, 26, 0.85);
-	border: 1px solid rgba(242, 193, 24, 0.5);
 	border-radius: 50%;
 	cursor: pointer;
 }
@@ -166,7 +177,26 @@
 	display: flex;
 }
 
-.ent-region-map__back:hover {
+/* Preset «sobre lienzo claro» (para lienzo claro): pastilla OSCURA, contrasta con
+   el crema; icono claro. Por defecto. */
+.ent-region-map.back-light .ent-region-map__back {
+	color: #f5f5f5;
 	background: #1a1a1a;
+	border: 1px solid #f2c118;
+}
+.ent-region-map.back-light .ent-region-map__back:hover {
+	background: #0e0e0e;
+	border-color: #c9a010;
+}
+
+/* Preset «sobre lienzo oscuro» (para lienzo oscuro): pastilla CLARA, contrasta con
+   el lienzo oscuro; icono oscuro (flecha negra). */
+.ent-region-map.back-dark .ent-region-map__back {
+	color: #1a1a1a;
+	background: #f5f5f2;
+	border: 1px solid #c9a010;
+}
+.ent-region-map.back-dark .ent-region-map__back:hover {
+	background: #ffffff;
 	border-color: #f2c118;
 }

@@ -51,9 +51,16 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 		$style_parts[] = '--ent-region-canvas: ' . $canvas;
 	}
 
+	/* #54 — Preajuste del botón «volver» según el tipo de lienzo declarado por el
+	   autor. Es independiente del modo de color (corrige la baja legibilidad del
+	   botón sobre el lienzo claro): se emite siempre, con «claro» por defecto. */
+	$back      = ( isset( $attributes['backCanvas'] ) && 'dark' === $attributes['backCanvas'] ) ? 'dark' : 'light';
+	$classes[] = 'back-' . $back;
+
 	/* #54 — Modo 'theme': marcadores de estado + custom properties de color/grosor/
-	   opacidad por nivel. Colores saneados a hex; numéricos acotados. El acento de
-	   hover y el botón «volver» son del siguiente commit; aquí no se emiten. */
+	   opacidad por nivel y acento de hover. Colores saneados a hex; numéricos
+	   acotados. El acento de hover se aplica también en modo 'asset' vía el fallback
+	   del CSS (#c9a010); aquí solo se emite el override cuando el autor personaliza. */
 	$is_theme = isset( $attributes['colorSource'] ) && 'theme' === $attributes['colorSource'];
 	if ( $is_theme ) {
 		$classes[] = 'is-color-theme';
@@ -70,6 +77,7 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 			'regionStroke'   => '--ent-region-stroke',
 			'provinceFill'   => '--ent-province-fill',
 			'provinceStroke' => '--ent-province-stroke',
+			'hoverAccent'    => '--ent-hover-accent',
 		);
 		foreach ( $color_map as $attr => $prop ) {
 			if ( ! isset( $attributes[ $attr ] ) ) continue;
