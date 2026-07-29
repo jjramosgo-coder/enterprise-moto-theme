@@ -1531,18 +1531,19 @@ function enterprise_register_map_blocks() {
         'supports' => array( 'html' => false, 'align' => array( 'wide', 'full' ) ),
     ) );
 
-    /* ── Bloque interactive-region-map (#43) ──
+    /* ── Bloque interactive-region-map (#43 / #54) ──
        Mapa coroplético SVG nativo de regiones (nivel-1, Europa). NO reutiliza el
        motor OpenLayers (§13.19). Fase #43: esqueleto + render inline estático del
-       SVG; sin interactividad (#44) ni personalización por región (#47). Se registra
-       SIN clave 'category' (la agrupación bajo «Enterprise Moto» es #39) y sin
-       'attributes' (los atributos por-región son #47). */
+       SVG; navegación en #44. Se registra SIN clave 'category' (la agrupación bajo
+       «Enterprise Moto» es #39). #54 añade 'attributes': colores, grosores y
+       opacidades configurables por nivel (paleta global, juego cerrado); la
+       personalización por región sigue siendo #47. */
     require_once get_template_directory() . '/blocks/interactive-region-map/render.php';
 
     wp_register_script(
         'enterprise-block-interactive-region-map',
         get_template_directory_uri() . '/assets/js/block-interactive-region-map.js',
-        array( 'wp-blocks', 'wp-element', 'wp-block-editor' ),
+        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components' ),
         filemtime( get_template_directory() . '/assets/js/block-interactive-region-map.js' ),
         true
     );
@@ -1551,6 +1552,30 @@ function enterprise_register_map_blocks() {
         'api_version'     => 3,
         'editor_script'   => 'enterprise-block-interactive-region-map',
         'render_callback' => 'enterprise_render_interactive_region_map_block',
+        /* #54 — Colores configurables (nivel 2). Defaults = asignación de la paleta
+           «Editorial» (§3.1 del requisito). Los de color/grosor/opacidad solo se
+           aplican cuando colorSource='theme'; en 'asset' manda el activo horneado. */
+        'attributes'      => array(
+            'colorSource'     => array( 'type' => 'string', 'default' => 'asset'     ),
+            'palette'         => array( 'type' => 'string', 'default' => 'editorial' ),
+            'landFill'        => array( 'type' => 'string', 'default' => '#1a1a1a'   ),
+            'baseStroke'      => array( 'type' => 'string', 'default' => '#0e0e0e'   ),
+            'countryStroke'   => array( 'type' => 'string', 'default' => '#f2c118'   ),
+            'regionFill'      => array( 'type' => 'string', 'default' => '#2a2a2a'   ),
+            'regionStroke'    => array( 'type' => 'string', 'default' => '#3a3a3a'   ),
+            'provinceFill'    => array( 'type' => 'string', 'default' => '#5a5a5a'   ),
+            'provinceStroke'  => array( 'type' => 'string', 'default' => '#2a2a2a'   ),
+            'hoverAccent'     => array( 'type' => 'string', 'default' => '#c9a010'   ),
+            'baseStrokeWidth' => array( 'type' => 'number', 'default' => 0.5 ),
+            't0StrokeWidth'   => array( 'type' => 'number', 'default' => 0.8 ),
+            't1StrokeWidth'   => array( 'type' => 'number', 'default' => 0.5 ),
+            't2StrokeWidth'   => array( 'type' => 'number', 'default' => 0.3 ),
+            'baseOpacity'     => array( 'type' => 'number', 'default' => 1 ),
+            't0Opacity'       => array( 'type' => 'number', 'default' => 1 ),
+            't1Opacity'       => array( 'type' => 'number', 'default' => 1 ),
+            't2Opacity'       => array( 'type' => 'number', 'default' => 1 ),
+            'backCanvas'      => array( 'type' => 'string', 'default' => 'light' ),
+        ),
         'supports'        => array( 'html' => false, 'align' => array( 'wide', 'full' ) ),
     ) );
 }
