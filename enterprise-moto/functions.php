@@ -1660,6 +1660,27 @@ function enterprise_region_map_assets() {
     );
 }
 add_action( 'wp_enqueue_scripts', 'enterprise_region_map_assets' );
+
+/* ─────────────────────────────────────────
+   RESOLUTOR DEL ACTIVO DEL MAPA (#58)
+   Fuente única para localizar un fichero del par mapa+árbol: devuelve la copia del
+   ALMACÉN del sitio (uploads/enterprise-maps/) si existe; si no, la copia SEMILLA
+   del tema (assets/maps/). Lo usa render.php para el SVG; #55 lo reutilizará para
+   el árbol. $filename es un literal interno fijo en las llamadas
+   ('enterprise-eu.svg', 'map-regions-global.json'): ninguna entrada de usuario
+   llega hasta aquí. Si wp_upload_dir() reporta error, cae a la copia del tema.
+───────────────────────────────────────── */
+function enterprise_map_asset_path( $filename ) {
+    $upload = wp_upload_dir();
+    if ( empty( $upload['error'] ) && ! empty( $upload['basedir'] ) ) {
+        $stored = trailingslashit( $upload['basedir'] ) . 'enterprise-maps/' . $filename;
+        if ( file_exists( $stored ) ) {
+            return $stored;
+        }
+    }
+    return get_template_directory() . '/assets/maps/' . $filename;
+}
+
 function enterprise_register_blocks() {
     // Cargar el render callback
     require_once get_template_directory() . '/blocks/post-stages/render.php';

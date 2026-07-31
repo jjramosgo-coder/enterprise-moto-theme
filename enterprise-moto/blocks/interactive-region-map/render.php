@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 function enterprise_render_interactive_region_map_block( $attributes, $content = '', $block = null ) {
 
-	$svg_path = get_template_directory() . '/assets/maps/enterprise-eu.svg';
+	$svg_path = enterprise_map_asset_path( 'enterprise-eu.svg' );
 	$svg      = @file_get_contents( $svg_path );
 
 	/* Activo ausente o vacío: aviso solo para editores, cadena vacía en el front. */
