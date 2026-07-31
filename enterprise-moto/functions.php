@@ -1681,6 +1681,170 @@ function enterprise_map_asset_path( $filename ) {
     return get_template_directory() . '/assets/maps/' . $filename;
 }
 
+/* ─────────────────────────────────────────
+   PÁGINA DE ADMIN «Enterprise Moto» + SUBIDA VALIDADA DEL PAR (#58)
+   Menú propio de nivel superior, SOLO administradores (manage_options). Su único
+   contenido en #58 es la subida del par mapa+árbol al almacén del sitio
+   (uploads/enterprise-maps/), validada de forma TRANSACCIONAL: los dos ficheros
+   presentes + árbol con formato esperado + sello data-tree-sha256 del SVG que casa
+   (hash_equals) con el sha256 de los bytes exactos del árbol subido. Si algo falla,
+   no se guarda nada. El árbol es un artefacto generado inmutable: se sube verbatim.
+   #55 ampliará la capacidad a editores al añadir la sección «Sincronizar».
+───────────────────────────────────────── */
+
+/* Menú de nivel superior (admin_menu). */
+function enterprise_moto_admin_menu() {
+    add_menu_page(
+        'Enterprise Moto',                      // título de la página (<title>)
+        'Enterprise Moto',                      // etiqueta del menú
+        'manage_options',                       // capacidad: solo administradores (#58)
+        'enterprise-moto',                      // slug
+        'enterprise_moto_render_admin_page',    // callback de render
+        'dashicons-location-alt'                // icono
+    );
+}
+add_action( 'admin_menu', 'enterprise_moto_admin_menu' );
+
+/* Render de la página: aviso de estado (del arg que fija la redirección) + formulario. */
+function enterprise_moto_render_admin_page() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( esc_html__( 'No tienes permiso para acceder a esta página.', 'enterprise-moto' ) );
+    }
+
+    $status = isset( $_GET['enterprise_map_status'] ) ? sanitize_key( wp_unslash( $_GET['enterprise_map_status'] ) ) : '';
+    if ( '' !== $status ) {
+        $notices = array(
+            'ok'            => array( 'success', 'El mapa y su árbol se han actualizado correctamente.' ),
+            'missing'       => array( 'error',   'Debes subir los dos ficheros: el mapa (SVG) y el árbol de regiones (JSON).' ),
+            'bad_tree'      => array( 'error',   'El fichero del árbol no tiene el formato esperado.' ),
+            'no_seal'       => array( 'error',   'El mapa (SVG) no incluye el sello del árbol (data-tree-sha256): no se ha guardado nada.' ),
+            'hash_mismatch' => array( 'error',   'El árbol subido no coincide con el mapa (hash distinto): no se ha guardado nada.' ),
+            'store_error'   => array( 'error',   'No se ha podido escribir en el almacén del sitio: no se ha guardado nada.' ),
+        );
+        if ( isset( $notices[ $status ] ) ) {
+            printf(
+                '<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>',
+                esc_attr( $notices[ $status ][0] ),
+                esc_html( $notices[ $status ][1] )
+            );
+        }
+    }
+    ?>
+    <div class="wrap">
+        <h1>Enterprise Moto</h1>
+
+        <h2><?php echo esc_html( 'Mapa de regiones' ); ?></h2>
+        <p><?php echo esc_html( 'Sube el par indivisible del mapa: el SVG maestro y su árbol de regiones (JSON). Se validan juntos por hash; si no cuadran, no se guarda nada.' ); ?></p>
+
+        <form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="enterprise_upload_map_pair" />
+            <?php wp_nonce_field( 'enterprise_upload_map_pair', 'enterprise_map_nonce' ); ?>
+            <table class="form-table" role="presentation">
+                <tr>
+                    <th scope="row"><label for="enterprise_map_svg"><?php echo esc_html( 'Mapa (SVG)' ); ?></label></th>
+                    <td><input type="file" id="enterprise_map_svg" name="map_svg" accept=".svg,image/svg+xml" required /></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="enterprise_map_tree"><?php echo esc_html( 'Árbol de regiones (JSON)' ); ?></label></th>
+                    <td><input type="file" id="enterprise_map_tree" name="map_tree" accept=".json,application/json" required /></td>
+                </tr>
+            </table>
+            <?php submit_button( 'Subir mapa y árbol' ); ?>
+        </form>
+    </div>
+    <?php
+}
+
+/* Handler de la subida (admin_post): valida el par y escribe ambos, o rechaza sin
+   escribir nada. Redirige a la página con un arg de estado que dispara el aviso. */
+function enterprise_upload_map_pair_handler() {
+    check_admin_referer( 'enterprise_upload_map_pair', 'enterprise_map_nonce' );
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( esc_html__( 'No tienes permiso para realizar esta acción.', 'enterprise-moto' ) );
+    }
+
+    $redirect = admin_url( 'admin.php?page=enterprise-moto' );
+
+    /* 1) Ambos ficheros presentes y subidos sin error (validar todo antes de escribir). */
+    if (
+        empty( $_FILES['map_svg'] ) || empty( $_FILES['map_tree'] ) ||
+        ! isset( $_FILES['map_svg']['error'], $_FILES['map_tree']['error'], $_FILES['map_svg']['tmp_name'], $_FILES['map_tree']['tmp_name'] ) ||
+        UPLOAD_ERR_OK !== $_FILES['map_svg']['error'] ||
+        UPLOAD_ERR_OK !== $_FILES['map_tree']['error'] ||
+        ! is_uploaded_file( $_FILES['map_svg']['tmp_name'] ) ||
+        ! is_uploaded_file( $_FILES['map_tree']['tmp_name'] )
+    ) {
+        wp_safe_redirect( add_query_arg( 'enterprise_map_status', 'missing', $redirect ) );
+        exit;
+    }
+
+    $svg_name  = sanitize_file_name( $_FILES['map_svg']['name'] );
+    $tree_name = sanitize_file_name( $_FILES['map_tree']['name'] );
+
+    $svg_bytes  = file_get_contents( $_FILES['map_svg']['tmp_name'] );
+    $tree_bytes = file_get_contents( $_FILES['map_tree']['tmp_name'] );
+
+    /* 2) Árbol: extensión .json + json_decode válido + objeto con _meta y tree no vacío. */
+    $tree_data = json_decode( (string) $tree_bytes, true );
+    if (
+        '.json' !== strtolower( (string) substr( $tree_name, -5 ) ) ||
+        ! is_array( $tree_data ) ||
+        ! isset( $tree_data['_meta'] ) ||
+        empty( $tree_data['tree'] ) ||
+        ! is_array( $tree_data['tree'] )
+    ) {
+        wp_safe_redirect( add_query_arg( 'enterprise_map_status', 'bad_tree', $redirect ) );
+        exit;
+    }
+
+    /* 3) SVG: extensión .svg + contenido con <svg + sello data-tree-sha256. */
+    if (
+        '.svg' !== strtolower( (string) substr( $svg_name, -4 ) ) ||
+        false === stripos( (string) $svg_bytes, '<svg' ) ||
+        ! preg_match( '/data-tree-sha256\s*=\s*"([a-f0-9]{64})"/i', (string) $svg_bytes, $m )
+    ) {
+        wp_safe_redirect( add_query_arg( 'enterprise_map_status', 'no_seal', $redirect ) );
+        exit;
+    }
+    $svg_hash = strtolower( $m[1] );
+
+    /* 4) Hash bloqueante: sello del SVG == sha256 de los bytes exactos del árbol. */
+    if ( ! hash_equals( $svg_hash, hash( 'sha256', (string) $tree_bytes ) ) ) {
+        wp_safe_redirect( add_query_arg( 'enterprise_map_status', 'hash_mismatch', $redirect ) );
+        exit;
+    }
+
+    /* 5) Todo válido: escribir el par al almacén bajo nombres canónicos, vía nombres
+          temporales + rename() (los dos o ninguno en disco). */
+    $upload = wp_upload_dir();
+    if ( ! empty( $upload['error'] ) || empty( $upload['basedir'] ) ) {
+        wp_safe_redirect( add_query_arg( 'enterprise_map_status', 'store_error', $redirect ) );
+        exit;
+    }
+    $dir = trailingslashit( $upload['basedir'] ) . 'enterprise-maps/';
+    if ( ! wp_mkdir_p( $dir ) ) {
+        wp_safe_redirect( add_query_arg( 'enterprise_map_status', 'store_error', $redirect ) );
+        exit;
+    }
+
+    $svg_tmp  = $dir . 'enterprise-eu.svg.' . wp_generate_password( 8, false ) . '.tmp';
+    $tree_tmp = $dir . 'map-regions-global.json.' . wp_generate_password( 8, false ) . '.tmp';
+
+    if ( false === file_put_contents( $svg_tmp, $svg_bytes ) || false === file_put_contents( $tree_tmp, $tree_bytes ) ) {
+        @unlink( $svg_tmp );
+        @unlink( $tree_tmp );
+        wp_safe_redirect( add_query_arg( 'enterprise_map_status', 'store_error', $redirect ) );
+        exit;
+    }
+
+    rename( $svg_tmp,  $dir . 'enterprise-eu.svg' );
+    rename( $tree_tmp, $dir . 'map-regions-global.json' );
+
+    wp_safe_redirect( add_query_arg( 'enterprise_map_status', 'ok', $redirect ) );
+    exit;
+}
+add_action( 'admin_post_enterprise_upload_map_pair', 'enterprise_upload_map_pair_handler' );
+
 function enterprise_register_blocks() {
     // Cargar el render callback
     require_once get_template_directory() . '/blocks/post-stages/render.php';
