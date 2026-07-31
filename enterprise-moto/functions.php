@@ -1683,13 +1683,14 @@ function enterprise_map_asset_path( $filename ) {
 
 /* ─────────────────────────────────────────
    PÁGINA DE ADMIN «Enterprise Moto» + SUBIDA VALIDADA DEL PAR (#58)
-   Menú propio de nivel superior, SOLO administradores (manage_options). Su único
-   contenido en #58 es la subida del par mapa+árbol al almacén del sitio
-   (uploads/enterprise-maps/), validada de forma TRANSACCIONAL: los dos ficheros
+   Menú propio de nivel superior. En #58 la subida del par mapa+árbol al almacén del
+   sitio (uploads/enterprise-maps/) se valida de forma TRANSACCIONAL: los dos ficheros
    presentes + árbol con formato esperado + sello data-tree-sha256 del SVG que casa
    (hash_equals) con el sha256 de los bytes exactos del árbol subido. Si algo falla,
    no se guarda nada. El árbol es un artefacto generado inmutable: se sube verbatim.
-   #55 ampliará la capacidad a editores al añadir la sección «Sincronizar».
+   #55 amplía la capacidad de la PÁGINA a editores (edit_others_posts) para la sección
+   «Sincronizar regiones»; la SUBIDA del par sigue siendo SOLO de administradores
+   (manage_options), acotada dentro de la propia página y en su handler.
 ───────────────────────────────────────── */
 
 /* Menú de nivel superior (admin_menu). */
@@ -1697,7 +1698,7 @@ function enterprise_moto_admin_menu() {
     add_menu_page(
         'Enterprise Moto',                      // título de la página (<title>)
         'Enterprise Moto',                      // etiqueta del menú
-        'manage_options',                       // capacidad: solo administradores (#58)
+        'edit_others_posts',                    // capacidad: administradores + editores (#55; era manage_options en #58)
         'enterprise-moto',                      // slug
         'enterprise_moto_render_admin_page',    // callback de render
         'dashicons-location-alt'                // icono
@@ -1707,10 +1708,11 @@ add_action( 'admin_menu', 'enterprise_moto_admin_menu' );
 
 /* Render de la página: aviso de estado (del arg que fija la redirección) + formulario. */
 function enterprise_moto_render_admin_page() {
-    if ( ! current_user_can( 'manage_options' ) ) {
+    if ( ! current_user_can( 'edit_others_posts' ) ) {
         wp_die( esc_html__( 'No tienes permiso para acceder a esta página.', 'enterprise-moto' ) );
     }
 
+    /* Aviso de estado de la subida del par (#58, solo administradores). */
     $status = isset( $_GET['enterprise_map_status'] ) ? sanitize_key( wp_unslash( $_GET['enterprise_map_status'] ) ) : '';
     if ( '' !== $status ) {
         $notices = array(
@@ -1729,10 +1731,30 @@ function enterprise_moto_render_admin_page() {
             );
         }
     }
+
+    /* Aviso de estado de «Sincronizar regiones» (#55, admins + editores). El reporte
+       de «Analizar» no cabe en un arg de URL: viaja por un transient por usuario que
+       pinta enterprise_regiones_render_report_panel() más abajo. */
+    $sync_status = isset( $_GET['enterprise_regiones'] ) ? sanitize_key( wp_unslash( $_GET['enterprise_regiones'] ) ) : '';
+    if ( '' !== $sync_status ) {
+        $sync_notices = array(
+            'applied'    => array( 'success', 'Las regiones se han sincronizado correctamente.' ),
+            'read_error' => array( 'error',   'No se ha podido leer el árbol de regiones (¿has subido el par mapa+árbol?).' ),
+            'bad_format' => array( 'error',   'El árbol de regiones no tiene el formato esperado.' ),
+        );
+        if ( isset( $sync_notices[ $sync_status ] ) ) {
+            printf(
+                '<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>',
+                esc_attr( $sync_notices[ $sync_status ][0] ),
+                esc_html( $sync_notices[ $sync_status ][1] )
+            );
+        }
+    }
     ?>
     <div class="wrap">
         <h1>Enterprise Moto</h1>
 
+        <?php if ( current_user_can( 'manage_options' ) ) : ?>
         <h2><?php echo esc_html( 'Mapa de regiones' ); ?></h2>
         <p><?php echo esc_html( 'Sube el par indivisible del mapa: el SVG maestro y su árbol de regiones (JSON). Se validan juntos por hash; si no cuadran, no se guarda nada.' ); ?></p>
 
@@ -1751,8 +1773,87 @@ function enterprise_moto_render_admin_page() {
             </table>
             <?php submit_button( 'Subir mapa y árbol' ); ?>
         </form>
+        <?php endif; ?>
+
+        <?php if ( current_user_can( 'edit_others_posts' ) ) : ?>
+        <h2><?php echo esc_html( 'Sincronizar regiones' ); ?></h2>
+        <p><?php echo esc_html( 'Siembra y actualiza los términos de la taxonomía "Regiones" a partir del árbol de regiones del mapa. La operación es no destructiva: nunca borra términos ni reasigna entradas.' ); ?></p>
+
+        <?php enterprise_regiones_render_report_panel(); ?>
+
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="enterprise_sync_regiones" />
+            <?php wp_nonce_field( 'enterprise_sync_regiones', 'enterprise_regiones_nonce' ); ?>
+            <p class="submit">
+                <button type="submit" name="mode" value="analyze" class="button button-secondary"><?php echo esc_html( 'Analizar cambios' ); ?></button>
+                <button type="submit" name="mode" value="apply" class="button button-primary"><?php echo esc_html( 'Aplicar cambios' ); ?></button>
+            </p>
+        </form>
+        <?php endif; ?>
     </div>
     <?php
+}
+
+/* ─────────────────────────────────────────
+   PANEL DE REPORTE DE «SINCRONIZAR REGIONES» (#55)
+   Lee el reporte precalculado del transient por usuario (lo fija el handler en modo
+   «analyze», Commit 3), lo muestra por grupos y lo borra tras mostrarlo (un solo uso).
+   En el Commit 2 todavía no hay handler que fije el transient: si no lo hay, no pinta
+   nada. Forma esperada del reporte (contrato con enterprise_regiones_compute_sync(),
+   Commit 3):
+     array(
+       'nuevas'          => [ array('code','name','admin'), … ],
+       'actualizar'      => [ array('code','name','admin','old_name','old_admin','term_id'), … ],
+       'descolgadas_con' => [ array('code','name','count','term_id'), … ],
+       'descolgadas_sin' => [ array('code','name','count','term_id'), … ],
+     )
+───────────────────────────────────────── */
+function enterprise_regiones_render_report_panel() {
+    $key    = 'enterprise_regiones_report_' . get_current_user_id();
+    $report = get_transient( $key );
+    if ( false === $report || ! is_array( $report ) ) {
+        return;
+    }
+    delete_transient( $key );
+
+    $nuevas     = ! empty( $report['nuevas'] )          && is_array( $report['nuevas'] )          ? $report['nuevas']          : array();
+    $actualizar = ! empty( $report['actualizar'] )      && is_array( $report['actualizar'] )      ? $report['actualizar']      : array();
+    $desc_con   = ! empty( $report['descolgadas_con'] ) && is_array( $report['descolgadas_con'] ) ? $report['descolgadas_con'] : array();
+    $desc_sin   = ! empty( $report['descolgadas_sin'] ) && is_array( $report['descolgadas_sin'] ) ? $report['descolgadas_sin'] : array();
+
+    if ( empty( $nuevas ) && empty( $actualizar ) && empty( $desc_con ) && empty( $desc_sin ) ) {
+        echo '<div class="notice notice-info inline"><p>' . esc_html( 'Todo está al día: no hay cambios que aplicar.' ) . '</p></div>';
+        return;
+    }
+
+    enterprise_regiones_render_report_bucket( 'Nuevas regiones', $nuevas, 'nueva' );
+    enterprise_regiones_render_report_bucket( 'Nombres a actualizar', $actualizar, 'actualizar' );
+    enterprise_regiones_render_report_bucket( 'Descolgadas con entradas (no se tocan)', $desc_con, 'descolgada' );
+    enterprise_regiones_render_report_bucket( 'Descolgadas sin entradas', $desc_sin, 'descolgada' );
+}
+
+/* Render de un grupo del reporte (título + nº + lista). No emite nada si está vacío. */
+function enterprise_regiones_render_report_bucket( $title, $items, $kind ) {
+    if ( empty( $items ) ) {
+        return;
+    }
+    echo '<h4>' . esc_html( $title ) . ' (' . (int) count( $items ) . ')</h4>';
+    echo '<ul style="list-style:disc;margin-left:2em;">';
+    foreach ( $items as $it ) {
+        $code = isset( $it['code'] ) ? (string) $it['code'] : '';
+        $name = isset( $it['name'] ) ? (string) $it['name'] : '';
+        if ( 'actualizar' === $kind ) {
+            $old  = isset( $it['old_name'] ) ? (string) $it['old_name'] : '';
+            $line = $code . ' — «' . $old . '» → «' . $name . '»';
+        } elseif ( 'descolgada' === $kind ) {
+            $count = isset( $it['count'] ) ? (int) $it['count'] : 0;
+            $line  = $code . ' — ' . $name . ' (' . $count . ' entradas)';
+        } else {
+            $line = $code . ' — ' . $name;
+        }
+        echo '<li>' . esc_html( $line ) . '</li>';
+    }
+    echo '</ul>';
 }
 
 /* Handler de la subida (admin_post): valida el par y escribe ambos, o rechaza sin
