@@ -1738,9 +1738,10 @@ function enterprise_moto_render_admin_page() {
     $sync_status = isset( $_GET['enterprise_regiones'] ) ? sanitize_key( wp_unslash( $_GET['enterprise_regiones'] ) ) : '';
     if ( '' !== $sync_status ) {
         $sync_notices = array(
-            'applied'    => array( 'success', 'Las regiones se han sincronizado correctamente.' ),
-            'read_error' => array( 'error',   'No se ha podido leer el árbol de regiones (¿has subido el par mapa+árbol?).' ),
-            'bad_format' => array( 'error',   'El árbol de regiones no tiene el formato esperado.' ),
+            'applied'      => array( 'success', 'Las regiones se han sincronizado correctamente.' ),
+            'read_error'   => array( 'error',   'No se ha podido leer el árbol de regiones (¿has subido el par mapa+árbol?).' ),
+            'bad_format'   => array( 'error',   'El árbol de regiones no tiene el formato esperado.' ),
+            'need_analyze' => array( 'error',   'Analiza los cambios antes de aplicar.' ),
         );
         if ( isset( $sync_notices[ $sync_status ] ) ) {
             printf(
@@ -1785,8 +1786,7 @@ function enterprise_moto_render_admin_page() {
             <input type="hidden" name="action" value="enterprise_sync_regiones" />
             <?php wp_nonce_field( 'enterprise_sync_regiones', 'enterprise_regiones_nonce' ); ?>
             <p class="submit">
-                <button type="submit" name="mode" value="analyze" class="button button-secondary"><?php echo esc_html( 'Analizar cambios' ); ?></button>
-                <button type="submit" name="mode" value="apply" class="button button-primary"><?php echo esc_html( 'Aplicar cambios' ); ?></button>
+                <button type="submit" name="mode" value="analyze" class="button button-primary"><?php echo esc_html( 'Analizar cambios' ); ?></button>
             </p>
         </form>
         <?php endif; ?>
@@ -1814,7 +1814,8 @@ function enterprise_regiones_render_report_panel() {
     if ( false === $report || ! is_array( $report ) ) {
         return;
     }
-    delete_transient( $key );
+    /* NO se borra el transient al pintar (§7.2): es la puerta de «previa antes de
+       aplicar». Lo consume un «Aplicar» con éxito (handler), o expira por su TTL. */
 
     $nuevas     = ! empty( $report['nuevas'] )          && is_array( $report['nuevas'] )          ? $report['nuevas']          : array();
     $actualizar = ! empty( $report['actualizar'] )      && is_array( $report['actualizar'] )      ? $report['actualizar']      : array();
@@ -1830,6 +1831,22 @@ function enterprise_regiones_render_report_panel() {
     enterprise_regiones_render_report_bucket( 'Nombres a actualizar', $actualizar, 'actualizar' );
     enterprise_regiones_render_report_bucket( 'Descolgadas con entradas (no se tocan)', $desc_con, 'descolgada' );
     enterprise_regiones_render_report_bucket( 'Descolgadas sin entradas', $desc_sin, 'descolgada' );
+
+    /* La confirmación vive AQUÍ (§7, Decisión C): «Aplicar» solo es alcanzable desde un
+       reporte recién analizado, y solo si hay algo aplicable (nuevas o a actualizar). Un
+       reporte de solo descolgadas —o «Todo está al día»— no muestra botón de aplicar. */
+    if ( ! empty( $nuevas ) || ! empty( $actualizar ) ) {
+        ?>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="enterprise_sync_regiones" />
+            <input type="hidden" name="mode" value="apply" />
+            <?php wp_nonce_field( 'enterprise_sync_regiones', 'enterprise_regiones_nonce' ); ?>
+            <p class="submit">
+                <button type="submit" class="button button-primary"><?php echo esc_html( 'Aplicar estos cambios' ); ?></button>
+            </p>
+        </form>
+        <?php
+    }
 }
 
 /* Render de un grupo del reporte (título + nº + lista). No emite nada si está vacío. */
@@ -2196,7 +2213,18 @@ function enterprise_sync_regiones_handler() {
     }
 
     if ( 'apply' === $mode ) {
+        /* Puerta de «previa siempre» (§7.2, Decisión C): exige el transient del análisis
+           previo del usuario. Si no existe (POST directo, pestaña obsoleta) → no escribe. */
+        $tkey     = 'enterprise_regiones_report_' . get_current_user_id();
+        $analyzed = get_transient( $tkey );
+        if ( false === $analyzed || ! is_array( $analyzed ) ) {
+            wp_safe_redirect( add_query_arg( 'enterprise_regiones', 'need_analyze', $redirect ) );
+            exit;
+        }
+        /* Se aplica el reporte RECIÉN recalculado ($report, Decisión 10 intacta), no el
+           del transient: este solo prueba que hubo previa. Se consume tras aplicar. */
         enterprise_regiones_apply_sync( $report );
+        delete_transient( $tkey );
         wp_safe_redirect( add_query_arg( 'enterprise_regiones', 'applied', $redirect ) );
         exit;
     }
