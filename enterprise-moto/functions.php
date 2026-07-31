@@ -2000,6 +2000,215 @@ function enterprise_register_regiones_taxonomy() {
 }
 add_action( 'init', 'enterprise_register_regiones_taxonomy' );
 
+/* ─────────────────────────────────────────
+   MOTOR DE «SINCRONIZAR REGIONES» (#55, Fase 1 de #45)
+   Siembra/actualización IDEMPOTENTE y NO DESTRUCTIVA de los términos de la taxonomía
+   `regiones` desde el árbol autoritativo del mapa (map-regions-global.json), leído del
+   almacén del sitio vía el resolutor de #58. El cómputo (enterprise_regiones_compute_sync)
+   NO escribe: aplana el árbol a todos los niveles, casa por `region_code` y clasifica en
+   cuatro grupos (nuevas / a actualizar / descolgadas con entradas / descolgadas sin
+   entradas). El handler ejecuta «Analizar» (guarda el reporte en un transient por usuario
+   y redirige) o «Aplicar» (recalcula sobre el árbol vigente y crea/actualiza; nunca borra
+   ni reasigna). Emparejamiento SIEMPRE por código (Decisión E); «actualizar» refresca
+   nombre + nivel (Decisión Opción A); término con posts protegido (Decisión F).
+───────────────────────────────────────── */
+
+/* Aplana el árbol (recursivo, todos los niveles) a una lista de { code, name, admin }.
+   Los nodos sin `code` no son sembrables: se ignoran, pero se recorre a sus hijos. */
+function enterprise_regiones_flatten_tree( $branch, &$out ) {
+    if ( ! is_array( $branch ) ) {
+        return;
+    }
+    foreach ( $branch as $node ) {
+        if ( ! is_array( $node ) ) {
+            continue;
+        }
+        $code = isset( $node['code'] ) ? (string) $node['code'] : '';
+        if ( '' !== $code ) {
+            $out[] = array(
+                'code'  => $code,
+                'name'  => isset( $node['name'] ) ? (string) $node['name'] : '',
+                'admin' => isset( $node['admin'] ) ? (int) $node['admin'] : 0,
+            );
+        }
+        if ( ! empty( $node['children'] ) && is_array( $node['children'] ) ) {
+            enterprise_regiones_flatten_tree( $node['children'], $out );
+        }
+    }
+}
+
+/* Dry-run: lee el árbol, lo aplana, carga los términos existentes indexados por
+   `region_code` y clasifica. NO escribe nada. Devuelve el reporte de cuatro grupos, o
+   array( 'error' => 'read_error'|'bad_format' ) si el árbol no se puede leer/parsear. */
+function enterprise_regiones_compute_sync() {
+    $path = enterprise_map_asset_path( 'map-regions-global.json' );
+    if ( ! file_exists( $path ) ) {
+        return array( 'error' => 'read_error' );
+    }
+    $bytes = file_get_contents( $path );
+    if ( false === $bytes ) {
+        return array( 'error' => 'read_error' );
+    }
+    $data = json_decode( (string) $bytes, true );
+    if (
+        ! is_array( $data ) ||
+        ! isset( $data['_meta'] ) ||
+        empty( $data['tree'] ) ||
+        ! is_array( $data['tree'] )
+    ) {
+        return array( 'error' => 'bad_format' );
+    }
+
+    /* Aplanar el árbol (todos los niveles). */
+    $nodes = array();
+    enterprise_regiones_flatten_tree( $data['tree'], $nodes );
+
+    $tree_codes = array();
+    foreach ( $nodes as $n ) {
+        $tree_codes[ $n['code'] ] = true;
+    }
+
+    /* Términos existentes indexados por `region_code` (primera aparición). */
+    $terms = get_terms( array( 'taxonomy' => 'regiones', 'hide_empty' => false ) );
+    if ( is_wp_error( $terms ) ) {
+        $terms = array();
+    }
+    $term_by_code = array();
+    foreach ( $terms as $t ) {
+        $code = (string) get_term_meta( $t->term_id, 'region_code', true );
+        if ( isset( $term_by_code[ $code ] ) ) {
+            continue;
+        }
+        $admin_meta = get_term_meta( $t->term_id, 'region_admin', true );
+        $term_by_code[ $code ] = array(
+            'term_id' => (int) $t->term_id,
+            'name'    => (string) $t->name,
+            'admin'   => ( '' === $admin_meta ? null : (int) $admin_meta ),
+            'count'   => (int) $t->count,
+        );
+    }
+
+    /* Clasificar cada nodo del árbol: nueva / a actualizar / sin cambios. */
+    $nuevas     = array();
+    $actualizar = array();
+    foreach ( $nodes as $n ) {
+        $code = $n['code'];
+        if ( ! isset( $term_by_code[ $code ] ) ) {
+            $nuevas[] = array( 'code' => $code, 'name' => $n['name'], 'admin' => $n['admin'] );
+            continue;
+        }
+        $t             = $term_by_code[ $code ];
+        $name_differs  = ( $t['name'] !== $n['name'] );
+        $admin_differs = ( null === $t['admin'] || (int) $t['admin'] !== (int) $n['admin'] );
+        if ( $name_differs || $admin_differs ) {
+            $actualizar[] = array(
+                'code'      => $code,
+                'name'      => $n['name'],
+                'admin'     => $n['admin'],
+                'old_name'  => $t['name'],
+                'old_admin' => $t['admin'],
+                'term_id'   => $t['term_id'],
+            );
+        }
+    }
+
+    /* Clasificar cada término cuyo código YA NO está en el árbol: descolgado
+       (separado por si tiene posts). Solo se reporta, nunca se toca. */
+    $desc_con = array();
+    $desc_sin = array();
+    foreach ( $term_by_code as $code => $t ) {
+        if ( isset( $tree_codes[ $code ] ) ) {
+            continue;
+        }
+        $entry = array( 'code' => $code, 'name' => $t['name'], 'count' => $t['count'], 'term_id' => $t['term_id'] );
+        if ( $t['count'] > 0 ) {
+            $desc_con[] = $entry;
+        } else {
+            $desc_sin[] = $entry;
+        }
+    }
+
+    return array(
+        'nuevas'          => $nuevas,
+        'actualizar'      => $actualizar,
+        'descolgadas_con' => $desc_con,
+        'descolgadas_sin' => $desc_sin,
+    );
+}
+
+/* Aplica el reporte: crea las nuevas y actualiza nombre + nivel de las «a actualizar».
+   NUNCA borra ni reasigna: los grupos «descolgadas» se ignoran aquí. */
+function enterprise_regiones_apply_sync( $report ) {
+    $nuevas     = ! empty( $report['nuevas'] )     && is_array( $report['nuevas'] )     ? $report['nuevas']     : array();
+    $actualizar = ! empty( $report['actualizar'] ) && is_array( $report['actualizar'] ) ? $report['actualizar'] : array();
+
+    foreach ( $nuevas as $n ) {
+        $code  = isset( $n['code'] )  ? (string) $n['code'] : '';
+        $name  = isset( $n['name'] )  ? (string) $n['name'] : '';
+        $admin = isset( $n['admin'] ) ? (int) $n['admin']   : 0;
+        if ( '' === $code ) {
+            continue;
+        }
+
+        $slug = strtolower( $code );
+        $res  = wp_insert_term( $name, 'regiones', array( 'slug' => $slug ) );
+
+        /* Colisión de slug (no debería ocurrir con slug = código): reintento con slug
+           sufijado; el join sigue en `region_code`. No se aborta la tanda. */
+        if ( is_wp_error( $res ) && 'term_exists' === $res->get_error_code() ) {
+            $res = wp_insert_term( $name, 'regiones', array( 'slug' => $slug . '-' . strtolower( wp_generate_password( 4, false ) ) ) );
+        }
+        if ( is_wp_error( $res ) || empty( $res['term_id'] ) ) {
+            continue;
+        }
+        $term_id = (int) $res['term_id'];
+        update_term_meta( $term_id, 'region_code', $code );
+        update_term_meta( $term_id, 'region_admin', $admin );
+    }
+
+    foreach ( $actualizar as $u ) {
+        $term_id = isset( $u['term_id'] ) ? (int) $u['term_id'] : 0;
+        $name    = isset( $u['name'] )    ? (string) $u['name'] : '';
+        $admin   = isset( $u['admin'] )   ? (int) $u['admin']   : 0;
+        if ( ! $term_id ) {
+            continue;
+        }
+        wp_update_term( $term_id, 'regiones', array( 'name' => $name ) ); // code y slug intactos
+        update_term_meta( $term_id, 'region_admin', $admin );
+    }
+}
+
+/* Handler admin_post: nonce + capacidad, luego «analyze» (reporte al transient +
+   redirect) o «apply» (recalcula sobre el árbol vigente y escribe + redirect). */
+function enterprise_sync_regiones_handler() {
+    check_admin_referer( 'enterprise_sync_regiones', 'enterprise_regiones_nonce' );
+    if ( ! current_user_can( 'edit_others_posts' ) ) {
+        wp_die( esc_html__( 'No tienes permiso para realizar esta acción.', 'enterprise-moto' ) );
+    }
+
+    $redirect = admin_url( 'admin.php?page=enterprise-moto' );
+    $mode     = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : '';
+
+    $report = enterprise_regiones_compute_sync();
+    if ( isset( $report['error'] ) ) {
+        wp_safe_redirect( add_query_arg( 'enterprise_regiones', $report['error'], $redirect ) );
+        exit;
+    }
+
+    if ( 'apply' === $mode ) {
+        enterprise_regiones_apply_sync( $report );
+        wp_safe_redirect( add_query_arg( 'enterprise_regiones', 'applied', $redirect ) );
+        exit;
+    }
+
+    /* Cualquier otro modo (incl. «analyze»): dry-run. El reporte no cabe en la URL;
+       viaja por un transient por usuario que pinta el panel de la página. */
+    set_transient( 'enterprise_regiones_report_' . get_current_user_id(), $report, 5 * MINUTE_IN_SECONDS );
+    wp_safe_redirect( add_query_arg( 'enterprise_regiones', 'analyzed', $redirect ) );
+    exit;
+}
+add_action( 'admin_post_enterprise_sync_regiones', 'enterprise_sync_regiones_handler' );
+
 function enterprise_register_blocks() {
     // Cargar el render callback
     require_once get_template_directory() . '/blocks/post-stages/render.php';
