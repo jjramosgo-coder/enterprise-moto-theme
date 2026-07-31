@@ -1845,6 +1845,60 @@ function enterprise_upload_map_pair_handler() {
 }
 add_action( 'admin_post_enterprise_upload_map_pair', 'enterprise_upload_map_pair_handler' );
 
+/* ─────────────────────────────────────────
+   TAXONOMÍA «Regiones» + TERM META (#55, Fase 1 de #45)
+   Capa de datos geográfica consultable: taxonomía propia PLANA `regiones`
+   (términos = unidades del mapa) sobre `post`, registrada MÍNIMA en la parte
+   pública (Decisión D: sin páginas/URLs por región; el destino del clic es de
+   #46). Dos term meta descriptivas cuya identidad es el código:
+     · region_code  = código ISO = id del <path> del SVG = CLAVE DE JOIN.
+     · region_admin = nivel administrativo (0 país / 1 región / 2 provincia / …).
+   Aquí NO se siembran términos: la siembra/actualización es la herramienta
+   «Sincronizar regiones» (previa + confirmar, no destructiva), no un seed
+   silencioso en init. Este registro solo declara la taxonomía y sus metas.
+───────────────────────────────────────── */
+function enterprise_register_regiones_taxonomy() {
+    register_taxonomy(
+        'regiones',
+        'post',
+        array(
+            'labels'             => array(
+                'name'          => 'Regiones',
+                'singular_name' => 'Región',
+            ),
+            'hierarchical'       => false,
+            'public'             => false,
+            'publicly_queryable' => false,
+            'show_ui'            => true,
+            'show_in_menu'       => true,
+            'show_admin_column'  => false,
+            'rewrite'            => false,
+            'show_in_rest'       => false,
+        )
+    );
+
+    register_term_meta(
+        'regiones',
+        'region_code',
+        array(
+            'type'         => 'string',
+            'single'       => true,
+            'show_in_rest' => false,
+        )
+    );
+
+    register_term_meta(
+        'regiones',
+        'region_admin',
+        array(
+            'type'         => 'integer',
+            'single'       => true,
+            'show_in_rest' => false,
+        )
+    );
+}
+add_action( 'init', 'enterprise_register_regiones_taxonomy' );
+
 function enterprise_register_blocks() {
     // Cargar el render callback
     require_once get_template_directory() . '/blocks/post-stages/render.php';
