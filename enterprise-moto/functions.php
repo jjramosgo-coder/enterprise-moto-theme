@@ -2327,7 +2327,11 @@ function enterprise_rmm_ingest_geo( $post, $request, $creating ) {
     $content = get_post_field( 'post_content', $post->ID );
     if ( ! $content ) return;
     $blocks = enterprise_rmm_collect_blocks( parse_blocks( $content ) );
-    if ( empty( $blocks ) ) return;
+
+    /* Unión de términos de los bloques que contribuyen. SIN bloques → unión vacía → el
+       reemplazo de abajo retira los términos previos (borrar el bloque decrementa el conteo). */
+    $union = array();
+    if ( ! empty( $blocks ) ) :
 
     /* Índice region_code → term_id (mismo patrón que #55, l. ~2364). */
     $terms = get_terms( array( 'taxonomy' => 'regiones', 'hide_empty' => false ) );
@@ -2339,8 +2343,6 @@ function enterprise_rmm_ingest_geo( $post, $request, $creating ) {
         $term_by_code[ $code ] = (int) $t->term_id;
     }
 
-    /* Unión de términos de los bloques que contribuyen. */
-    $union = array();
     foreach ( $blocks as $b ) {
         $attrs = ( isset( $b['attrs'] ) && is_array( $b['attrs'] ) ) ? $b['attrs'] : array();
         if ( empty( $attrs['validated'] ) ) continue;
@@ -2358,6 +2360,8 @@ function enterprise_rmm_ingest_geo( $post, $request, $creating ) {
             if ( isset( $term_by_code[ $code ] ) ) $union[ $term_by_code[ $code ] ] = true;
         }
     }
+
+    endif; /* ! empty( $blocks ) */
 
     /* Reemplazo (todos los niveles). Unión vacía → se retiran los términos previos. */
     $term_ids = array_map( 'intval', array_keys( $union ) );
