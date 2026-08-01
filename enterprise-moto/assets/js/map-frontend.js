@@ -856,11 +856,23 @@
           }
 
           var LPAD = 52;
+
+          /* Etiqueta flotante de altitud sobre el perfil (#56, Commit 5). Creada en JS
+             (sin markup en render.php); co-beneficia a route-comparison. */
+          var elevLabel = null;
+          if (elevWrap) {
+            elevLabel = document.createElement('div');
+            elevLabel.className = 'ent-map-elev-alt';
+            elevLabel.style.cssText = 'display:none;position:absolute;top:6px;transform:translateX(-50%);padding:2px 7px;font-family:inherit;font-size:12px;font-weight:600;line-height:1.3;color:#fff;background:' + elevColor + ';border-radius:4px;pointer-events:none;white-space:nowrap;z-index:6;';
+            elevWrap.appendChild(elevLabel);
+          }
+
           function syncFromX(xRaw) {
             var chartW = elevCanvas.getBoundingClientRect().width - LPAD;
             if (xRaw < 0 || xRaw > chartW) {
               animMarkerSrc.clear();
               if (elevCursor) elevCursor.style.display = 'none';
+              if (elevLabel)  elevLabel.style.display  = 'none';
               return;
             }
             var ratio  = Math.max(0, Math.min(1, xRaw / chartW));
@@ -875,6 +887,15 @@
               elevCursor.style.display = 'block';
               elevCursor.style.left    = (LPAD + xRaw) + 'px';
             }
+            if (elevLabel) {
+              if (pt.ele != null && !isNaN(pt.ele)) {
+                elevLabel.textContent   = Math.round(pt.ele) + ' m';
+                elevLabel.style.left    = (LPAD + xRaw) + 'px';
+                elevLabel.style.display = 'block';
+              } else {
+                elevLabel.style.display = 'none';
+              }
+            }
           }
 
           elevCanvas.addEventListener('mousemove', function(e) {
@@ -884,6 +905,7 @@
           elevCanvas.addEventListener('mouseleave', function() {
             animMarkerSrc.clear();
             if (elevCursor) elevCursor.style.display = 'none';
+            if (elevLabel)  elevLabel.style.display  = 'none';
           });
           elevCanvas.addEventListener('touchmove', function(e) {
             e.preventDefault();
