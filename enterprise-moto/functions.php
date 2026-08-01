@@ -2428,6 +2428,46 @@ function enterprise_register_blocks() {
         'supports' => array( 'html' => false, 'align' => array( 'wide', 'full' ) ),
     ) );
 
+    /* ── Bloque: Mapa de ruta con metadatos (#56 · Fase 2 del plan #45) ─── */
+    require_once get_template_directory() . '/blocks/route-metadata-map/render.php';
+
+    $rmm_js_path = get_template_directory() . '/assets/js/block-route-metadata-map.js';
+    wp_register_script(
+        'enterprise-block-route-metadata-map',
+        get_template_directory_uri() . '/assets/js/block-route-metadata-map.js',
+        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components' ),
+        file_exists( $rmm_js_path ) ? filemtime( $rmm_js_path ) : ENTERPRISE_VERSION,
+        true
+    );
+
+    register_block_type( 'enterprise/route-metadata-map', array(
+        'api_version'     => 3,
+        'editor_script'   => 'enterprise-block-route-metadata-map',
+        'render_callback' => 'enterprise_render_route_metadata_map_block',
+        'attributes'      => array(
+            'year'            => array( 'type' => 'string',  'default' => ''        ),
+            'month'           => array( 'type' => 'string',  'default' => ''        ),
+            'day'             => array( 'type' => 'string',  'default' => ''        ),
+            'trip'            => array( 'type' => 'string',  'default' => ''        ),
+            'validated'       => array( 'type' => 'boolean', 'default' => false     ),
+            'useGeoInventory' => array( 'type' => 'boolean', 'default' => true      ),
+            'gpxLabel1'       => array( 'type' => 'string',  'default' => 'GPX1 — Ruta planificada' ),
+            'gpxLabel2'       => array( 'type' => 'string',  'default' => 'GPX2 — Ruta realizada'   ),
+            'heading'         => array( 'type' => 'string',  'default' => ''        ),
+            'description'     => array( 'type' => 'string',  'default' => ''        ),
+            'mapHeight'       => array( 'type' => 'string',  'default' => 'md'      ),
+            'routeColor'      => array( 'type' => 'string',  'default' => '#001f5c' ),
+            'routeColor2'     => array( 'type' => 'string',  'default' => '#c0392b' ),
+            'markerColor'     => array( 'type' => 'string',  'default' => '#f2c118' ),
+            'routeWeight'     => array( 'type' => 'integer', 'default' => 4         ),
+            'showElevation'   => array( 'type' => 'boolean', 'default' => true      ),
+            'showStats'       => array( 'type' => 'boolean', 'default' => true      ),
+            'startLabel'      => array( 'type' => 'string',  'default' => ''        ),
+            'endLabel'        => array( 'type' => 'string',  'default' => ''        ),
+        ),
+        'supports' => array( 'html' => false, 'align' => array( 'wide', 'full' ) ),
+    ) );
+
     /* ── Bloques: Markdown simple + Markdown con estilo ───────────── */
     require_once get_template_directory() . '/blocks/markdown/render.php';
     require_once get_template_directory() . '/blocks/markdown-styled/render.php';
