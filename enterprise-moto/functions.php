@@ -2239,6 +2239,133 @@ function enterprise_rmm_delete_handler( $request ) {
 }
 
 /* ─────────────────────────────────────────
+   PUERTA DE PUBLICACIÓN + INGESTA GEOGRÁFICA (#56, Fase 2 de #45 · Commit 6)
+   - Puerta DURA de completitud: no se puede publicar si hay algún bloque
+     route-metadata-map sin validar (cliente = lockPostSaving; servidor = este veto
+     autoritativo por rest_pre_insert_post → WP_Error, que en WP 7.0.2 muestra el mensaje).
+     Decisión A del operador: la puerta salta con cualquier bloque incompleto presente,
+     sin condicionar al tipo de entrada.
+   - Ingesta NO bloqueante: al publicar una entrada de tipo «etapa», por cada bloque con
+     el interruptor de inventario activo y metadatos VALID (re-leídos en servidor), se
+     recogen sus administrative_regions[].id, se mapean a términos por region_code y se
+     fija el conjunto UNIÓN en la taxonomía `regiones` por REEMPLAZO (el conteo se recalcula).
+───────────────────────────────────────── */
+
+/* Recolecta recursivamente los bloques enterprise/route-metadata-map de un árbol. */
+function enterprise_rmm_collect_blocks( $blocks ) {
+    $out = array();
+    if ( ! is_array( $blocks ) ) return $out;
+    foreach ( $blocks as $b ) {
+        if ( isset( $b['blockName'] ) && 'enterprise/route-metadata-map' === $b['blockName'] ) {
+            $out[] = $b;
+        }
+        if ( ! empty( $b['innerBlocks'] ) ) {
+            $out = array_merge( $out, enterprise_rmm_collect_blocks( $b['innerBlocks'] ) );
+        }
+    }
+    return $out;
+}
+
+/* Lee y decodifica el _metadata.json almacenado de un bloque (por sus atributos). */
+function enterprise_rmm_block_metadata( $attrs ) {
+    $year   = preg_replace( '/\D/', '', (string) ( isset( $attrs['year'] )  ? $attrs['year']  : '' ) );
+    $month  = substr( str_pad( preg_replace( '/\D/', '', (string) ( isset( $attrs['month'] ) ? $attrs['month'] : '' ) ), 2, '0', STR_PAD_LEFT ), -2 );
+    $day    = substr( str_pad( preg_replace( '/\D/', '', (string) ( isset( $attrs['day'] )   ? $attrs['day']   : '' ) ), 2, '0', STR_PAD_LEFT ), -2 );
+    $suffix = (string) ( isset( $attrs['assetSuffix'] ) ? $attrs['assetSuffix'] : '' );
+    if ( '' !== $suffix && ! preg_match( '/^\(\d+\)$/', $suffix ) ) $suffix = '';
+    if ( ! preg_match( '/^\d{4}$/', $year ) || ! preg_match( '/^\d{2}$/', $month ) || ! preg_match( '/^\d{2}$/', $day ) ) return null;
+
+    $upload = wp_upload_dir();
+    if ( ! empty( $upload['error'] ) || empty( $upload['basedir'] ) ) return null;
+    $path = trailingslashit( $upload['basedir'] ) . 'routes/recorded/' . $year . '/' . $month . '/' . $month . $day . '_metadata' . $suffix . '.json';
+    if ( ! file_exists( $path ) ) return null;
+    $decoded = json_decode( (string) file_get_contents( $path ), true );
+    return is_array( $decoded ) ? $decoded : null;
+}
+
+/* Puerta dura: veto si al publicar hay algún bloque route-metadata-map sin validar. */
+function enterprise_rmm_publish_gate( $prepared_post, $request ) {
+
+    /* Solo bloquea si el estado objetivo es «publish». */
+    $status = '';
+    if ( isset( $request['status'] ) )                 $status = (string) $request['status'];
+    elseif ( isset( $prepared_post->post_status ) )    $status = (string) $prepared_post->post_status;
+    elseif ( ! empty( $prepared_post->ID ) )           $status = (string) get_post_status( $prepared_post->ID );
+    if ( 'publish' !== $status ) return $prepared_post;
+
+    /* Contenido que se va a guardar. */
+    $content = '';
+    if ( isset( $request['content'] ) ) {
+        if ( is_array( $request['content'] ) && isset( $request['content']['raw'] ) ) $content = (string) $request['content']['raw'];
+        elseif ( is_string( $request['content'] ) )                                   $content = (string) $request['content'];
+    }
+    if ( '' === $content && isset( $prepared_post->post_content ) ) $content = (string) $prepared_post->post_content;
+    if ( '' === $content ) return $prepared_post;
+
+    $blocks = enterprise_rmm_collect_blocks( parse_blocks( $content ) );
+    foreach ( $blocks as $b ) {
+        $attrs = ( isset( $b['attrs'] ) && is_array( $b['attrs'] ) ) ? $b['attrs'] : array();
+        if ( empty( $attrs['validated'] ) ) {
+            return new WP_Error(
+                'ent_rmm_incomplete',
+                'No se puede publicar: hay un bloque "Mapa de ruta con metadatos" sin completar. Abre el bloque, carga los ficheros y guárdalos antes de publicar.',
+                array( 'status' => 400 )
+            );
+        }
+    }
+    return $prepared_post;
+}
+add_filter( 'rest_pre_insert_post', 'enterprise_rmm_publish_gate', 10, 2 );
+
+/* Ingesta geográfica no bloqueante: al publicar una etapa, fija los términos `regiones`
+   como UNIÓN de los bloques que contribuyen (interruptor activo + metadatos VALID). */
+function enterprise_rmm_ingest_geo( $post, $request, $creating ) {
+    if ( ! $post || 'publish' !== get_post_status( $post ) ) return;
+    $tipo = get_post_meta( $post->ID, '_post_tipo', true ) ?: 'etapa';
+    if ( 'etapa' !== $tipo ) return; // ingesta solo para Tipo B/C (etapa).
+
+    $content = get_post_field( 'post_content', $post->ID );
+    if ( ! $content ) return;
+    $blocks = enterprise_rmm_collect_blocks( parse_blocks( $content ) );
+    if ( empty( $blocks ) ) return;
+
+    /* Índice region_code → term_id (mismo patrón que #55, l. ~2364). */
+    $terms = get_terms( array( 'taxonomy' => 'regiones', 'hide_empty' => false ) );
+    if ( is_wp_error( $terms ) ) $terms = array();
+    $term_by_code = array();
+    foreach ( $terms as $t ) {
+        $code = (string) get_term_meta( $t->term_id, 'region_code', true );
+        if ( '' === $code || isset( $term_by_code[ $code ] ) ) continue;
+        $term_by_code[ $code ] = (int) $t->term_id;
+    }
+
+    /* Unión de términos de los bloques que contribuyen. */
+    $union = array();
+    foreach ( $blocks as $b ) {
+        $attrs = ( isset( $b['attrs'] ) && is_array( $b['attrs'] ) ) ? $b['attrs'] : array();
+        if ( empty( $attrs['validated'] ) ) continue;
+        $use = array_key_exists( 'useGeoInventory', $attrs ) ? (bool) $attrs['useGeoInventory'] : true;
+        if ( ! $use ) continue;
+
+        $meta = enterprise_rmm_block_metadata( $attrs );
+        if ( ! is_array( $meta ) ) continue;
+        if ( ! isset( $meta['validation_status'] ) || 'VALID' !== $meta['validation_status'] ) continue;
+        if ( empty( $meta['administrative_regions'] ) || ! is_array( $meta['administrative_regions'] ) ) continue;
+
+        foreach ( $meta['administrative_regions'] as $reg ) {
+            if ( ! isset( $reg['id'] ) ) continue;
+            $code = (string) $reg['id'];
+            if ( isset( $term_by_code[ $code ] ) ) $union[ $term_by_code[ $code ] ] = true;
+        }
+    }
+
+    /* Reemplazo (todos los niveles). Unión vacía → se retiran los términos previos. */
+    $term_ids = array_map( 'intval', array_keys( $union ) );
+    wp_set_object_terms( $post->ID, $term_ids, 'regiones', false );
+}
+add_action( 'rest_after_insert_post', 'enterprise_rmm_ingest_geo', 10, 3 );
+
+/* ─────────────────────────────────────────
    TAXONOMÍA «Regiones» + TERM META (#55, Fase 1 de #45)
    Capa de datos geográfica consultable: taxonomía propia PLANA `regiones`
    (términos = unidades del mapa) sobre `post`, registrada MÍNIMA en la parte
@@ -2710,7 +2837,7 @@ function enterprise_register_blocks() {
     wp_register_script(
         'enterprise-block-route-metadata-map',
         get_template_directory_uri() . '/assets/js/block-route-metadata-map.js',
-        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-api-fetch' ),
+        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-api-fetch', 'wp-data' ),
         file_exists( $rmm_js_path ) ? filemtime( $rmm_js_path ) : ENTERPRISE_VERSION,
         true
     );

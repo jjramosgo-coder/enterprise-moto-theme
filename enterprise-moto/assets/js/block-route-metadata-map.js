@@ -469,3 +469,51 @@
   });
 
 })();
+
+/* ═══════════════════════════════════════════
+   PUERTA DE COMPLETITUD (cliente) — #56, Commit 6
+   Bloquea Publicar/Actualizar mientras haya algún bloque «Mapa de ruta con metadatos»
+   sin validar. El veto autoritativo (con mensaje) lo da el servidor
+   (rest_pre_insert_post). Guarda contra el bucle: solo se despacha lock/unlock al
+   CAMBIAR el estado.
+═══════════════════════════════════════════ */
+(function () {
+  'use strict';
+  if (!window.wp || !wp.data || !wp.data.subscribe) return;
+
+  var LOCK = 'ent-rmm-incomplete';
+  var locked = false;
+
+  function hasIncomplete(blocks) {
+    if (!blocks) return false;
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i];
+      if (b.name === 'enterprise/route-metadata-map' &&
+          !(b.attributes && b.attributes.validated)) {
+        return true;
+      }
+      if (b.innerBlocks && b.innerBlocks.length && hasIncomplete(b.innerBlocks)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  wp.data.subscribe(function () {
+    var be = wp.data.select('core/block-editor');
+    var ed = wp.data.dispatch('core/editor');
+    if (!be || !ed || !ed.lockPostSaving) return;
+
+    var incomplete = hasIncomplete(be.getBlocks());
+    // IMPORTANTE: fijar el flag ANTES de despachar. lockPostSaving/unlockPostSaving
+    // notifican a los suscriptores de forma síncrona; si el flag se pusiera después,
+    // la reentrada volvería a despachar en bucle («Maximum call stack size exceeded»).
+    if (incomplete && !locked) {
+      locked = true;
+      ed.lockPostSaving(LOCK);
+    } else if (!incomplete && locked) {
+      locked = false;
+      ed.unlockPostSaving(LOCK);
+    }
+  });
+})();
