@@ -56,6 +56,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
   --youtube-red:     #ff0000;    /* rojo de marca YouTube (icono de canal) */
   --youtube-red-rgb: 255,0,0;    /* canal para el overlay de YouTube */
 
+  /* data-viz del espejo de estadísticas #56 (funcional) */
+  --slope-1: #85B7EB;  --slope-2: #378ADD;  --slope-3: #185FA5;  /* escala de pendiente (azules) */
+  --red-tint: #f7e4e1;  --red-dk: #8a2820;                       /* par rojo: píldora de dificultad */
+
   /* gradientes decorativos (funcional) */
   --grad-slate:    linear-gradient(135deg, #2a3a5a, #080e1e);
   --grad-hero:     linear-gradient(160deg, #d4b060 0%, #8a5c1a 40%, #2a1a08 100%);

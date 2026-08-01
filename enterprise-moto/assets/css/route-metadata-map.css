@@ -45,8 +45,8 @@
 }
 .ent-rmm__diff .l { font-size: 13px; color: var(--mid); }
 .ent-rmm__diff .pill {
-  background: rgba(var(--gold-rgb), .18);
-  color: var(--gold-dk);
+  background: var(--red-tint);
+  color: var(--red-dk);
   font-size: 12px;
   font-weight: 500;
   padding: 3px 11px;
@@ -87,10 +87,10 @@
 .ent-rmm__dist .k { color: var(--mid); }
 .ent-rmm__dist .bar { height: 12px; border-radius: 3px; min-width: 2px; }
 .ent-rmm__dist .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--black); }
-.ent-rmm__bar--1 { background: rgba(var(--gold-rgb), .30); }
-.ent-rmm__bar--2 { background: rgba(var(--gold-rgb), .50); }
-.ent-rmm__bar--3 { background: rgba(var(--gold-rgb), .72); }
-.ent-rmm__bar--4 { background: rgba(var(--gold-rgb), .95); }
+.ent-rmm__bar--1 { background: var(--slope-1); }
+.ent-rmm__bar--2 { background: var(--slope-2); }
+.ent-rmm__bar--3 { background: var(--slope-3); }
+.ent-rmm__bar--4 { background: var(--slope-3); }
 
 /* Botón «info» + tooltip (§3.10) */
 .ent-rmm-info-wrap { position: relative; display: inline-block; }
