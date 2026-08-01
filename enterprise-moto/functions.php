@@ -1594,7 +1594,8 @@ function enterprise_map_frontend_assets() {
     $has_animated   = has_block( 'enterprise/animated-route-map',    $post );
     $has_comparison = has_block( 'enterprise/route-comparison',      $post );
     $has_rbl        = has_block( 'enterprise/routes-by-location',    $post );
-    if ( ! $has_location && ! $has_route && ! $has_animated && ! $has_comparison && ! $has_rbl ) return;
+    $has_rmm        = has_block( 'enterprise/route-metadata-map',     $post );
+    if ( ! $has_location && ! $has_route && ! $has_animated && ! $has_comparison && ! $has_rbl && ! $has_rmm ) return;
 
     /* ── OpenLayers — para ambos bloques de mapa ── */
     wp_enqueue_style(
@@ -1629,6 +1630,49 @@ function enterprise_map_frontend_assets() {
     );
 }
 add_action( 'wp_enqueue_scripts', 'enterprise_map_frontend_assets' );
+
+/* ─────────────────────────────────────────
+   CSS + JS PROPIOS DEL BLOQUE route-metadata-map (#56, Fase 2 de #45)
+   El mapa reutiliza OpenLayers + map-frontend.js (encolados arriba). Esto añade el
+   estilo del espejo de estadísticas y el JS de los tooltips «info». Condicional por
+   has_block + cache-busting por filemtime.
+───────────────────────────────────────── */
+function enterprise_route_metadata_map_assets() {
+    if ( ! is_singular() ) return;
+    $post = get_queried_object();
+    if ( ! $post || ! isset( $post->post_content ) ) return;
+    if ( ! has_block( 'enterprise/route-metadata-map', $post ) ) return;
+
+    $css_path = get_template_directory() . '/assets/css/route-metadata-map.css';
+    wp_enqueue_style(
+        'enterprise-route-metadata-map',
+        get_template_directory_uri() . '/assets/css/route-metadata-map.css',
+        array( 'enterprise-style' ),
+        file_exists( $css_path ) ? filemtime( $css_path ) : ENTERPRISE_VERSION
+    );
+
+    $js_path = get_template_directory() . '/assets/js/route-metadata-map-front.js';
+    wp_enqueue_script(
+        'enterprise-route-metadata-map-front',
+        get_template_directory_uri() . '/assets/js/route-metadata-map-front.js',
+        array(),
+        file_exists( $js_path ) ? filemtime( $js_path ) : ENTERPRISE_VERSION,
+        true
+    );
+}
+add_action( 'wp_enqueue_scripts', 'enterprise_route_metadata_map_assets' );
+
+/* Textos de los tooltips «info» del espejo de estadísticas (§3.10). Mapa asociativo
+   localizado: clave = ruta del campo en el JSON de metadatos → texto. Una etiqueta
+   muestra botón «info» SOLO si tiene entrada no vacía aquí. Contenido definicional
+   (no de BD ni por-post). El contenido definitivo y la elección de qué etiquetas lo
+   llevan se difieren a otra sesión; aquí solo el mecanismo + dos entradas de ejemplo. */
+function enterprise_route_metadata_stat_info() {
+    return array(
+        'summary.overall_difficulty_score' => __( 'Puntuación global de dificultad (0–100) que combina la exigencia física y la técnica.', 'enterprise-moto' ),
+        'technical_curves.sinuosity_index' => __( 'Índice de sinuosidad: relación entre la longitud real del trazado y la distancia en línea recta; a mayor valor, más revirado.', 'enterprise-moto' ),
+    );
+}
 
 /* ─────────────────────────────────────────
    CSS + JS DEL BLOQUE interactive-region-map (#43 / #51)

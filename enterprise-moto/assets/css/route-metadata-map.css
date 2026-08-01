@@ -1,0 +1,150 @@
+/**
+ * Enterprise Moto — assets/css/route-metadata-map.css
+ * Espejo de estadísticas del bloque «Mapa de ruta con metadatos» (#56, Fase 2 de #45).
+ * Estética editorial clara sobre el fondo del contenido; color 100 % por tokens (§13.18).
+ */
+
+.ent-rmm {
+  margin-top: 18px;
+  font-family: var(--font-body);
+}
+
+/* Tarjetas de cabecera + puntuación */
+.ent-rmm__cards,
+.ent-rmm__score {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.ent-rmm__card {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 12px 15px;
+}
+.ent-rmm__card .l { font-size: 13px; color: var(--mid); }
+.ent-rmm__card .n {
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: -.01em;
+  color: var(--black);
+}
+.ent-rmm__score .ent-rmm__card .n { font-size: 21px; }
+.ent-rmm__score .ent-rmm__card .n small { font-size: 13px; color: var(--mid); font-weight: 400; }
+
+/* Tira de dificultad */
+.ent-rmm__diff {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 10px 15px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.ent-rmm__diff .l { font-size: 13px; color: var(--mid); }
+.ent-rmm__diff .pill {
+  background: rgba(var(--gold-rgb), .18);
+  color: var(--gold-dk);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 11px;
+  border-radius: 6px;
+}
+.ent-rmm__diff .r { margin-left: auto; font-size: 13px; color: var(--mid); }
+.ent-rmm__diff .r b { font-weight: 500; color: var(--black); }
+
+/* Secciones y tablas */
+.ent-rmm__cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+}
+.ent-rmm__block { margin-top: 20px; }
+.ent-rmm__sec {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gold-dk);
+  letter-spacing: .02em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+  margin-bottom: 6px;
+}
+.ent-rmm table { width: 100%; font-size: 14px; border-collapse: collapse; }
+.ent-rmm td { padding: 5px 0; }
+.ent-rmm td.k { color: var(--mid); }
+.ent-rmm td.v { text-align: right; font-variant-numeric: tabular-nums; color: var(--black); }
+
+/* Reparto por pendiente */
+.ent-rmm__dist {
+  display: grid;
+  grid-template-columns: 130px 1fr 52px;
+  gap: 9px 12px;
+  align-items: center;
+  font-size: 13px;
+}
+.ent-rmm__dist .k { color: var(--mid); }
+.ent-rmm__dist .bar { height: 12px; border-radius: 3px; min-width: 2px; }
+.ent-rmm__dist .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--black); }
+.ent-rmm__bar--1 { background: rgba(var(--gold-rgb), .30); }
+.ent-rmm__bar--2 { background: rgba(var(--gold-rgb), .50); }
+.ent-rmm__bar--3 { background: rgba(var(--gold-rgb), .72); }
+.ent-rmm__bar--4 { background: rgba(var(--gold-rgb), .95); }
+
+/* Botón «info» + tooltip (§3.10) */
+.ent-rmm-info-wrap { position: relative; display: inline-block; }
+.ent-rmm-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  margin-left: 5px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--mid);
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.ent-rmm-info:hover,
+.ent-rmm-info:focus-visible {
+  color: var(--gold-dk);
+  border-color: var(--gold);
+  outline: none;
+}
+.ent-rmm-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 240px;
+  background: var(--black);
+  color: var(--white);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  letter-spacing: normal;
+  text-transform: none;
+  z-index: 6;
+  box-shadow: 0 4px 16px rgba(var(--shadow-rgb), .28);
+}
+.ent-rmm-tip[hidden] { display: none; }
+
+@media (max-width: 640px) {
+  .ent-rmm__cards,
+  .ent-rmm__score { grid-template-columns: 1fr; }
+  .ent-rmm__cols { grid-template-columns: 1fr; gap: 16px; }
+  .ent-rmm__dist { grid-template-columns: 108px 1fr 46px; }
+}
