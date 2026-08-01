@@ -23,6 +23,7 @@
   var useState = wp.element.useState;
   var be       = wp.blockEditor;
   var co        = wp.components;
+  var apiFetch = wp.apiFetch;
 
   var InspectorControls = be.InspectorControls;
   var useBlockProps     = be.useBlockProps;
@@ -104,6 +105,37 @@
     var _fj = useState(null); var metaFile     = _fj[0]; var setMetaFile     = _fj[1];
 
     var _err = useState(''); var error = _err[0]; var setError = _err[1];
+    var _up  = useState(false); var uploading = _up[0]; var setUploading = _up[1];
+    var _del = useState(false); var deleting  = _del[0]; var setDeleting  = _del[1];
+
+    var busy = uploading || deleting;
+
+    /* Borra en el servidor los tres ficheros de este bloque (por su base) y, solo si
+       el borrado va bien, devuelve el bloque a editable (onDelete). */
+    function handleDelete() {
+      setError('');
+      setDeleting(true);
+      apiFetch({
+        path: '/enterprise/v1/route-metadata',
+        method: 'DELETE',
+        data: {
+          year:   (data.year || year),
+          month:  pad2(data.month || month),
+          day:    pad2(data.day || day),
+          // sufijo persistido ('' o '(N)'); la base <md> se deriva de mes+día.
+          suffix: (data.suffix || ''),
+        },
+      })
+        .then(function(res){
+          setDeleting(false);
+          if (res && res.ok) { onDelete(); }
+          else { setError('No se pudieron borrar los ficheros. Inténtalo de nuevo.'); }
+        })
+        .catch(function(err){
+          setDeleting(false);
+          setError((err && err.message) ? err.message : 'Error al borrar los ficheros.');
+        });
+    }
 
     function handleSave() {
       var y = year, m = pad2(month), d = pad2(day);
@@ -112,13 +144,35 @@
       if (!recordedFile) { setError('Falta el GPX de la ruta registrada (track).'); return; }
       if (!metaFile) { setError('Faltan los metadatos de la ruta (JSON).'); return; }
       setError('');
-      // Commit 2 (stub): persiste los campos y marca validado. El Commit 3 sustituye esto
-      // por la subida+validación en servidor (hash, duplicidad, almacenamiento).
-      // El almacenamiento usa <year>/<month>; «trip» es informativo y opcional (no entra en path ni nombre).
-      onSave(
-        { year: y, month: m, day: d, trip: trip },
-        { planned: plannedFile, recorded: recordedFile, metadata: metaFile }
-      );
+
+      // Subida+validación en servidor (Commit 3): el endpoint REST valida hash y duplicidad,
+      // almacena en uploads/routes/recorded/<year>/<month>/ y responde. «trip» viaja como
+      // dato informativo (no se usa en disco). El almacenamiento usa <year>/<month>.
+      var fd = new FormData();
+      fd.append('year', y);
+      fd.append('month', m);
+      fd.append('day', d);
+      fd.append('trip', trip);
+      fd.append('recorded', recordedFile);
+      fd.append('metadata', metaFile);
+      if (plannedFile) fd.append('planned', plannedFile);
+
+      setUploading(true);
+      apiFetch({ path: '/enterprise/v1/route-metadata', method: 'POST', body: fd })
+        .then(function(res){
+          setUploading(false);
+          if (res && res.ok) {
+            onSave({ year: y, month: m, day: d, trip: trip }, res.suffix || '');
+          } else if (res && res.duplicate) {
+            setError(res.message || 'Ya existe una ruta registrada idéntica para esa fecha.');
+          } else {
+            setError('No se pudo guardar. Inténtalo de nuevo.');
+          }
+        })
+        .catch(function(err){
+          setUploading(false);
+          setError((err && err.message) ? err.message : 'Error al subir los ficheros.');
+        });
     }
 
     var lblStyle = { fontSize:11, fontWeight:700, letterSpacing:'.08em',
@@ -174,10 +228,11 @@
       /* ── Pie: tres botones (§3.4) ── */
       el('div', { style:{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:18,
                           borderTop:'1px solid #eee', paddingTop:14 } },
-        el(Button, { variant:'tertiary', onClick:onClose }, 'Cancelar'),
-        el(Button, { isDestructive:true, variant:'secondary', disabled:!validated,
-          onClick:function(){ onDelete(); } }, 'Borrar ficheros'),
-        !validated && el(Button, { variant:'primary', onClick:handleSave }, 'Guardar')
+        el(Button, { variant:'tertiary', onClick:onClose, disabled:busy }, 'Cancelar'),
+        el(Button, { isDestructive:true, variant:'secondary', disabled:!validated || busy,
+          isBusy:deleting, onClick:handleDelete }, deleting ? 'Borrando…' : 'Borrar ficheros'),
+        !validated && el(Button, { variant:'primary', onClick:handleSave, isBusy:uploading, disabled:busy },
+          uploading ? 'Guardando…' : 'Guardar')
       )
     );
   }
@@ -201,6 +256,7 @@
       trip:            { type:'string',  default:'' },
       validated:       { type:'boolean', default:false },
       useGeoInventory: { type:'boolean', default:true  },
+      assetSuffix:     { type:'string',  default:'' },
       gpxLabel1:       { type:'string',  default:'GPX1 — Ruta planificada' },
       gpxLabel2:       { type:'string',  default:'GPX2 — Ruta realizada'   },
       heading:         { type:'string',  default:'' },
@@ -225,18 +281,19 @@
 
       var locked = !a.validated; // Lectura-B lock: barra lateral inhabilitada hasta validar.
 
-      /* ── Guardar (stub Commit 2): persiste campos + marca validado ── */
-      function onModalSave( fields /*, files */ ) {
+      /* ── Guardar OK: persiste campos + el sufijo aplicado por el servidor + validado ── */
+      function onModalSave( fields, suffix ) {
         set({
           year: fields.year, month: fields.month, day: fields.day, trip: fields.trip,
+          assetSuffix: suffix || '',
           validated: true,
         });
         setOpen(false);
       }
 
-      /* ── Borrar ficheros: vuelve al estado editable (§3.5) ── */
+      /* ── Borrado OK en servidor: vuelve a editable y limpia el sufijo (§3.5) ── */
       function onModalDelete() {
-        set({ validated: false });
+        set({ validated: false, assetSuffix: '' });
         setOpen(false);
       }
 
@@ -398,7 +455,7 @@
           },
             el(CaptureModal, {
               validated: a.validated,
-              data: { year: a.year, month: a.month, day: a.day, trip: a.trip },
+              data: { year: a.year, month: a.month, day: a.day, trip: a.trip, suffix: a.assetSuffix },
               onSave: onModalSave,
               onDelete: onModalDelete,
               onClose: function(){ setOpen(false); },

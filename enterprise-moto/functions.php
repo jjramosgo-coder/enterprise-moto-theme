@@ -1964,6 +1964,237 @@ function enterprise_upload_map_pair_handler() {
 add_action( 'admin_post_enterprise_upload_map_pair', 'enterprise_upload_map_pair_handler' );
 
 /* ─────────────────────────────────────────
+   SUBIDA + VALIDACIÓN + ALMACENAMIENTO DE LA RUTA REGISTRADA (#56, Fase 2 de #45)
+   Endpoint REST (primera ruta REST del tema) que recibe del modal del bloque
+   `enterprise/route-metadata-map` los tres ficheros (GPX planificada opcional, GPX
+   registrada requerida, JSON de metadatos requerido) + año/mes/día. Valida en servidor
+   (fecha real, consistencia de hash y duplicidad) y almacena de forma transaccional
+   (temp + rename, patrón #58) en:
+     uploads/routes/recorded/<year>/<month>/
+   Nombres canónicos con base <md> = <month><day> (2 dígitos):
+     · planificada → <md>.gpx           · registrada → <md>_track.gpx
+     · metadatos   → <md>_metadata.json
+   `trip` es INFORMATIVO: no participa en el path ni en el nombre (no se usa en disco).
+   La puerta DURA de completitud (bloqueo de publicación) es del Commit 6, no de aquí.
+───────────────────────────────────────── */
+
+/* Rellena a 2 dígitos (solo cifras). '' si no hay cifras. */
+function enterprise_rmm_pad2( $v ) {
+    $v = preg_replace( '/\D/', '', (string) $v );
+    if ( '' === $v ) return '';
+    return substr( str_pad( $v, 2, '0', STR_PAD_LEFT ), -2 );
+}
+
+/* True si <year><month><day> es una fecha real (año de 4 cifras). */
+function enterprise_rmm_valid_ymd( $y, $m, $d ) {
+    if ( ! preg_match( '/^\d{4}$/', (string) $y ) ) return false;
+    return checkdate( (int) $m, (int) $d, (int) $y );
+}
+
+/* Registro de la ruta REST: POST = subir; DELETE = borrar los ficheros del bloque. */
+function enterprise_rmm_register_rest() {
+    $can = function () { return current_user_can( 'edit_posts' ); };
+    register_rest_route( 'enterprise/v1', '/route-metadata', array(
+        array(
+            'methods'             => 'POST',
+            'callback'            => 'enterprise_rmm_upload_handler',
+            'permission_callback' => $can,
+        ),
+        array(
+            'methods'             => 'DELETE',
+            'callback'            => 'enterprise_rmm_delete_handler',
+            'permission_callback' => $can,
+        ),
+    ) );
+}
+add_action( 'rest_api_init', 'enterprise_rmm_register_rest' );
+
+/* Handler: valida TODO antes de escribir; escribe temp + rename (todos o ninguno). */
+function enterprise_rmm_upload_handler( $request ) {
+
+    /* 1) Fecha: año de 4 cifras + composición real. */
+    $year  = preg_replace( '/\D/', '', (string) $request->get_param( 'year' ) );
+    $month = enterprise_rmm_pad2( $request->get_param( 'month' ) );
+    $day   = enterprise_rmm_pad2( $request->get_param( 'day' ) );
+    if ( ! preg_match( '/^\d{4}$/', $year ) || ! enterprise_rmm_valid_ymd( $year, $month, $day ) ) {
+        return new WP_Error( 'ent_rmm_bad_date', 'La fecha (año/mes/día) no es válida.', array( 'status' => 400 ) );
+    }
+
+    /* 2) Ficheros presentes y subidos sin error. */
+    $files = $request->get_file_params();
+
+    $recorded_ok = ! empty( $files['recorded'] )
+        && isset( $files['recorded']['tmp_name'], $files['recorded']['error'] )
+        && UPLOAD_ERR_OK === $files['recorded']['error']
+        && is_uploaded_file( $files['recorded']['tmp_name'] );
+    if ( ! $recorded_ok ) {
+        return new WP_Error( 'ent_rmm_no_recorded', 'Falta el GPX de la ruta registrada (track).', array( 'status' => 400 ) );
+    }
+
+    $meta_ok = ! empty( $files['metadata'] )
+        && isset( $files['metadata']['tmp_name'], $files['metadata']['error'] )
+        && UPLOAD_ERR_OK === $files['metadata']['error']
+        && is_uploaded_file( $files['metadata']['tmp_name'] );
+    if ( ! $meta_ok ) {
+        return new WP_Error( 'ent_rmm_no_meta', 'Faltan los metadatos de la ruta (JSON).', array( 'status' => 400 ) );
+    }
+
+    $has_planned = ! empty( $files['planned'] )
+        && isset( $files['planned']['tmp_name'], $files['planned']['error'] )
+        && UPLOAD_ERR_OK === $files['planned']['error']
+        && is_uploaded_file( $files['planned']['tmp_name'] );
+
+    $recorded_bytes = file_get_contents( $files['recorded']['tmp_name'] );
+    $meta_bytes     = file_get_contents( $files['metadata']['tmp_name'] );
+    $planned_bytes  = $has_planned ? file_get_contents( $files['planned']['tmp_name'] ) : null;
+
+    /* 3) Metadatos: JSON válido + gpx-data-sha256 con formato de 64 hex. */
+    $meta = json_decode( (string) $meta_bytes, true );
+    if ( ! is_array( $meta )
+        || ! isset( $meta['metadata']['gpx-data-sha256'] )
+        || ! preg_match( '/^[a-fA-F0-9]{64}$/', (string) $meta['metadata']['gpx-data-sha256'] ) ) {
+        return new WP_Error( 'ent_rmm_bad_meta',
+            'El fichero de metadatos no es válido o le falta «gpx-data-sha256».', array( 'status' => 400 ) );
+    }
+    $declared = strtolower( (string) $meta['metadata']['gpx-data-sha256'] );
+
+    /* 4) Consistencia (§3.6.1): sha256 de los bytes de la GPX registrada == declarado. */
+    $actual = hash( 'sha256', (string) $recorded_bytes );
+    if ( ! hash_equals( $declared, $actual ) ) {
+        return new WP_Error( 'ent_rmm_hash_mismatch',
+            'El GPX de la ruta registrada no coincide con el hash «gpx-data-sha256» de los metadatos.',
+            array( 'status' => 400 ) );
+    }
+
+    /* 5) Carpeta de almacenamiento: uploads/routes/recorded/<year>/<month>/ */
+    $upload = wp_upload_dir();
+    if ( ! empty( $upload['error'] ) || empty( $upload['basedir'] ) ) {
+        return new WP_Error( 'ent_rmm_store', 'No se pudo acceder al almacén de subidas.', array( 'status' => 500 ) );
+    }
+    $dir = trailingslashit( $upload['basedir'] ) . 'routes/recorded/' . $year . '/' . $month . '/';
+    if ( ! wp_mkdir_p( $dir ) ) {
+        return new WP_Error( 'ent_rmm_store', 'No se pudo crear la carpeta de almacenamiento.', array( 'status' => 500 ) );
+    }
+
+    /* 6) Duplicidad (§3.6.2): base <md> = <month><day>; el sufijo (N) va ANTES de la
+          extensión de cada nombre (0801(N).gpx / 0801_track(N).gpx / 0801_metadata(N).json). */
+    $md     = $month . $day;
+    $suffix = '';
+    $track_path = $dir . $md . '_track.gpx';
+    if ( file_exists( $track_path ) ) {
+        $existing = hash( 'sha256', (string) file_get_contents( $track_path ) );
+        if ( hash_equals( $existing, $actual ) ) {
+            // Igual → ese track ya se subió desde OTRO bloque; no se reescribe. Para
+            // reemplazarlo, el autor debe ir a ese bloque y usar «Borrar ficheros».
+            return new WP_REST_Response( array(
+                'ok'        => false,
+                'duplicate' => true,
+                'message'   => 'Este track ya se ha subido desde otro bloque (mismo contenido). Para reemplazarlo, ve a ese bloque y usa «Borrar ficheros» antes de volver a subirlo.',
+            ), 200 );
+        }
+        // Distinto → mismo sufijo (N) que libere los TRES nombres a la vez.
+        $n = 1;
+        do {
+            $s = '(' . $n . ')';
+            $free = ! file_exists( $dir . $md . $s . '.gpx' )
+                 && ! file_exists( $dir . $md . '_track' . $s . '.gpx' )
+                 && ! file_exists( $dir . $md . '_metadata' . $s . '.json' );
+            $n++;
+        } while ( ! $free && $n < 1000 );
+        if ( ! $free ) {
+            return new WP_Error( 'ent_rmm_store', 'No se pudo asignar un nombre libre para esa fecha.', array( 'status' => 500 ) );
+        }
+        $suffix = $s;
+    }
+
+    /* 7) Escritura transaccional: todos los temporales, o ninguno; luego rename.
+          Sufijo (N) antes de la extensión de cada nombre. */
+    $targets = array(
+        'recorded' => array( $dir . $md . '_track' . $suffix . '.gpx',     $recorded_bytes ),
+        'metadata' => array( $dir . $md . '_metadata' . $suffix . '.json', $meta_bytes ),
+    );
+    if ( $has_planned ) {
+        $targets['planned'] = array( $dir . $md . $suffix . '.gpx', $planned_bytes );
+    }
+    $temps = array();
+    $write_ok = true;
+    foreach ( $targets as $key => $t ) {
+        $tmp = $t[0] . '.' . wp_generate_password( 8, false ) . '.tmp';
+        if ( false === file_put_contents( $tmp, $t[1] ) ) { $write_ok = false; break; }
+        $temps[ $key ] = $tmp;
+    }
+    if ( ! $write_ok ) {
+        foreach ( $temps as $tmp ) { @unlink( $tmp ); }
+        return new WP_Error( 'ent_rmm_store', 'No se pudieron escribir los ficheros.', array( 'status' => 500 ) );
+    }
+    foreach ( $targets as $key => $t ) {
+        rename( $temps[ $key ], $t[0] );
+    }
+
+    /* 8) Respuesta: sufijo aplicado + nombres canónicos + URL pública de la carpeta. */
+    $resp = array(
+        'ok'     => true,
+        'suffix' => $suffix,
+        'url'    => trailingslashit( $upload['baseurl'] ) . 'routes/recorded/' . $year . '/' . $month . '/',
+        'files'  => array(
+            'recorded' => $md . '_track' . $suffix . '.gpx',
+            'metadata' => $md . '_metadata' . $suffix . '.json',
+        ),
+    );
+    if ( $has_planned ) {
+        $resp['files']['planned'] = $md . $suffix . '.gpx';
+    }
+    return new WP_REST_Response( $resp, 200 );
+}
+
+/* Handler de borrado (DELETE): elimina los tres ficheros del bloque —<md>(N).gpx,
+   <md>_track(N).gpx, <md>_metadata(N).json— en uploads/routes/recorded/<year>/<month>/,
+   con el sufijo (N) ANTES de la extensión. `md` = <month><day>; `suffix` = '' o '(N)',
+   ambos validados con formato estricto para evitar travesías. Tolerante si algún fichero
+   ya no existe. */
+function enterprise_rmm_delete_handler( $request ) {
+
+    $year   = preg_replace( '/\D/', '', (string) $request->get_param( 'year' ) );
+    $month  = enterprise_rmm_pad2( $request->get_param( 'month' ) );
+    $day    = enterprise_rmm_pad2( $request->get_param( 'day' ) );
+    $suffix = (string) $request->get_param( 'suffix' );
+
+    if ( ! preg_match( '/^\d{4}$/', $year ) || ! preg_match( '/^\d{2}$/', $month ) || ! preg_match( '/^\d{2}$/', $day ) ) {
+        return new WP_Error( 'ent_rmm_bad_date', 'Fecha inválida.', array( 'status' => 400 ) );
+    }
+    // suffix = '' o «(N)». Sin barras ni «..».
+    if ( '' !== $suffix && ! preg_match( '/^\(\d+\)$/', $suffix ) ) {
+        return new WP_Error( 'ent_rmm_bad_suffix', 'Sufijo de fichero inválido.', array( 'status' => 400 ) );
+    }
+
+    $upload = wp_upload_dir();
+    if ( ! empty( $upload['error'] ) || empty( $upload['basedir'] ) ) {
+        return new WP_Error( 'ent_rmm_store', 'No se pudo acceder al almacén de subidas.', array( 'status' => 500 ) );
+    }
+    $dir = trailingslashit( $upload['basedir'] ) . 'routes/recorded/' . $year . '/' . $month . '/';
+
+    $md      = $month . $day;
+    $names   = array(
+        $md . $suffix . '.gpx',
+        $md . '_track' . $suffix . '.gpx',
+        $md . '_metadata' . $suffix . '.json',
+    );
+    $deleted = array();
+    foreach ( $names as $name ) {
+        $path = $dir . $name;
+        if ( file_exists( $path ) ) {
+            if ( @unlink( $path ) ) {
+                $deleted[] = $name;
+            } else {
+                return new WP_Error( 'ent_rmm_delete', 'No se pudo borrar «' . $name . '».', array( 'status' => 500 ) );
+            }
+        }
+    }
+
+    return new WP_REST_Response( array( 'ok' => true, 'deleted' => $deleted ), 200 );
+}
+
+/* ─────────────────────────────────────────
    TAXONOMÍA «Regiones» + TERM META (#55, Fase 1 de #45)
    Capa de datos geográfica consultable: taxonomía propia PLANA `regiones`
    (términos = unidades del mapa) sobre `post`, registrada MÍNIMA en la parte
@@ -2435,7 +2666,7 @@ function enterprise_register_blocks() {
     wp_register_script(
         'enterprise-block-route-metadata-map',
         get_template_directory_uri() . '/assets/js/block-route-metadata-map.js',
-        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components' ),
+        array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-api-fetch' ),
         file_exists( $rmm_js_path ) ? filemtime( $rmm_js_path ) : ENTERPRISE_VERSION,
         true
     );
@@ -2451,6 +2682,7 @@ function enterprise_register_blocks() {
             'trip'            => array( 'type' => 'string',  'default' => ''        ),
             'validated'       => array( 'type' => 'boolean', 'default' => false     ),
             'useGeoInventory' => array( 'type' => 'boolean', 'default' => true      ),
+            'assetSuffix'     => array( 'type' => 'string',  'default' => ''        ),
             'gpxLabel1'       => array( 'type' => 'string',  'default' => 'GPX1 — Ruta planificada' ),
             'gpxLabel2'       => array( 'type' => 'string',  'default' => 'GPX2 — Ruta realizada'   ),
             'heading'         => array( 'type' => 'string',  'default' => ''        ),
