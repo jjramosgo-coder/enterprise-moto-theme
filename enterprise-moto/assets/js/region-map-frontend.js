@@ -215,6 +215,35 @@
     if (state.balloon) state.balloon.style.display = 'none';
   }
 
+  /* Reconcilia el globo al terminar cada zoom (#64), sin exigir movimiento del ratón.
+     Dos fuentes, por este orden:
+       1) Pieza enfocada conocida (state.pendingBalloonPath): un drill a una TERMINAL
+          enfoca una pieza concreta que el motor ya tiene en la mano; su nombre es el que
+          hay que mostrar. NO se hace hit-test: tras el zoom el mismo píxel de pantalla cae
+          sobre otra coordenada SVG (el vecino atenuado que asoma en el margen del encuadre),
+          y consultarlo daría el nombre equivocado.
+       2) Sin pieza enfocada única (volver / Europa): sí se mira qué hay bajo el último
+          puntero con elementFromPoint → apuntable → su data-name; si no → ocultar. El globo
+          lleva pointer-events:none (CSS), así que devuelve el path de debajo, no el globo.
+     El globo se ancla en la última posición del puntero/toque (ptrX/ptrY). */
+  function reconcileBalloonAtPointer(state) {
+    var focused = state.pendingBalloonPath;
+    state.pendingBalloonPath = null; // consumido: solo aplica a este zoom
+    var x = state.ptrX, y = state.ptrY;
+    if (x == null || y == null) return;
+    if (focused) {
+      showBalloon(state, focused.getAttribute('data-name') || '', x, y);
+      return;
+    }
+    var el = document.elementFromPoint(x, y);
+    var p  = el && el.closest ? el.closest('path') : null;
+    if (p && state.svg.contains(p) && isHoverable(p)) {
+      showBalloon(state, p.getAttribute('data-name') || '', x, y);
+    } else {
+      hideBalloon(state);
+    }
+  }
+
   /* Hoverable = path visible (activo O atenuado): el globo con el nombre aparece
      también sobre los vecinos atenuados (§7). Solo los ocultos (ent-hidden) no se
      pueden apuntar (display:none). */
@@ -314,6 +343,7 @@
     state.animating = true;
     animateViewBox(state.svg, fromVB, toVB, ZOOM_MS, function () {
       state.animating = false;
+      reconcileBalloonAtPointer(state); // #64: devuelve el globo bajo el puntero al acabar el zoom
     });
   }
 
@@ -371,6 +401,9 @@
     state.focus = country;
     state.level = 1;
     state.container.classList.add('is-drilled');
+    // #64: si el país es terminal se enfoca una pieza única → su nombre es el del globo;
+    // si revela sus regiones no hay pieza única (el reconcile cae al hit-test).
+    state.pendingBalloonPath = terminal ? country : null;
 
     if (terminal) animateToBBox(state, bbox);
     else animateToBBox(state, childrenBBox(state, countryId));
@@ -413,6 +446,9 @@
     state.focus = region;
     state.level = 2;
     state.container.classList.add('is-drilled');
+    // #64: región terminal → pieza única enfocada, su nombre es el del globo; región con
+    // provincias → destapa un sub-nivel (varias piezas), el reconcile cae al hit-test.
+    state.pendingBalloonPath = terminal ? region : null;
 
     animateToBBox(state, bbox);
   }
@@ -487,6 +523,7 @@
     });
 
     c.addEventListener('mousemove', function (e) {
+      state.ptrX = e.clientX; state.ptrY = e.clientY; // #64: última posición para el reconcile
       moveBalloon(state, e.clientX, e.clientY);
     });
 
@@ -506,9 +543,9 @@
     c.addEventListener('click', function (e) {
       if (state.animating) return;
       var p = pathFromEvent(state, e);
-      if (!p) return;
-      if (!p.classList.contains(CLS_ACTIVE) && !p.classList.contains(CLS_DIMMED)) return;
-      if (!isFocusable(p)) return;
+      state.ptrX = e.clientX; state.ptrY = e.clientY; // #64: el click fingido táctil trae las coords del toque
+      if (!p || !isHoverable(p)) { hideBalloon(state); return; } // toque en mar/vacío o pieza oculta: apaga el globo
+      if (!isFocusable(p)) return;   // hoja (provincia): no-op (#46), el globo persiste
       drill(state, p);
     });
   }
@@ -527,6 +564,10 @@
       focus: null,      // null = Europa (nivel-0)
       level: 0,
       animating: false,
+      ptrX: null,       // última posición conocida del puntero/toque (coords de viewport)
+      ptrY: null,       // null hasta el primer evento; la usa reconcileBalloonAtPointer (#64)
+      pendingBalloonPath: null, // #64: pieza enfocada por el drill (terminal); su nombre es el
+                                // que debe mostrar el globo al acabar el zoom, sin hit-test
       backButton: null,
       balloon: null,
       balloonMain: null,
