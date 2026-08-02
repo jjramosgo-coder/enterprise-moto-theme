@@ -2369,9 +2369,14 @@ function enterprise_rmm_ingest_geo( $post, $request, $creating ) {
 }
 add_action( 'rest_after_insert_post', 'enterprise_rmm_ingest_geo', 10, 3 );
 
-/* #57 — Diccionario region_code => count (conteo nativo del término, publicados). Lectura en
-   vivo; la caché se añade en el commit siguiente. */
+/* #57 — Diccionario region_code => count (conteo nativo del término, publicados).
+   Fuente única del conteo: el `count` mantenido por el core. Proyección cacheada en el
+   transient `enterprise_regiones_counts` con reconstrucción perezosa en fallo de caché y
+   TTL de respaldo de 12 h; la invalidación explícita vive en los hooks de abajo. */
 function enterprise_regiones_counts() {
+    $cached = get_transient( 'enterprise_regiones_counts' );
+    if ( is_array( $cached ) ) return $cached;
+
     $terms = get_terms( array( 'taxonomy' => 'regiones', 'hide_empty' => false ) );
     if ( is_wp_error( $terms ) ) return array();
     $map = array();
@@ -2380,8 +2385,29 @@ function enterprise_regiones_counts() {
         if ( '' === $code ) continue;
         if ( ! array_key_exists( $code, $map ) ) $map[ $code ] = (int) $t->count; // 1ª aparición (patrón l. 2342)
     }
+    set_transient( 'enterprise_regiones_counts', $map, 12 * HOUR_IN_SECONDS );
     return $map;
 }
+
+function enterprise_regiones_counts_flush() {
+    delete_transient( 'enterprise_regiones_counts' );
+}
+/* Invalida cuando cambia el conteo o el conjunto de términos de `regiones`.
+   `edited_term_taxonomy` (recálculo de conteo) y `set_object_terms` (asignación) cubren
+   conteo y asignación; `created_term`/`delete_term` cubren el cambio de keyset (una región
+   recién sembrada debe aflorar `data-count="0"`). El TTL de 12 h es el respaldo último. */
+add_action( 'edited_term_taxonomy', function ( $tt_id, $taxonomy ) {
+    if ( 'regiones' === $taxonomy ) enterprise_regiones_counts_flush();
+}, 10, 2 );
+add_action( 'set_object_terms', function ( $object_id, $terms, $tt_ids, $taxonomy ) {
+    if ( 'regiones' === $taxonomy ) enterprise_regiones_counts_flush();
+}, 10, 4 );
+add_action( 'created_term', function ( $term_id, $tt_id, $taxonomy ) {
+    if ( 'regiones' === $taxonomy ) enterprise_regiones_counts_flush();
+}, 10, 3 );
+add_action( 'delete_term', function ( $term, $tt_id, $taxonomy ) {
+    if ( 'regiones' === $taxonomy ) enterprise_regiones_counts_flush();
+}, 10, 3 );
 
 /* ─────────────────────────────────────────
    TAXONOMÍA «Regiones» + TERM META (#55, Fase 1 de #45)
