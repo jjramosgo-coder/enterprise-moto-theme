@@ -2369,6 +2369,20 @@ function enterprise_rmm_ingest_geo( $post, $request, $creating ) {
 }
 add_action( 'rest_after_insert_post', 'enterprise_rmm_ingest_geo', 10, 3 );
 
+/* #57 — Diccionario region_code => count (conteo nativo del término, publicados). Lectura en
+   vivo; la caché se añade en el commit siguiente. */
+function enterprise_regiones_counts() {
+    $terms = get_terms( array( 'taxonomy' => 'regiones', 'hide_empty' => false ) );
+    if ( is_wp_error( $terms ) ) return array();
+    $map = array();
+    foreach ( $terms as $t ) {
+        $code = (string) get_term_meta( $t->term_id, 'region_code', true );
+        if ( '' === $code ) continue;
+        if ( ! array_key_exists( $code, $map ) ) $map[ $code ] = (int) $t->count; // 1ª aparición (patrón l. 2342)
+    }
+    return $map;
+}
+
 /* ─────────────────────────────────────────
    TAXONOMÍA «Regiones» + TERM META (#55, Fase 1 de #45)
    Capa de datos geográfica consultable: taxonomía propia PLANA `regiones`

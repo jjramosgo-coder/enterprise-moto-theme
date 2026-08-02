@@ -113,6 +113,24 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 		$style_attr = ' style="' . esc_attr( implode( '; ', $style_parts ) . ';' ) . '"';
 	}
 
+	/* #57 — Inyección aditiva de data-count por región. path.id (=código) → count del
+	   término. Sin término → sin atributo; término con 0 → data-count="0". Aditivo: no
+	   toca ningún atributo existente del SVG (invariante «SVG tal cual», §13.19). */
+	$counts = enterprise_regiones_counts();
+	if ( ! empty( $counts ) ) {
+		$svg = preg_replace_callback(
+			'/<path\b[^>]*\bid="([^"]+)"[^>]*>/i',
+			function ( $m ) use ( $counts ) {
+				$tag = $m[0];
+				$id  = $m[1];
+				if ( ! array_key_exists( $id, $counts ) )   return $tag; // sin término → sin atributo
+				if ( false !== strpos( $tag, 'data-count' ) ) return $tag; // idempotencia defensiva
+				return preg_replace( '/^<path\b/i', '<path data-count="' . (int) $counts[ $id ] . '"', $tag, 1 );
+			},
+			$svg
+		);
+	}
+
 	/* El SVG es un activo GPL de confianza y de origen propio: se emite tal cual,
 	   inline, para que el motor interactivo pueda acceder a los nodos <path>. No se
 	   pasa por wp_kses_* (eliminaría elementos/atributos SVG). */
