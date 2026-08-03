@@ -712,9 +712,23 @@
     c.addEventListener('pointerup', function (e) {
       state.lastInputMouse = e.pointerType !== 'touch'; // #66.2: input que dispara el zoom → lo usa el reconcile
       if (e.pointerType === 'touch') {
-        activate(state, e); // rama táctil
+        activate(state, e); // rama táctil (sin cambios: navega el clic del globo — 66.3)
       } else {
-        activate(state, e); // rama ratón/lápiz
+        /* #66.2 (Commit 2) — RATÓN/LÁPIZ: el clic en una REGIÓN terminal ENLAZABLE navega a su
+           página de destino (la pieza entera es el disparador; el globo pasó a ser etiqueta). El
+           conteo se lee de data-count igual que showBalloon; enlazable = sin hijos + data-count>0
+           + href no vacío (buildRegionHref). Cualquier otro caso cae en el activate de siempre
+           (drill / apagar globo / hoja no-op), sin cambios. */
+        var p = pathFromEvent(state, e);
+        if (p && !hasChildren(state, p)) {
+          var countAttr = p.getAttribute('data-count');
+          var count = (countAttr === null || countAttr === '') ? NaN : parseInt(countAttr, 10);
+          if (!isNaN(count) && count > 0) {
+            var href = buildRegionHref(state, p.getAttribute('id'));
+            if (href) { window.location.href = href; return; }
+          }
+        }
+        activate(state, e); // rama ratón/lápiz: resto de casos, sin cambios
       }
     });
   }
