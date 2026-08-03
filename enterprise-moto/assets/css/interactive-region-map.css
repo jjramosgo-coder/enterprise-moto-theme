@@ -181,6 +181,28 @@
 	opacity: 0.7;
 }
 
+/* ── Globo accionable + pista de acción (#66.2 · Commit 3) ──
+   El globo de una pieza terminal enlazable (data-count>0 + página de destino) lleva la clase
+   .is-link y la línea «Ver las rutas». Se estilan como CALL TO ACTION, POR TOKENS (§13.18: sin
+   literales de color fuera de :root; se reutiliza el acento de marca --gold, el mismo dorado que
+   los CTA del tema). La legibilidad «sobre cualquier color de mapa» (#54) la garantiza el propio
+   globo, cuyo fondo es OPACO (var(--dark)): el color del mapa por detrás no lo atraviesa; el
+   contraste es dorado sobre fondo oscuro en claro y en oscuro por igual. .is-link (0,2,0) gana a
+   la regla base .ent-region-map__balloon (0,1,0), así que redefine su box-shadow conservando la
+   sombra base y añadiendo un aro dorado fino. */
+.ent-region-map__balloon.is-link {
+	box-shadow: 0 2px 8px rgba(var(--shadow-rgb), 0.35),
+	            0 0 0 1.5px rgba(var(--gold-rgb), 0.9);
+}
+
+.ent-region-map__balloon-hint {
+	margin-top: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	color: var(--gold);
+}
+
 /* ── Control «volver» (#44/#51/#54) ──
    Botón con icono inline (sin texto), arriba-izquierda. Oculto por defecto; visible
    solo cuando el motor marca el contenedor como drilleado (.is-drilled).
