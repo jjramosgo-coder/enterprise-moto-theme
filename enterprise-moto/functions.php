@@ -830,7 +830,11 @@ function enterprise_coleccion_assets() {
     if ( ! is_page() ) {
         return;
     }
-    if ( 'page-templates/template-trip-coleccion.php' !== get_page_template_slug( get_queried_object_id() ) ) {
+    // #46: la página de destino por región reutiliza el hero (col-hero), las cifras
+    // (col-stats), el ticker y la .trip-card estilados por coleccion.css.
+    $tpl = get_page_template_slug( get_queried_object_id() );
+    if ( 'page-templates/template-trip-coleccion.php' !== $tpl
+      && 'page-templates/template-region-destino.php'  !== $tpl ) {
         return;
     }
     wp_enqueue_style( 'enterprise-coleccion' );
@@ -2410,6 +2414,90 @@ add_action( 'delete_term', function ( $term, $tt_id, $taxonomy ) {
 }, 10, 3 );
 
 /* ─────────────────────────────────────────
+   CONSUMO AGUAS ABAJO: PÁGINA DE DESTINO POR REGIÓN (#46, Fase III.1 de #41)
+   Helpers de resolución, consulta y enrutado para template-region-destino.php.
+   La taxonomía `regiones` es public=false (Decisión D de #45): el destino del
+   clic NO es el archivo nativo del término, sino una plantilla dedicada que
+   recibe el region_code por la URL. Gemelos de los de «Rutas por localización».
+───────────────────────────────────────── */
+/**
+ * Resuelve el término de `regiones` cuyo term meta region_code coincide con $code
+ * (código ISO 3166-2 sin guion = id del <path> del SVG = clave de join). Fuente
+ * ÚNICA de la resolución código→término, compartida por la plantilla de destino
+ * y el contexto de navegación from_region de single.php (#46), para que no
+ * diverjan. Devuelve WP_Term o null.
+ */
+function enterprise_region_term_by_code( $code ) {
+    $code = strtoupper( preg_replace( '/[^A-Za-z0-9]/', '', (string) $code ) );
+    if ( '' === $code ) return null;
+
+    $terms = get_terms( array(
+        'taxonomy'   => 'regiones',
+        'hide_empty' => false,
+        'number'     => 1,
+        'meta_query' => array( array(
+            'key'     => 'region_code',
+            'value'   => $code,
+            'compare' => '=',
+        ) ),
+    ) );
+    if ( is_wp_error( $terms ) || empty( $terms ) ) return null;
+    return $terms[0];
+}
+
+/**
+ * WP_Query de las ETAPAS (entradas publicadas) asignadas a un término de
+ * `regiones`. Fuente ÚNICA de la secuencia del carrusel de etapas de la página de
+ * destino y del prev/next del contexto from_region (#46 Commit 4), de modo que la
+ * plantilla y single.php produzcan el MISMO orden (contrato de navegación §6). Solo
+ * publicados → el total coincide con el `count` del término (= data-count del globo,
+ * #57). Orden por defecto: fecha DESC (el del tema); $overrides permite ajustarlo.
+ */
+function enterprise_region_stage_query( $term_id, $overrides = array() ) {
+    $args = array(
+        'post_type'      => 'post',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'no_found_rows'  => true,
+        'tax_query'      => array( array(
+            'taxonomy' => 'regiones',
+            'field'    => 'term_id',
+            'terms'    => (int) $term_id,
+        ) ),
+    );
+    if ( is_array( $overrides ) && ! empty( $overrides ) ) {
+        $args = array_merge( $args, $overrides );
+    }
+    return new WP_Query( $args );
+}
+
+/**
+ * URL de la página de destino por región. Base = permalink de la Página elegida en
+ * el Customizer (theme mod `enterprise_region_dest_page`); si no está configurada
+ * o publicada, cae a home_url('/') (el enlace sigue llevando region=<code>). Añade
+ * region=<code> y, si $src_page_id>0, region_src=<id> (para «← Volver al mapa»).
+ * Gemelo de enterprise_rbl_destination_url(); lo consumen el enlace del globo
+ * (#46 Commit 3) y single.php (#46 Commit 4). Devuelve URL saneada.
+ */
+function enterprise_region_destination_url( $code, $src_page_id = 0 ) {
+    $code        = strtoupper( preg_replace( '/[^A-Za-z0-9]/', '', (string) $code ) );
+    $src_page_id = intval( $src_page_id );
+
+    $page_id = (int) get_theme_mod( 'enterprise_region_dest_page', 0 );
+    $base    = ( $page_id && 'publish' === get_post_status( $page_id ) )
+                 ? get_permalink( $page_id )
+                 : home_url( '/' );
+
+    $args = array();
+    if ( '' !== $code )     $args['region']     = $code;
+    if ( $src_page_id > 0 ) $args['region_src'] = $src_page_id;
+
+    return empty( $args ) ? esc_url_raw( $base ) : esc_url_raw( add_query_arg( $args, $base ) );
+}
+
+/* ─────────────────────────────────────────
    TAXONOMÍA «Regiones» + TERM META (#55, Fase 1 de #45)
    Capa de datos geográfica consultable: taxonomía propia PLANA `regiones`
    (términos = unidades del mapa) sobre `post`, registrada MÍNIMA en la parte
@@ -3037,7 +3125,8 @@ function enterprise_carousel_assets() {
     // carrusel (carruseles de .post-card por categoría) vía su plantilla.
     $needs_carousel = has_block( 'enterprise/post-stages', $post )
                    || has_block( 'enterprise/trip-collection', $post )
-                   || ( 'page-templates/template-routes-by-location.php' === get_page_template_slug( $post ) );
+                   || ( 'page-templates/template-routes-by-location.php' === get_page_template_slug( $post ) )
+                   || ( 'page-templates/template-region-destino.php'      === get_page_template_slug( $post ) );
     if ( ! $needs_carousel ) return;
 
     $carousel_css_path = get_template_directory() . '/assets/css/carousel.css';
@@ -3349,6 +3438,29 @@ function enterprise_customizer( $wp_customize ) {
         'label'       => __( 'Página-destino', 'enterprise-moto' ),
         'description' => __( 'Página a la que enlaza cada localización del bloque «Mapa de rutas por localización». Crea una Página con la plantilla «Mapa de rutas por localización» y selecciónala aquí.', 'enterprise-moto' ),
         'section'     => 'enterprise_rbl',
+        'type'        => 'dropdown-pages',
+    ) );
+
+    /* ════════════════════════════════════════
+       SECCIÓN: MAPA INTERACTIVO DE REGIONES (#46, Fase III.1 de #41)
+       Página-destino a la que enlaza el globo de cada región terminal del bloque
+       «Mapa interactivo de regiones»: hero + carrusel de etapas (+ de viajes).
+       Gemela de la de «Rutas por localización».
+    ════════════════════════════════════════ */
+    $wp_customize->add_section( 'enterprise_region_map', array(
+        'title' => __( 'Mapa interactivo de regiones', 'enterprise-moto' ),
+        'panel' => 'enterprise_home',
+    ) );
+
+    $wp_customize->add_setting( 'enterprise_region_dest_page', array(
+        'default'           => 0,
+        'sanitize_callback' => 'absint',
+        'transport'         => 'refresh',
+    ) );
+    $wp_customize->add_control( 'enterprise_region_dest_page', array(
+        'label'       => __( 'Página-destino', 'enterprise-moto' ),
+        'description' => __( 'Página a la que enlaza el globo de cada región del bloque «Mapa interactivo de regiones». Crea una Página con la plantilla «Página de destino por región» y selecciónala aquí.', 'enterprise-moto' ),
+        'section'     => 'enterprise_region_map',
         'type'        => 'dropdown-pages',
     ) );
 
