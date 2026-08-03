@@ -32,6 +32,13 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 		return '';
 	}
 
+	/* #63 (absorbido en #47) — Higiene del marcado emitido. El activo empieza por el
+	   prólogo `<?xml version="1.0"?>` (compatibilidad con la herramienta de diseño/GIS
+	   que lo genera); en HTML5, emitido inline, se parsea como comentario bogus (marcado
+	   inválido). Se retira SOLO del marcado emitido, nunca del activo (invariante D-1,
+	   §13.19). Idempotente: si no hay prólogo, no cambia nada. */
+	$svg = preg_replace( '/^\s*<\?xml[^>]*\?>\s*/i', '', $svg, 1 );
+
 	if ( ! is_array( $attributes ) ) $attributes = array();
 
 	/* Fondo (canvas) de fuente única (§13.19): el color lo declara el activo —el
