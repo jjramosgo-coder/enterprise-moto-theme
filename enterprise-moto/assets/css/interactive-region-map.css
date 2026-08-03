@@ -115,6 +115,27 @@
 	opacity: 1;
 }
 
+/* ── Realce por conteo (#47 · atenuar regiones sin entradas) ──
+   Las regiones con data-count="0" o SIN el atributo (id sin término, tratado
+   igual que 0, §0 del requisito) se muestran a media fuerza. La reducción va en
+   el CANAL DE PINTURA (fill-opacity/stroke-opacity), NO en `opacity` de elemento:
+   así MULTIPLICA con el `opacity` que gobierna el motor (vecino .ent-dimmed = .25)
+   y las opacidades por-nivel de #54, en vez de sobrescribirlas (D-3). Selector con
+   `> svg path` para no alcanzar el icono del botón «volver» (cuelga del <button>). */
+.ent-region-map > svg path[data-count="0"],
+.ent-region-map > svg path:not([data-count]) {
+	fill-opacity: 0.5;
+	stroke-opacity: 0.5;
+}
+
+/* El acento de hover de esas mismas regiones también se atenúa a la mitad (0.85 →
+   0.425). Va DESPUÉS del bloque de interacción y con mayor especificidad que el
+   acento base (dos elementos svg+path), para ganarle en el estado :hover. */
+.ent-region-map > svg path[data-count="0"]:hover,
+.ent-region-map > svg path:not([data-count]):hover {
+	fill-opacity: 0.425;
+}
+
 /* Globo con el nombre del área (#51 · bilingüe). Se añade a <body>, por eso el
    selector no está anidado. El CSS solo se encola donde hay bloque, así que la
    clase no se filtra a otras páginas. Línea principal = nombre en español; línea
