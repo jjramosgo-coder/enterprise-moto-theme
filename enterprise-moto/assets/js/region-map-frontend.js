@@ -602,6 +602,20 @@
     return p;
   }
 
+  /* #66.1 (Commit 2) — Activación (drill / apagar globo / hoja no-op): despacho interno
+     COMÚN que ejecutan AMBAS ramas (ratón/lápiz y táctil) del pointerup. Es, verbatim, la
+     lógica que tenía el 'click' delegado del contenedor; extraída para que la bifurcación
+     por pointerType comparta HOY un único cuerpo (sin cambio de comportamiento) y 66.2/66.3
+     puedan divergir cada rama sin reintroducir un camino único. */
+  function activate(state, e) {
+    if (state.animating) return;
+    var p = pathFromEvent(state, e);
+    state.ptrX = e.clientX; state.ptrY = e.clientY; // #64: el pointerup trae las coords del puntero/toque
+    if (!p || !isHoverable(p)) { hideBalloon(state); return; } // mar/vacío o pieza oculta: apaga el globo
+    if (!isFocusable(p)) return;   // hoja (provincia): no-op (#46), el globo persiste
+    drill(state, p);
+  }
+
   function bindEvents(state) {
     var c = state.container;
 
@@ -645,19 +659,20 @@
       hideBalloon(state);
     });
 
-    /* Clic delegado: reenfoca cualquier unidad VISIBLE ENFOCABLE —activa o atenuada
-       (§7)—. Enfocable = país (admin-0) o región (admin-1), tenga hijos o no (§8): un
-       vecino atenuado es un salto directo (clic en país vecino entra en él; clic en
-       región hermana salta a ella, aunque sea terminal). drill() despacha por
-       data-admin (país→focusCountry; región→focusRegion, que ya ramifica terminal).
-       La provincia (admin-2) es la hoja: no-op — su redirect es #46. */
-    c.addEventListener('click', function (e) {
-      if (state.animating) return;
-      var p = pathFromEvent(state, e);
-      state.ptrX = e.clientX; state.ptrY = e.clientY; // #64: el click fingido táctil trae las coords del toque
-      if (!p || !isHoverable(p)) { hideBalloon(state); return; } // toque en mar/vacío o pieza oculta: apaga el globo
-      if (!isFocusable(p)) return;   // hoja (provincia): no-op (#46), el globo persiste
-      drill(state, p);
+    /* #66.1 (Commit 2) — Activación delegada sobre POINTER EVENTS (pointerup) con la misma
+       bifurcación por pointerType (D1 = A). Sustituye al 'click' del contenedor: el motor deja
+       de depender del click sintético para NAVEGAR. Ambas ramas ejecutan hoy el mismo despacho
+       (activate) —sin cambio de comportamiento—; quedan separadas para que 66.2 (ratón) y 66.3
+       (táctil) puedan divergir. Reenfoca cualquier unidad VISIBLE ENFOCABLE —activa o atenuada
+       (§7)—: país (admin-0) o región (admin-1), tenga hijos o no (§8); un vecino atenuado es un
+       salto directo. La provincia (admin-2) es la hoja: no-op — su redirect es #46. El globo y
+       el botón «volver» conservan su propio 'click' (§1.4), fuera de alcance de 66.1. */
+    c.addEventListener('pointerup', function (e) {
+      if (e.pointerType === 'touch') {
+        activate(state, e); // rama táctil
+      } else {
+        activate(state, e); // rama ratón/lápiz
+      }
     });
   }
 
