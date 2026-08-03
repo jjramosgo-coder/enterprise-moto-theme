@@ -149,6 +149,20 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 		$dest_attr = ' data-region-dest="' . esc_url( enterprise_region_destination_url( '', get_queried_object_id() ) ) . '"';
 	}
 
+	/* Monograma de marca (añadido estético) — firma BE en la esquina inferior derecha.
+	   Decorativo: aria-hidden y sin enlace; el CSS lo hace no clicable (pointer-events:none)
+	   para no interferir con la interacción del mapa. Se sirve como <img> con cache-busting
+	   por filemtime, mismo patrón que el logo de la cabecera (header.php). Si el activo no
+	   está, no se emite nada. */
+	$mono_rel  = 'assets/images/favicon-monograma.svg';
+	$mono_path = get_theme_file_path( $mono_rel );
+	$mono_img  = '';
+	if ( file_exists( $mono_path ) ) {
+		$mono_uri = add_query_arg( 'ver', filemtime( $mono_path ), get_theme_file_uri( $mono_rel ) );
+		$mono_img = '<img class="ent-region-map__brand" src="' . esc_url( $mono_uri )
+			. '" alt="" aria-hidden="true" width="40" height="40">';
+	}
+
 	/* El SVG es un activo GPL de confianza y de origen propio: se emite tal cual,
 	   inline, para que el motor interactivo pueda acceder a los nodos <path>. No se
 	   pasa por wp_kses_* (eliminaría elementos/atributos SVG). */
@@ -156,6 +170,7 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 	?>
 	<div class="<?php echo $class_attr; ?>"<?php echo $style_attr; echo $dest_attr; ?>>
 		<?php echo $svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — activo SVG GPL de confianza, ver nota superior. ?>
+		<?php echo $mono_img; // <img> del monograma ya saneado (esc_url); firma de marca decorativa. ?>
 	</div>
 	<?php
 	return ob_get_clean();
