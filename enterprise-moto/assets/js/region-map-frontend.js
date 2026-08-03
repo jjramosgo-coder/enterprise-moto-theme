@@ -605,21 +605,39 @@
   function bindEvents(state) {
     var c = state.container;
 
-    c.addEventListener('mouseover', function (e) {
+    /* #66.1 (Commit 1) — Familia hover/globo sobre POINTER EVENTS con bifurcación por
+       pointerType (D1 = A): una sola familia de listeners que se ramifica dentro entre
+       ratón/lápiz ('mouse'/'pen') y táctil ('touch'). No cambia el comportamiento: cada
+       input hace hoy lo mismo que hacía con los eventos mouse* (ratón, explícito) o con
+       los mouse* sintéticos del navegador (táctil, emergente §1.2 del spec). El navegador
+       sigue emitiendo esos mouse* sintéticos en el toque, pero el contenedor ya NO los
+       escucha, así que se ignoran (no hay doble disparo); su supresión es #66.3, no aquí. */
+    c.addEventListener('pointerover', function (e) {
       var p = pathFromEvent(state, e);
       if (!p || !isHoverable(p)) return;
+      if (e.pointerType === 'touch') {
+        // Rama táctil: reproduce el globo-al-tocar que daba el mouseover sintético. Fija las
+        // coords del toque para el reconcile del zoom (#64): la rama táctil ignora pointermove,
+        // así que si no se registran aquí, ptrX/ptrY no se actualizarían en el toque.
+        state.ptrX = e.clientX; state.ptrY = e.clientY;
+      }
+      // Ambas ramas muestran el globo con las mismas coords (mouseover previo, idéntico).
       showBalloon(state, p, e.clientX, e.clientY);
     });
 
-    c.addEventListener('mousemove', function (e) {
+    c.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'touch') return; // rama táctil: se ignora (persiste hasta el siguiente toque, #64 · §3.3)
+      // Rama ratón/lápiz: idéntica al mousemove previo.
       state.ptrX = e.clientX; state.ptrY = e.clientY; // #64: última posición para el reconcile
       moveBalloon(state, e.clientX, e.clientY);
     });
 
-    c.addEventListener('mouseout', function (e) {
+    c.addEventListener('pointerout', function (e) {
+      if (e.pointerType === 'touch') return; // rama táctil: se ignora — no ocultar al levantar el dedo (#64 · §3.3)
+      // Rama ratón/lápiz: lógica del mouseout previo, verbatim.
       // #46: un globo-enlace anclado (terminal con data-count>0) persiste al salir de la
       // pieza, para poder llevar el cursor hasta él y pulsarlo; se reemplaza al entrar en
-      // otra pieza (mouseover) o se cierra al clicar mar/vacío.
+      // otra pieza (pointerover) o se cierra al clicar mar/vacío.
       if (state.balloonAnchored) return;
       var p = pathFromEvent(state, e);
       if (!p || !isHoverable(p)) return;
