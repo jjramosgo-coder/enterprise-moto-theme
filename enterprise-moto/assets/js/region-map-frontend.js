@@ -195,9 +195,15 @@
     var cnt = document.createElement('span');
     cnt.className = 'ent-region-map__balloon-count';
     cnt.style.display = 'none';
+    /* #66.2 (Commit 1) — pista de acción «Ver las rutas» (span nuevo), oculta por defecto
+       como el conteo; showBalloon la muestra solo en piezas terminales enlazables. */
+    var hint = document.createElement('span');
+    hint.className = 'ent-region-map__balloon-hint';
+    hint.style.display = 'none';
     b.appendChild(main);
     b.appendChild(sub);
     b.appendChild(cnt);
+    b.appendChild(hint);
     document.body.appendChild(b);
     /* #46 (Commit 3) — en modo enlace (terminal con data-count>0) el globo es clicable y
        navega a la página de destino por región; en el resto lleva pointer-events:none (CSS)
@@ -209,15 +215,23 @@
     state.balloonMain = main;
     state.balloonSub = sub;
     state.balloonCount = cnt;
+    state.balloonHint = hint;
     return b;
   }
 
-  /* Muestra el globo de una PIEZA (path): nombre bilingüe + nº de entradas (data-count).
-     #46 (Commit 3): si la pieza es TERMINAL (sin hijos) y su data-count>0, el globo entra en
-     modo ENLACE — se ancla (deja de seguir al cursor) y se hace clicable hacia la página de
-     destino por región—; en cualquier otro caso conserva el comportamiento previo (sigue al
-     cursor, pointer-events:none, no enlaza). Todos los llamadores tienen el path en la mano. */
-  function showBalloon(state, pathEl, x, y) {
+  /* Muestra el globo de una PIEZA (path): nombre bilingüe + nº de entradas (data-count) + pista.
+     El 5º argumento `isMouse` (true = ratón/lápiz, false = táctil) SEPARA la interacción por
+     input (#66.2), porque esta función es COMPARTIDA por ambas ramas (66.1 desdobló los
+     listeners, no las acciones):
+       · Contenido (AMBOS inputs): si la pieza es TERMINAL enlazable (sin hijos + data-count>0 +
+         base configurada = href no vacío) se muestra la pista «Ver las rutas»; si no, se oculta.
+       · Interacción RATÓN/LÁPIZ (#66.2): el globo NO se ancla y NO es clicable → SIGUE al cursor
+         (moveBalloon), como en los tiers 0/1; la navegación la hace el clic en la REGIÓN
+         (Commit 2), no el globo. La clase is-link se mantiene solo para el estilo (Commit 3).
+       · Interacción TÁCTIL (sin cambios, #46): en una terminal enlazable el globo se ANCLA y se
+         hace CLICABLE hacia la página de destino; navega el clic del globo. Su rediseño es 66.3.
+     Todos los llamadores tienen el path en la mano y saben (o rastrean) el input. */
+  function showBalloon(state, pathEl, x, y, isMouse) {
     ensureBalloon(state);
     var parsed = parseName(pathEl.getAttribute('data-name') || '');
     state.balloonMain.textContent = parsed.primary;
@@ -241,15 +255,36 @@
       state.balloonCount.style.display = 'none';
     }
 
-    /* Modo enlace: terminal (sin hijos) + data-count>0 + base configurada. */
+    /* Enlazable: terminal (sin hijos) + data-count>0 + base configurada (href no vacío). */
     var linkable = !hasChildren(state, pathEl) && !isNaN(count) && count > 0;
     var href = linkable ? buildRegionHref(state, pathEl.getAttribute('id')) : '';
+
+    /* Pista de acción «Ver las rutas»: CONTENIDO del globo, en AMBOS inputs, solo si la pieza
+       es enlazable; en cualquier otro caso se oculta (igual que la línea del conteo). */
     if (href) {
-      state.balloonHref     = href;
-      state.balloonAnchored = true;                 // deja de seguir al cursor
+      state.balloonHint.textContent = 'Ver las rutas';
+      state.balloonHint.style.display = 'block';
+    } else {
+      state.balloonHint.textContent = '';
+      state.balloonHint.style.display = 'none';
+    }
+
+    if (href) {
+      state.balloonHref = href;
       state.balloon.classList.add('is-link');
-      state.balloon.style.pointerEvents = 'auto';   // clicable
-      state.balloon.style.cursor        = 'pointer';
+      if (isMouse) {
+        /* RATÓN/LÁPIZ (#66.2): no anclar y no clicable → el globo SIGUE al cursor y el clic
+           navega desde la región (Commit 2). El 'click' propio del globo (l. ~205) queda inerte
+           por pointer-events:none. */
+        state.balloonAnchored             = false;
+        state.balloon.style.pointerEvents = 'none';
+        state.balloon.style.cursor        = '';
+      } else {
+        /* TÁCTIL (sin cambios, #46): globo anclado y clicable; navega el clic del globo. */
+        state.balloonAnchored             = true;   // deja de seguir al toque
+        state.balloon.style.pointerEvents = 'auto'; // clicable
+        state.balloon.style.cursor        = 'pointer';
+      }
     } else {
       state.balloonHref     = '';
       state.balloonAnchored = false;
@@ -293,14 +328,18 @@
     state.pendingBalloonPath = null; // consumido: solo aplica a este zoom
     var x = state.ptrX, y = state.ptrY;
     if (x == null || y == null) return;
+    /* #66.2: el reconcile corre en el onDone del zoom, AGUAS ABAJO de la bifurcación por
+       pointerType, así que no ve el input; lo lee de state.lastInputMouse, que fijan los
+       handlers (pointerover/pointerup) al disparar el zoom. Así el globo reconciliado hereda
+       el input real: ratón → sigue el cursor; táctil → anclado y clicable (sin cambios). */
     if (focused) {
-      showBalloon(state, focused, x, y);
+      showBalloon(state, focused, x, y, state.lastInputMouse);
       return;
     }
     var el = document.elementFromPoint(x, y);
     var p  = el && el.closest ? el.closest('path') : null;
     if (p && state.svg.contains(p) && isHoverable(p)) {
-      showBalloon(state, p, x, y);
+      showBalloon(state, p, x, y, state.lastInputMouse);
     } else {
       hideBalloon(state);
     }
@@ -629,14 +668,17 @@
     c.addEventListener('pointerover', function (e) {
       var p = pathFromEvent(state, e);
       if (!p || !isHoverable(p)) return;
+      var isMouse = e.pointerType !== 'touch';
+      state.lastInputMouse = isMouse; // #66.2: input que verá el reconcile tras el próximo zoom
       if (e.pointerType === 'touch') {
         // Rama táctil: reproduce el globo-al-tocar que daba el mouseover sintético. Fija las
         // coords del toque para el reconcile del zoom (#64): la rama táctil ignora pointermove,
         // así que si no se registran aquí, ptrX/ptrY no se actualizarían en el toque.
         state.ptrX = e.clientX; state.ptrY = e.clientY;
       }
-      // Ambas ramas muestran el globo con las mismas coords (mouseover previo, idéntico).
-      showBalloon(state, p, e.clientX, e.clientY);
+      // Ambas ramas muestran el globo con las mismas coords (mouseover previo, idéntico); el
+      // 5º arg separa la INTERACCIÓN por input (#66.2), no el contenido.
+      showBalloon(state, p, e.clientX, e.clientY, isMouse);
     });
 
     c.addEventListener('pointermove', function (e) {
@@ -668,6 +710,7 @@
        salto directo. La provincia (admin-2) es la hoja: no-op — su redirect es #46. El globo y
        el botón «volver» conservan su propio 'click' (§1.4), fuera de alcance de 66.1. */
     c.addEventListener('pointerup', function (e) {
+      state.lastInputMouse = e.pointerType !== 'touch'; // #66.2: input que dispara el zoom → lo usa el reconcile
       if (e.pointerType === 'touch') {
         activate(state, e); // rama táctil
       } else {
@@ -697,12 +740,15 @@
       regionDestBase: container.getAttribute('data-region-dest') || '', // #46: base del enlace del globo
       balloonAnchored: false,   // #46: globo en modo enlace (terminal) → no sigue al cursor
       balloonHref: '',          // #46: destino del clic del globo cuando está en modo enlace
+      lastInputMouse: true,     // #66.2: último input (ratón/lápiz true, táctil false); lo fijan
+                                // pointerover/pointerup y lo lee reconcileBalloonAtPointer
       backButton: null,
       regionLabel: null,        // etiqueta de la unidad enfocada (esquina superior derecha)
       balloon: null,
       balloonMain: null,
       balloonSub: null,
-      balloonCount: null        // #46: elemento del nº de entradas (data-count) en el globo
+      balloonCount: null,       // #46: elemento del nº de entradas (data-count) en el globo
+      balloonHint: null         // #66.2: elemento de la pista de acción «Ver las rutas»
     };
     container._entRegionMap = state;
 
