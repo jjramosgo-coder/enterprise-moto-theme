@@ -5,8 +5,6 @@
  * El color por región y los tokens editoriales son #47/#48; aquí NO hay tematización.
  */
 .ent-region-map {
-	max-width: 900px;
-	margin-inline: auto;
 	position: relative; /* ancla el control «volver» (#44/#51) */
 }
 
