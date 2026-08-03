@@ -2497,6 +2497,76 @@ function enterprise_region_destination_url( $code, $src_page_id = 0 ) {
     return empty( $args ) ? esc_url_raw( $base ) : esc_url_raw( add_query_arg( $args, $base ) );
 }
 
+/* #46 (Commit 2) — Diccionario region_code => [IDs de entradas TIPO D («viaje») que
+   contienen alguna etapa de la región] (carrusel 2 de la página de destino). NUNCA páginas
+   «Colección de viajes» (modelo A+B/colecciones ANULADO — ver §0 del requisito y §13.19:
+   `regiones` se asigna solo a Tipo B/C, y las «Colección de viajes» agrupan Tipo D). Un
+   viaje «contiene» una etapa por su propio filtro cat/tag (misma pertenencia DERIVADA que
+   enterprise_calculate_viaje_stats, vía enterprise_viaje_stage_ids). Proyectado en el
+   transient `enterprise_region_trips_map` (reconstrucción perezosa + TTL de respaldo 12 h);
+   invalidación explícita en enterprise_post_stage_save (guardar etapa Tipo B/C o viaje Tipo D).
+   Construcción por INVERSIÓN: por cada viaje se recorren sus etapas y se acumula su id en cada
+   region_code de los términos `regiones` de esas etapas. Mismo patrón de caché que
+   enterprise_regiones_counts: un único transient con el mapa completo, borrable de una vez.
+   Rebuild perezoso ⇒ el flush en `save_post` (aunque los términos `regiones` se fijen después,
+   en rest_after_insert_post) es seguro: la reconstrucción ocurre en la siguiente vista. */
+function enterprise_region_trips_map() {
+    $cached = get_transient( 'enterprise_region_trips_map' );
+    if ( is_array( $cached ) ) return $cached;
+
+    $map = array();
+
+    /* Entradas Tipo D («viaje») publicadas. */
+    $viajes = get_posts( array(
+        'post_type'      => 'post',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'fields'         => 'ids',
+        'no_found_rows'  => true,
+        'meta_query'     => array( array( 'key' => '_post_tipo', 'value' => 'viaje' ) ),
+    ) );
+
+    foreach ( $viajes as $viaje_id ) {
+        $viaje_id  = (int) $viaje_id;
+        $stage_ids = enterprise_viaje_stage_ids( $viaje_id );
+        if ( empty( $stage_ids ) ) continue;
+
+        /* Códigos de región de las etapas del viaje (una sola consulta para todo el conjunto).
+           El viaje pertenece a cada region_code que alguna de sus etapas tenga asignado ⇔ su
+           conjunto de etapas interseca las etapas de esa región. */
+        $terms = wp_get_object_terms( $stage_ids, 'regiones' );
+        if ( is_wp_error( $terms ) ) continue;
+
+        $codes = array();
+        foreach ( $terms as $t ) {
+            $code = (string) get_term_meta( $t->term_id, 'region_code', true );
+            if ( '' !== $code ) $codes[ $code ] = true;
+        }
+        foreach ( array_keys( $codes ) as $code ) {
+            if ( ! isset( $map[ $code ] ) ) $map[ $code ] = array();
+            if ( ! in_array( $viaje_id, $map[ $code ], true ) ) $map[ $code ][] = $viaje_id;
+        }
+    }
+
+    set_transient( 'enterprise_region_trips_map', $map, 12 * HOUR_IN_SECONDS );
+    return $map;
+}
+
+function enterprise_region_trips_flush() {
+    delete_transient( 'enterprise_region_trips_map' );
+}
+
+/**
+ * IDs de las entradas Tipo D («viaje») que contienen alguna etapa de la región $code
+ * (carrusel 2 de la página de destino, #46). Lee del mapa cacheado. Devuelve int[].
+ */
+function enterprise_region_trip_ids( $code ) {
+    $code = strtoupper( preg_replace( '/[^A-Za-z0-9]/', '', (string) $code ) );
+    if ( '' === $code ) return array();
+    $map = enterprise_region_trips_map();
+    return ( isset( $map[ $code ] ) && is_array( $map[ $code ] ) ) ? $map[ $code ] : array();
+}
+
 /* ─────────────────────────────────────────
    TAXONOMÍA «Regiones» + TERM META (#55, Fase 1 de #45)
    Capa de datos geográfica consultable: taxonomía propia PLANA `regiones`
@@ -4236,7 +4306,15 @@ function enterprise_cuaderno_stats( $page_id ) {
    CALCULAR ESTADÍSTICAS DEL VIAJE (TIPO D)
    Usa los mismos filtros que los bloques Timeline/Carrusel
 ───────────────────────────────────────── */
-function enterprise_calculate_viaje_stats( $post_id ) {
+/**
+ * IDs de las etapas (Tipo B/C) que componen un viaje Tipo D, según el filtro propio del
+ * viaje (_post_viaje_cat_ids / _post_viaje_tag_ids / _post_viaje_tag_rel + rango de fechas
+ * _post_fecha_inicio/_fin). Pertenencia DERIVADA, sin enlace almacenado: una etapa pertenece
+ * al viaje si casa ese filtro. Fuente ÚNICA de la relación viaje→etapas, reutilizada por las
+ * cifras del viaje (enterprise_calculate_viaje_stats) y por la derivación del carrusel 2 de
+ * la página de destino por región (#46). Devuelve int[] de IDs de entrada publicadas.
+ */
+function enterprise_viaje_stage_ids( $post_id ) {
     $cat_ids   = get_post_meta( $post_id, '_post_viaje_cat_ids',  true ) ?: array();
     $tag_ids   = get_post_meta( $post_id, '_post_viaje_tag_ids',  true ) ?: array();
     $tag_rel   = get_post_meta( $post_id, '_post_viaje_tag_rel',  true ) ?: 'OR';
@@ -4272,7 +4350,11 @@ function enterprise_calculate_viaje_stats( $post_id ) {
         $args['date_query'] = $dq;
     }
 
-    $ids      = get_posts( $args );
+    return array_map( 'intval', (array) get_posts( $args ) );
+}
+
+function enterprise_calculate_viaje_stats( $post_id ) {
+    $ids      = enterprise_viaje_stage_ids( $post_id );
     $km_total = 0; $km_inc = false; $ferry = 0;
     foreach ( $ids as $eid ) {
         $km = get_post_meta( $eid, '_post_km', true );
@@ -4360,6 +4442,12 @@ function enterprise_post_stage_save( $post_id ) {
             update_post_meta( $post_id, '_route_dias', $dias );
         }
     }
+
+    /* #46: recomponer el carrusel 2 de las páginas de destino por región (mapa
+       region_code → viajes Tipo D). Cubre guardar una ETAPA (pudo cambiar su región o su
+       pertenencia a un viaje) y guardar un VIAJE (pudo cambiar su filtro cat/tag). Flush +
+       reconstrucción perezosa en la siguiente vista de la página de región. */
+    enterprise_region_trips_flush();
 }
 add_action( 'save_post', 'enterprise_post_stage_save' );
 
