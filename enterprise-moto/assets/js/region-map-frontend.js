@@ -427,6 +427,7 @@
     state.focus = null;
     state.level = 0;
     state.container.classList.remove('is-drilled');
+    setRegionLabel(state, null); // Europa: sin unidad enfocada, etiqueta vacía (y oculta por CSS)
     animateVB(state, state.baseVB.slice());
   }
 
@@ -463,6 +464,7 @@
     state.focus = country;
     state.level = 1;
     state.container.classList.add('is-drilled');
+    setRegionLabel(state, country); // nivel país: etiqueta = nombre español del país enfocado
     // #64: si el país es terminal se enfoca una pieza única → su nombre es el del globo;
     // si revela sus regiones no hay pieza única (el reconcile cae al hit-test).
     state.pendingBalloonPath = terminal ? country : null;
@@ -508,6 +510,7 @@
     state.focus = region;
     state.level = 2;
     state.container.classList.add('is-drilled');
+    setRegionLabel(state, region); // nivel región: etiqueta = nombre español de la región enfocada
     // #64: región terminal → pieza única enfocada, su nombre es el del globo; región con
     // provincias → destapa un sub-nivel (varias piezas), el reconcile cae al hit-test.
     state.pendingBalloonPath = terminal ? region : null;
@@ -562,6 +565,30 @@
     });
     state.container.appendChild(btn);
     state.backButton = btn;
+  }
+
+  /* ═══════════════════════════════════════════
+     ETIQUETA DE REGIÓN ENFOCADA (añadido estético — esquina superior derecha)
+     Espejo del botón «volver»: el CSS la muestra con .is-drilled (niveles país y
+     región) y la oculta en Europa; su color lo dan los mismos presets back-light/
+     back-dark. El motor solo escribe su TEXTO = nombre español (parseName.primary)
+     de la unidad enfocada (state.focus). La provincia (tier-2) nunca se enfoca, así
+     que nunca aparece su nombre.
+  ═══════════════════════════════════════════ */
+  function createRegionLabel(state) {
+    var el = document.createElement('div');
+    el.className = 'ent-region-map__label';
+    state.container.appendChild(el);
+    state.regionLabel = el;
+  }
+
+  /* Escribe en la etiqueta el nombre español de la pieza enfocada; con null la vacía
+     (vuelta a Europa; el CSS ya la oculta al quitar .is-drilled). */
+  function setRegionLabel(state, pathEl) {
+    if (!state.regionLabel) return;
+    if (!pathEl) { state.regionLabel.textContent = ''; return; }
+    var parsed = parseName(pathEl.getAttribute('data-name') || '');
+    state.regionLabel.textContent = parsed.primary;
   }
 
   /* ═══════════════════════════════════════════
@@ -638,6 +665,7 @@
       balloonAnchored: false,   // #46: globo en modo enlace (terminal) → no sigue al cursor
       balloonHref: '',          // #46: destino del clic del globo cuando está en modo enlace
       backButton: null,
+      regionLabel: null,        // etiqueta de la unidad enfocada (esquina superior derecha)
       balloon: null,
       balloonMain: null,
       balloonSub: null,
@@ -650,6 +678,7 @@
     container.classList.add('is-ready');
 
     createBackButton(state);
+    createRegionLabel(state);
     bindEvents(state);
     applyLevel0(state);
   }

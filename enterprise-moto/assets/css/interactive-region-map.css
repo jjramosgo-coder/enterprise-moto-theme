@@ -235,3 +235,41 @@
 	background: #ffffff;
 	border-color: #f2c118;
 }
+
+/* ── Etiqueta de la unidad enfocada (añadido estético · esquina superior derecha) ──
+   Espejo del botón «volver»: misma condición de visibilidad (.is-drilled → visible en
+   nivel país y región; oculta en Europa) y los MISMOS dos presets de color por tipo de
+   lienzo (back-light/back-dark). El motor (region-map-frontend.js) le escribe el nombre
+   español de la unidad enfocada. Posición simétrica: el botón «volver» va arriba-izquierda,
+   la etiqueta arriba-derecha. */
+.ent-region-map__label {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	z-index: 5;
+	display: none;
+	max-width: 60%;
+	padding: 5px 10px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.3;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.ent-region-map.is-drilled .ent-region-map__label {
+	display: block;
+}
+
+.ent-region-map.back-light .ent-region-map__label {
+	color: #f5f5f5;
+	background: #1a1a1a;
+	border: 1px solid #f2c118;
+}
+.ent-region-map.back-dark .ent-region-map__label {
+	color: #1a1a1a;
+	background: #f5f5f2;
+	border: 1px solid #c9a010;
+}
