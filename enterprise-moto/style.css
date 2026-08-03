@@ -37,6 +37,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
   --media-bg-2: #111;      /* fondo near-black del bloque youtube — funcional */
   --ink-lt:     #e0e0e0;   /* texto claro sobre oscuro (markdown) — funcional */
   --ink-lt-2:   #f0f0f0;   /* texto claro sobre oscuro (youtube) — funcional */
+  --balloon-fg: #f5f5f5;   /* texto del globo del mapa de regiones — funcional */
   --gold:       #f2c118;
   --gold-dk:    #c9a010;
   --gold-lt:    rgba(var(--gold-rgb), 0.10);
