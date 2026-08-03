@@ -230,11 +230,11 @@
     }
 
     /* nº de entradas: se pinta solo si hay data-count>0 (el «0» y la ausencia de término no
-       se muestran en este avance; el globo completo con etiqueta/estados es #48). */
+       se muestran; #48 antepone la etiqueta «Rutas: » al número, siempre en plural). */
     var countAttr = pathEl.getAttribute('data-count');
     var count = (countAttr === null || countAttr === '') ? NaN : parseInt(countAttr, 10);
     if (!isNaN(count) && count > 0) {
-      state.balloonCount.textContent = String(count);
+      state.balloonCount.textContent = 'Rutas: ' + count;
       state.balloonCount.style.display = 'block';
     } else {
       state.balloonCount.textContent = '';
