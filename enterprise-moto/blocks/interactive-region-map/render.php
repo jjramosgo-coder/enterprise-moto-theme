@@ -131,12 +131,23 @@ function enterprise_render_interactive_region_map_block( $attributes, $content =
 		);
 	}
 
+	/* #46 (Commit 3) — URL base de la página de destino por región para el enlace del globo.
+	   El motor (region-map-frontend.js) le añade `region=<id de la pieza>` por cada unidad
+	   TERMINAL con data-count>0. Solo se emite si la Página-destino está configurada y
+	   publicada; si no, el globo muestra nombre + conteo pero no enlaza. `region_src` = id de
+	   la página que hospeda el mapa (para «← Volver al mapa»), lo estampa el helper. */
+	$dest_attr = '';
+	$rd_page   = (int) get_theme_mod( 'enterprise_region_dest_page', 0 );
+	if ( $rd_page && 'publish' === get_post_status( $rd_page ) && function_exists( 'enterprise_region_destination_url' ) ) {
+		$dest_attr = ' data-region-dest="' . esc_url( enterprise_region_destination_url( '', get_queried_object_id() ) ) . '"';
+	}
+
 	/* El SVG es un activo GPL de confianza y de origen propio: se emite tal cual,
 	   inline, para que el motor interactivo pueda acceder a los nodos <path>. No se
 	   pasa por wp_kses_* (eliminaría elementos/atributos SVG). */
 	ob_start();
 	?>
-	<div class="<?php echo $class_attr; ?>"<?php echo $style_attr; ?>>
+	<div class="<?php echo $class_attr; ?>"<?php echo $style_attr; echo $dest_attr; ?>>
 		<?php echo $svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — activo SVG GPL de confianza, ver nota superior. ?>
 	</div>
 	<?php

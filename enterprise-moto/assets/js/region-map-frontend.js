@@ -92,6 +92,16 @@
     return !!id && getChildren(state, id).length > 0;
   }
 
+  /* #46 (Commit 3) — Href de la página de destino por región para una pieza TERMINAL.
+     Base = data-region-dest del contenedor (permalink de la Página-destino + region_src,
+     emitido por render.php solo si está configurada); se le añade region=<id de la pieza>
+     (= region_code). Cadena vacía si no hay base (sin Página-destino → globo sin enlace). */
+  function buildRegionHref(state, pieceId) {
+    var base = state.regionDestBase;
+    if (!base || !pieceId) return '';
+    return base + (base.indexOf('?') >= 0 ? '&' : '?') + 'region=' + encodeURIComponent(pieceId);
+  }
+
   /* Un nodo es ENFOCABLE por nivel administrativo, no por tener hijos (§8.2.1):
      país (admin-0) y región (admin-1) son enfocables —una región terminal, sin
      hijos, también—; la provincia (admin-2) es la hoja (clic no-op → #46). Esta es
@@ -181,18 +191,35 @@
     main.className = 'ent-region-map__balloon-name';
     var sub = document.createElement('span');
     sub.className = 'ent-region-map__balloon-native';
+    /* #46 (Commit 3) — nº de entradas de la pieza (data-count), avance de #48. */
+    var cnt = document.createElement('span');
+    cnt.className = 'ent-region-map__balloon-count';
+    cnt.style.display = 'none';
     b.appendChild(main);
     b.appendChild(sub);
+    b.appendChild(cnt);
     document.body.appendChild(b);
+    /* #46 (Commit 3) — en modo enlace (terminal con data-count>0) el globo es clicable y
+       navega a la página de destino por región; en el resto lleva pointer-events:none (CSS)
+       y este handler no dispara (balloonHref vacío). */
+    b.addEventListener('click', function () {
+      if (state.balloonHref) { window.location.href = state.balloonHref; }
+    });
     state.balloon = b;
     state.balloonMain = main;
     state.balloonSub = sub;
+    state.balloonCount = cnt;
     return b;
   }
 
-  function showBalloon(state, raw, x, y) {
+  /* Muestra el globo de una PIEZA (path): nombre bilingüe + nº de entradas (data-count).
+     #46 (Commit 3): si la pieza es TERMINAL (sin hijos) y su data-count>0, el globo entra en
+     modo ENLACE — se ancla (deja de seguir al cursor) y se hace clicable hacia la página de
+     destino por región—; en cualquier otro caso conserva el comportamiento previo (sigue al
+     cursor, pointer-events:none, no enlaza). Todos los llamadores tienen el path en la mano. */
+  function showBalloon(state, pathEl, x, y) {
     ensureBalloon(state);
-    var parsed = parseName(raw);
+    var parsed = parseName(pathEl.getAttribute('data-name') || '');
     state.balloonMain.textContent = parsed.primary;
     if (parsed.secondary) {
       state.balloonSub.textContent = parsed.secondary;
@@ -201,18 +228,53 @@
       state.balloonSub.textContent = '';
       state.balloonSub.style.display = 'none';
     }
+
+    /* nº de entradas: se pinta solo si hay data-count>0 (el «0» y la ausencia de término no
+       se muestran en este avance; el globo completo con etiqueta/estados es #48). */
+    var countAttr = pathEl.getAttribute('data-count');
+    var count = (countAttr === null || countAttr === '') ? NaN : parseInt(countAttr, 10);
+    if (!isNaN(count) && count > 0) {
+      state.balloonCount.textContent = String(count);
+      state.balloonCount.style.display = 'block';
+    } else {
+      state.balloonCount.textContent = '';
+      state.balloonCount.style.display = 'none';
+    }
+
+    /* Modo enlace: terminal (sin hijos) + data-count>0 + base configurada. */
+    var linkable = !hasChildren(state, pathEl) && !isNaN(count) && count > 0;
+    var href = linkable ? buildRegionHref(state, pathEl.getAttribute('id')) : '';
+    if (href) {
+      state.balloonHref     = href;
+      state.balloonAnchored = true;                 // deja de seguir al cursor
+      state.balloon.classList.add('is-link');
+      state.balloon.style.pointerEvents = 'auto';   // clicable
+      state.balloon.style.cursor        = 'pointer';
+    } else {
+      state.balloonHref     = '';
+      state.balloonAnchored = false;
+      state.balloon.classList.remove('is-link');
+      state.balloon.style.pointerEvents = 'none';
+      state.balloon.style.cursor        = '';
+    }
+
     state.balloon.style.display = 'block';
-    moveBalloon(state, x, y);
+    /* Posición inicial directa (moveBalloon respeta el anclaje y no reposicionaría). */
+    state.balloon.style.left = (x + 14) + 'px';
+    state.balloon.style.top  = (y + 14) + 'px';
   }
 
   function moveBalloon(state, x, y) {
     if (!state.balloon || state.balloon.style.display === 'none') return;
+    if (state.balloonAnchored) return; // #46: globo-enlace anclado (terminal) no sigue al cursor
     state.balloon.style.left = (x + 14) + 'px';
     state.balloon.style.top  = (y + 14) + 'px';
   }
 
   function hideBalloon(state) {
     if (state.balloon) state.balloon.style.display = 'none';
+    state.balloonAnchored = false; // #46: al ocultar se sale del modo enlace/anclaje
+    state.balloonHref     = '';
   }
 
   /* Reconcilia el globo al terminar cada zoom (#64), sin exigir movimiento del ratón.
@@ -232,13 +294,13 @@
     var x = state.ptrX, y = state.ptrY;
     if (x == null || y == null) return;
     if (focused) {
-      showBalloon(state, focused.getAttribute('data-name') || '', x, y);
+      showBalloon(state, focused, x, y);
       return;
     }
     var el = document.elementFromPoint(x, y);
     var p  = el && el.closest ? el.closest('path') : null;
     if (p && state.svg.contains(p) && isHoverable(p)) {
-      showBalloon(state, p.getAttribute('data-name') || '', x, y);
+      showBalloon(state, p, x, y);
     } else {
       hideBalloon(state);
     }
@@ -519,7 +581,7 @@
     c.addEventListener('mouseover', function (e) {
       var p = pathFromEvent(state, e);
       if (!p || !isHoverable(p)) return;
-      showBalloon(state, p.getAttribute('data-name') || '', e.clientX, e.clientY);
+      showBalloon(state, p, e.clientX, e.clientY);
     });
 
     c.addEventListener('mousemove', function (e) {
@@ -528,6 +590,10 @@
     });
 
     c.addEventListener('mouseout', function (e) {
+      // #46: un globo-enlace anclado (terminal con data-count>0) persiste al salir de la
+      // pieza, para poder llevar el cursor hasta él y pulsarlo; se reemplaza al entrar en
+      // otra pieza (mouseover) o se cierra al clicar mar/vacío.
+      if (state.balloonAnchored) return;
       var p = pathFromEvent(state, e);
       if (!p || !isHoverable(p)) return;
       if (e.relatedTarget && p.contains(e.relatedTarget)) return;
@@ -568,10 +634,14 @@
       ptrY: null,       // null hasta el primer evento; la usa reconcileBalloonAtPointer (#64)
       pendingBalloonPath: null, // #64: pieza enfocada por el drill (terminal); su nombre es el
                                 // que debe mostrar el globo al acabar el zoom, sin hit-test
+      regionDestBase: container.getAttribute('data-region-dest') || '', // #46: base del enlace del globo
+      balloonAnchored: false,   // #46: globo en modo enlace (terminal) → no sigue al cursor
+      balloonHref: '',          // #46: destino del clic del globo cuando está en modo enlace
       backButton: null,
       balloon: null,
       balloonMain: null,
-      balloonSub: null
+      balloonSub: null,
+      balloonCount: null        // #46: elemento del nº de entradas (data-count) en el globo
     };
     container._entRegionMap = state;
 
