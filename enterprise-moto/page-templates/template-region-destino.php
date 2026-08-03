@@ -210,10 +210,16 @@ if ( '' === $back_map_url ) {
 
           $bg_class = $bg[ $n % count( $bg ) ];
 
-          /* #46 Commit 4: aquí se estampará el contexto from_region en $card_href
-             (from_region = $dest_page_id, region_code, region_src). Por ahora,
-             enlace plano al relato. */
-          $card_href = get_permalink();
+          /* #46 Commit 4: contexto de navegación from_region en la card de ETAPA (no en las
+             de viaje del carrusel 2). from_region = esta página; region_code = código de la
+             región; region_src = origen del mapa (para «← Volver al mapa»). single.php
+             reconstruye prev/next desde la secuencia del término `regiones` y «Volver» aquí. */
+          $card_args = array(
+              'from_region' => $dest_page_id,
+              'region_code' => $region_code_stored,
+          );
+          if ( $region_src > 0 ) { $card_args['region_src'] = $region_src; }
+          $card_href = add_query_arg( $card_args, get_permalink() );
       ?>
         <div class="ent-stages__slide" role="listitem" data-index="<?php echo intval( $n ); ?>">
           <a href="<?php echo esc_url( $card_href ); ?>" class="trip-card">

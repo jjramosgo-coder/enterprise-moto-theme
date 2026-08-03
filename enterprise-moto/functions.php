@@ -525,6 +525,15 @@ function enterprise_nav_origin_params() {
         $loc_src = isset( $_GET['loc_src'] ) ? intval( $_GET['loc_src'] ) : 0;
         if ( $loc_src > 0 ) { $out['loc_src'] = $loc_src; }
     }
+    // #46: contexto «región» (página de destino por región + código de la región). region_src
+    // arrastra el origen del mapa para que «← Volver al mapa» sobreviva región→etapa→vuelta
+    // (gemelo de loc_src). region_code se sanea igual que en la plantilla y en single.php.
+    if ( isset( $_GET['from_region'] ) && intval( $_GET['from_region'] ) ) {
+        $out['from_region'] = intval( $_GET['from_region'] );
+        $out['region_code'] = isset( $_GET['region_code'] ) ? strtoupper( preg_replace( '/[^A-Za-z0-9]/', '', wp_unslash( $_GET['region_code'] ) ) ) : '';
+        $region_src = isset( $_GET['region_src'] ) ? intval( $_GET['region_src'] ) : 0;
+        if ( $region_src > 0 ) { $out['region_src'] = $region_src; }
+    }
     if ( isset( $_GET['from_cat'] ) && sanitize_key( $_GET['from_cat'] ) ) {
         $out['from_cat'] = sanitize_key( $_GET['from_cat'] );
     }

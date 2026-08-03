@@ -38,6 +38,12 @@ $cat_name = enterprise_first_category();
     // #21: id de la página que hospeda el mapa (rbl_src en el destino), propagado
     // como loc_src por el viaje de ida y vuelta para reponer «← Volver al mapa».
     $loc_src     = isset( $_GET['loc_src'] )  ? intval( $_GET['loc_src'] )  : 0;
+    // #46: contexto de origen «región» (id de la página de destino por región + código de la
+    // región). region_src = id de la página que hospeda el mapa, propagado para reponer
+    // «← Volver al mapa» en el viaje región→etapa→vuelta (gemelo de loc_src).
+    $from_region_id = isset( $_GET['from_region'] ) ? intval( $_GET['from_region'] ) : 0;
+    $region_code    = isset( $_GET['region_code'] ) ? strtoupper( preg_replace( '/[^A-Za-z0-9]/', '', wp_unslash( $_GET['region_code'] ) ) ) : '';
+    $region_src     = isset( $_GET['region_src'] )  ? intval( $_GET['region_src'] )  : 0;
     // Validar que from_post es realmente un post tipo D
     if ( $from_post_id && get_post_meta( $from_post_id, '_post_tipo', true ) !== 'viaje' ) {
         $from_post_id = 0;
@@ -63,6 +69,17 @@ $cat_name = enterprise_first_category();
         $loc_tag     = array();
         $loc_src     = 0;
     }
+    // #46: validar que from_region es una página con la plantilla de destino por región y
+    // que trae un region_code; sin ambas cosas no es un contexto region válido.
+    if ( $from_region_id
+         && 'page-templates/template-region-destino.php' !== get_page_template_slug( $from_region_id ) ) {
+        $from_region_id = 0;
+    }
+    if ( ! $from_region_id || '' === $region_code ) {
+        $from_region_id = 0;
+        $region_code    = '';
+        $region_src     = 0;
+    }
     // #13: ancestro = orígenes validados presentes, salvo el inmediato from_post.
     // Se construye desde los locales YA validados (no se re-lee $_GET), de modo que
     // un from_col/from_cat/from_cuaderno inválido no se arrastra.
@@ -70,6 +87,7 @@ $cat_name = enterprise_first_category();
     if ( $from_cuaderno_id ) { $nav_ancestor['from_cuaderno'] = $from_cuaderno_id; }
     if ( $from_col_id )      { $nav_ancestor['from_col'] = $from_col_id; $nav_ancestor['col_key'] = $col_key; }
     if ( $from_loc_id )      { $nav_ancestor['from_loc'] = $from_loc_id; $nav_ancestor['loc_cat'] = $loc_cat; $nav_ancestor['loc_tag'] = implode( ',', $loc_tag ); if ( $loc_src > 0 ) { $nav_ancestor['loc_src'] = $loc_src; } }
+    if ( $from_region_id )   { $nav_ancestor['from_region'] = $from_region_id; $nav_ancestor['region_code'] = $region_code; if ( $region_src > 0 ) { $nav_ancestor['region_src'] = $region_src; } }
     if ( $from_cat_slug )    { $nav_ancestor['from_cat'] = $from_cat_slug; }
     if ( $from_post_id ) {
         // #13: al volver al viaje, conservar el ancestro para que el viaje siga
@@ -95,6 +113,14 @@ $cat_name = enterprise_first_category();
         $back_url   = add_query_arg( $back_args, get_permalink( $from_loc_id ) );
         $back_label = esc_html__( '← Volver', 'enterprise-moto' );
         $active_context = 'loc';
+    } elseif ( $from_region_id ) {
+        // #46: volver a la página de destino por región (?region=<region_code>), conservando
+        // region_src para que «← Volver al mapa» sobreviva el viaje región→etapa→vuelta.
+        $back_args = array( 'region' => $region_code );
+        if ( $region_src > 0 ) { $back_args['region_src'] = $region_src; }
+        $back_url   = add_query_arg( $back_args, get_permalink( $from_region_id ) );
+        $back_label = esc_html__( '← Volver', 'enterprise-moto' );
+        $active_context = 'region';
     } elseif ( $from_cat_slug ) {
         $from_cat_obj  = get_category_by_slug( $from_cat_slug );
         $back_url      = $from_cat_obj ? get_term_link( $from_cat_obj ) : home_url( '/las-rutas/' );
@@ -544,6 +570,29 @@ if ( $has_data ) : ?>
           $next_id = $current_pos < count( $loc_ids ) - 1 ? $loc_ids[ $current_pos + 1 ] : null;
           $prev    = $prev_id ? get_post( $prev_id ) : null;
           $next    = $next_id ? get_post( $next_id ) : null;
+      }
+
+  } elseif ( $from_region_id && '' !== $region_code ) {
+      /* ── Contexto: venimos de la página de destino por región (#46) ──
+         CONTRATO DE NAVEGACIÓN (§6): «anterior/siguiente» recorren la secuencia en el
+         MISMO orden que el carrusel de etapas de la región. La fuente es el término
+         `regiones` (NO cat/tag — diferencia clave con from_loc), vía la MISMA función que
+         usa la plantilla, enterprise_region_stage_query(), para que navegación y listado
+         no puedan divergir. */
+      $nav_suffix = array( 'from_region' => $from_region_id, 'region_code' => $region_code );
+      if ( $region_src > 0 ) { $nav_suffix['region_src'] = $region_src; }
+
+      $region_term_nav = function_exists( 'enterprise_region_term_by_code' ) ? enterprise_region_term_by_code( $region_code ) : null;
+      if ( $region_term_nav && function_exists( 'enterprise_region_stage_query' ) ) {
+          $reg_q       = enterprise_region_stage_query( $region_term_nav->term_id );
+          $reg_ids     = wp_list_pluck( $reg_q->posts, 'ID' );
+          $current_pos = array_search( get_the_ID(), $reg_ids, true );
+          if ( $current_pos !== false ) {
+              $prev_id = $current_pos > 0                     ? $reg_ids[ $current_pos - 1 ] : null;
+              $next_id = $current_pos < count( $reg_ids ) - 1 ? $reg_ids[ $current_pos + 1 ] : null;
+              $prev    = $prev_id ? get_post( $prev_id ) : null;
+              $next    = $next_id ? get_post( $next_id ) : null;
+          }
       }
 
   } elseif ( $from_cat_slug ) {
