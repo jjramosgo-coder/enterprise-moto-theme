@@ -11,7 +11,8 @@
  * de la página que hospeda el mapa, para «← Volver al mapa»). Presenta:
  *   · Hero decorado (patrón col-hero, coleccion.css): marca de agua + título
  *     (nombre de la región) + subtítulo + fila de cifras (nº etapas + nº viajes) +
- *     ticker (campo TRAMO «origen → destino», _post_tramo, de las etapas del término).
+ *     ticker (campo «Nombre en el ticker», _post_ticker_name, de las etapas del término;
+ *     si está vacío cae al título de la entrada).
  *   · Carrusel 1 — ETAPAS del término `regiones` (Tipo B/C), reutilizando la
  *     .trip-card (enterprise_trip_card_data) y el andamiaje .ent-stages del
  *     carrusel compartido (carousel.js/carousel.css), SIN modificarlos.
@@ -81,7 +82,15 @@ if ( ! $region_term || $stage_count < 1 ) :
 endif;
 
 /* ══ DATOS DEL HERO ══ */
-$region_name = $region_term->name;
+/* Nombre a mostrar. El nombre del término puede venir en la forma «Nativo [Español]»
+   (mismo convenio bilingüe que parsea el globo del mapa, parseName en region-map-frontend.js):
+   si hay texto entre corchetes, se usa el español; si no, el nombre tal cual. */
+$region_name = trim( (string) $region_term->name );
+if ( preg_match( '/^(.*?)\s*\[(.*?)\]\s*$/', $region_name, $mname ) ) {
+    $native  = trim( $mname[1] );
+    $spanish = trim( $mname[2] );
+    $region_name = ( '' !== $spanish ) ? $spanish : $native;
+}
 
 /* Carrusel 2 (#46 Commit 2): entradas TIPO D que contienen alguna etapa de la región.
    Derivado al vuelo y cacheado por region_code (transient invalidado al guardar etapa/viaje).
@@ -101,17 +110,22 @@ if ( is_array( $parts ) && count( $parts ) > 1 ) {
     $title_html = '<em>' . esc_html( $region_name ) . '</em>';
 }
 
-/* Ticker: campo TRAMO (origen → destino, _post_tramo) de las etapas del término,
-   en mayúsculas, deduplicado, en orden de aparición del carrusel. */
+/* Ticker: campo «Nombre en el ticker» (_post_ticker_name) de las etapas del término, en
+   mayúsculas, deduplicado, en orden de aparición del carrusel. Semántica del campo (igual
+   que el col-hero): si está vacío, se usa el título de la entrada. */
 $ticker_names = array();
 foreach ( $stage_q->posts as $p ) {
-    $tramo = trim( (string) get_post_meta( $p->ID, '_post_tramo', true ) );
-    if ( '' === $tramo ) {
+    $name = trim( (string) get_post_meta( $p->ID, '_post_ticker_name', true ) );
+    if ( '' === $name ) {
+        $name = get_the_title( $p->ID );
+    }
+    $name = trim( (string) $name );
+    if ( '' === $name ) {
         continue;
     }
-    $tramo = function_exists( 'mb_strtoupper' ) ? mb_strtoupper( $tramo, 'UTF-8' ) : strtoupper( $tramo );
-    if ( ! in_array( $tramo, $ticker_names, true ) ) {
-        $ticker_names[] = $tramo;
+    $name = function_exists( 'mb_strtoupper' ) ? mb_strtoupper( $name, 'UTF-8' ) : strtoupper( $name );
+    if ( ! in_array( $name, $ticker_names, true ) ) {
+        $ticker_names[] = $name;
     }
 }
 $ticker_loop = array_merge( $ticker_names, $ticker_names ); // duplicado para el bucle infinito
@@ -143,7 +157,7 @@ if ( '' === $back_map_url ) {
 
     <h1 class="col-title"><?php echo $title_html; // ya escapado por partes ?></h1>
 
-    <p class="col-subtitle"><?php esc_html_e( 'Rutas y etapas que cruzaron esta región', 'enterprise-moto' ); ?></p>
+    <p class="col-subtitle"><?php esc_html_e( 'Rutas que cruzaron esta región', 'enterprise-moto' ); ?></p>
 
     <div class="col-stats">
       <div class="col-stat"><div class="col-stat-n"><?php echo intval( $stage_count ); ?></div><div class="col-stat-l"><?php echo esc_html( _n( 'Etapa', 'Etapas', $stage_count, 'enterprise-moto' ) ); ?></div></div>
