@@ -60,6 +60,10 @@
   var CLS_DIMMED = 'ent-dimmed';
   var CLS_HIDDEN = 'ent-hidden';
   var CLS_NAV    = 'ent-navigable';
+  /* #66.3 (Commit 1) — acento TÁCTIL por clase (espejo del :hover del ratón en el
+     CSS). En táctil el :hover es poco fiable; el motor marca la pieza revelada con
+     esta clase, que persiste hasta el siguiente toque. Táctil-only. */
+  var CLS_TOUCH_ACCENT = 'ent-touch-accent';
 
   var ZOOM_MS  = 420;   // duración de la animación de viewBox
   var ZOOM_PAD = 0.08;  // margen alrededor del bbox enfocado (fracción)
@@ -297,6 +301,11 @@
     /* Posición inicial directa (moveBalloon respeta el anclaje y no reposicionaría). */
     state.balloon.style.left = (x + 14) + 'px';
     state.balloon.style.top  = (y + 14) + 'px';
+
+    /* #66.3 (Commit 1): en TÁCTIL (isMouse===false) marca la pieza con el acento por
+       clase (persiste hasta el siguiente toque); en ratón/lápiz el acento lo da :hover
+       (no se toca). Va al final: la pieza mostrada es la que se acentúa. */
+    if (!isMouse) applyTouchAccent(state, pathEl);
   }
 
   function moveBalloon(state, x, y) {
@@ -310,6 +319,26 @@
     if (state.balloon) state.balloon.style.display = 'none';
     state.balloonAnchored = false; // #46: al ocultar se sale del modo enlace/anclaje
     state.balloonHref     = '';
+    clearTouchAccent(state); // #66.3 (Commit 1): al ocultar el globo se retira el acento táctil (no-op en ratón)
+  }
+
+  /* #66.3 (Commit 1) — Pone/quita el acento táctil por clase (CLS_TOUCH_ACCENT). Solo
+     una pieza lo lleva a la vez (state.touchAccentPath); al revelar otra, se mueve.
+     Táctil-only: lo invoca showBalloon únicamente con isMouse===false, así que la rama
+     de ratón/lápiz (#66.2, con :hover) no se ve afectada; en una sesión de ratón puro
+     touchAccentPath es null y clearTouchAccent es un no-op. */
+  function applyTouchAccent(state, pathEl) {
+    if (state.touchAccentPath === pathEl) return;
+    if (state.touchAccentPath) state.touchAccentPath.classList.remove(CLS_TOUCH_ACCENT);
+    pathEl.classList.add(CLS_TOUCH_ACCENT);
+    state.touchAccentPath = pathEl;
+  }
+
+  function clearTouchAccent(state) {
+    if (state.touchAccentPath) {
+      state.touchAccentPath.classList.remove(CLS_TOUCH_ACCENT);
+      state.touchAccentPath = null;
+    }
   }
 
   /* Reconcilia el globo al terminar cada zoom (#64), sin exigir movimiento del ratón.
@@ -326,6 +355,13 @@
   function reconcileBalloonAtPointer(state) {
     var focused = state.pendingBalloonPath;
     state.pendingBalloonPath = null; // consumido: solo aplica a este zoom
+    /* #66.3 (Commit 2) — En TÁCTIL el reconcile queda SUPRIMIDO (§3.5): tras cualquier zoom
+       (drill o «volver») no reaparece el globo ni queda ninguna pieza acentuada; el gesto
+       arranca de nuevo con el primer toque en el nuevo nivel. El globo y el acento ya se
+       limpiaron en el hideBalloon del arranque del zoom (animateVB), así que basta con NO
+       volver a mostrar nada. La rama de RATÓN (#64/#66.2) NO cambia; se distingue por
+       state.lastInputMouse, que fijan pointerover/pointerdown/pointerup. */
+    if (!state.lastInputMouse) return;
     var x = state.ptrX, y = state.ptrY;
     if (x == null || y == null) return;
     /* #66.2: el reconcile corre en el onDone del zoom, AGUAS ABAJO de la bifurcación por
@@ -655,6 +691,30 @@
     drill(state, p);
   }
 
+  /* #66.3 (Commit 2) — Confirmación (2.º toque) del gesto táctil sobre la pieza armada, decidida
+     por el TIPO DE PIEZA (nivel admin + terminal), no por el Nivel desde el que se toca (§3.2/§3.9):
+       · drilleable (país/región CON hijos) → ENTRA (drill: revela hijos + zoom). El reconcile
+         táctil está suprimido (§3.5), así que tras el zoom no queda globo ni acento; el gesto
+         empieza de cero en el nuevo nivel. Se desarma.
+       · terminal (sin hijos: provincia admin-2 —siempre—, o país/región terminal) → NO entra:
+         con rutas (data-count>0 + destino configurado → href) navega a la página de la región
+         (#46, buildRegionHref); sin rutas, no-op (se queda resaltada y con globo, §3.9).
+     Un vecino atenuado se confirma según su propia pieza (salto a vecino), sin caso especial. */
+  function confirmArmed(state, p) {
+    if (hasChildren(state, p)) {
+      state.armedPath = null;
+      drill(state, p);
+      return;
+    }
+    var countAttr = p.getAttribute('data-count');
+    var count = (countAttr === null || countAttr === '') ? NaN : parseInt(countAttr, 10);
+    if (!isNaN(count) && count > 0) {
+      var href = buildRegionHref(state, p.getAttribute('id'));
+      if (href) { window.location.href = href; return; }
+    }
+    /* terminal sin rutas: no-op — la pieza sigue armada, con acento y globo visibles (§3.9). */
+  }
+
   function bindEvents(state) {
     var c = state.container;
 
@@ -665,20 +725,47 @@
        los mouse* sintéticos del navegador (táctil, emergente §1.2 del spec). El navegador
        sigue emitiendo esos mouse* sintéticos en el toque, pero el contenedor ya NO los
        escucha, así que se ignoran (no hay doble disparo); su supresión es #66.3, no aquí. */
+    /* #66.3 (Commit 2) — En TÁCTIL, pointerover ya NO revela: el gesto de dos toques revela en
+       pointerdown y confirma en pointerup. Se sale temprano para no encender el globo al primer
+       contacto ni interferir con el armado. La rama de RATÓN/LÁPIZ (#66.2) queda intacta: revela
+       el globo que sigue al cursor. */
     c.addEventListener('pointerover', function (e) {
+      if (e.pointerType === 'touch') return;
       var p = pathFromEvent(state, e);
       if (!p || !isHoverable(p)) return;
-      var isMouse = e.pointerType !== 'touch';
+      var isMouse = e.pointerType !== 'touch'; // aquí siempre true (táctil ya retornó)
       state.lastInputMouse = isMouse; // #66.2: input que verá el reconcile tras el próximo zoom
-      if (e.pointerType === 'touch') {
-        // Rama táctil: reproduce el globo-al-tocar que daba el mouseover sintético. Fija las
-        // coords del toque para el reconcile del zoom (#64): la rama táctil ignora pointermove,
-        // así que si no se registran aquí, ptrX/ptrY no se actualizarían en el toque.
-        state.ptrX = e.clientX; state.ptrY = e.clientY;
-      }
-      // Ambas ramas muestran el globo con las mismas coords (mouseover previo, idéntico); el
-      // 5º arg separa la INTERACCIÓN por input (#66.2), no el contenido.
       showBalloon(state, p, e.clientX, e.clientY, isMouse);
+    });
+
+    /* #66.3 (Commit 2) — Gesto TÁCTIL de dos toques (revela / confirma). Solo táctil; el ratón/
+       lápiz no usa pointerdown (su camino sigue siendo pointerover→pointerup, #66.2). PRIMER toque
+       sobre una pieza apuntable: revela su globo anclado en el punto tocado (sobre la geometría,
+       §3.4) + acento por clase (Commit 1) y la ARMA (state.armedPath). Si el pointerdown cae sobre
+       la MISMA pieza ya armada, es el arranque del SEGUNDO toque → marca confirmPending y lo remata
+       el pointerup. Tocar mar/vacío/oculto descarta el gesto (oculta globo, desarma). */
+    c.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'touch') return;
+      if (state.animating) return;
+      state.lastInputMouse = false; // táctil: el reconcile del próximo zoom quedará suprimido (§3.5)
+      var p = pathFromEvent(state, e);
+      state.ptrX = e.clientX; state.ptrY = e.clientY; // ancla del globo y del posible zoom
+      if (!p || !isHoverable(p)) {
+        hideBalloon(state);            // mar / vacío / pieza oculta → descartar el gesto en curso
+        state.armedPath = null;
+        state.confirmPending = false;
+        return;
+      }
+      if (state.armedPath === p) {
+        state.confirmPending = true;   // 2.º toque sobre la pieza armada: se confirma en el pointerup
+        return;
+      }
+      // 1.er toque (o re-armar otra pieza): revela + acento + arma. showBalloon(false) ancla el
+      // globo en el punto tocado y pinta el acento por clase; al revelar otra pieza, el acento se
+      // mueve (applyTouchAccent) — solo una pieza armada/acentuada a la vez.
+      state.confirmPending = false;
+      state.armedPath = p;
+      showBalloon(state, p, e.clientX, e.clientY, false);
     });
 
     c.addEventListener('pointermove', function (e) {
@@ -712,7 +799,18 @@
     c.addEventListener('pointerup', function (e) {
       state.lastInputMouse = e.pointerType !== 'touch'; // #66.2: input que dispara el zoom → lo usa el reconcile
       if (e.pointerType === 'touch') {
-        activate(state, e); // rama táctil (sin cambios: navega el clic del globo — 66.3)
+        /* #66.3 (Commit 2) — CONFIRMACIÓN del gesto de dos toques. Solo confirma si este pointerup
+           remata el 2.º toque (confirmPending) sobre la MISMA pieza armada; el 1.er toque
+           (confirmPending=false) no entra ni navega, solo dejó la pieza revelada y armada. */
+        if (state.animating) { state.confirmPending = false; return; }
+        var pt = pathFromEvent(state, e);
+        state.ptrX = e.clientX; state.ptrY = e.clientY;
+        if (state.confirmPending && pt && pt === state.armedPath) {
+          state.confirmPending = false;
+          confirmArmed(state, pt);
+        } else {
+          state.confirmPending = false; // toque no confirmatorio (1.er toque o soltó fuera de la pieza)
+        }
       } else {
         /* #66.2 (Commit 2) — RATÓN/LÁPIZ: el clic en una REGIÓN terminal ENLAZABLE navega a su
            página de destino (la pieza entera es el disparador; el globo pasó a ser etiqueta). El
@@ -730,6 +828,16 @@
         }
         activate(state, e); // rama ratón/lápiz: resto de casos, sin cambios
       }
+    });
+
+    /* #66.3 (Commit 2) — Cancelación del puntero táctil (p. ej. el gesto se convierte en scroll o
+       el sistema se lo lleva): aborta el gesto en curso SIN confirmar —oculta globo, limpia acento
+       (hideBalloon) y desarma— para que un pointerup posterior no dispare una confirmación falsa. */
+    c.addEventListener('pointercancel', function (e) {
+      if (e.pointerType !== 'touch') return;
+      hideBalloon(state);
+      state.armedPath = null;
+      state.confirmPending = false;
     });
   }
 
@@ -762,7 +870,10 @@
       balloonMain: null,
       balloonSub: null,
       balloonCount: null,       // #46: elemento del nº de entradas (data-count) en el globo
-      balloonHint: null         // #66.2: elemento de la pista de acción «Ver las rutas»
+      balloonHint: null,        // #66.2: elemento de la pista de acción «Ver las rutas»
+      touchAccentPath: null,    // #66.3: pieza con el acento táctil por clase (persiste hasta el siguiente toque)
+      armedPath: null,          // #66.3 (Commit 2): pieza revelada/armada en táctil (1.er toque); el 2.º toque sobre ella confirma
+      confirmPending: false     // #66.3 (Commit 2): un pointerdown cayó sobre la pieza ya armada → el pointerup confirmará
     };
     container._entRegionMap = state;
 
