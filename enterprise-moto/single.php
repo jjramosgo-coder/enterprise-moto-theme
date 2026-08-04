@@ -119,7 +119,8 @@ $cat_name = enterprise_first_category();
         $back_args = array( 'region' => $region_code );
         if ( $region_src > 0 ) { $back_args['region_src'] = $region_src; }
         $back_url   = add_query_arg( $back_args, get_permalink( $from_region_id ) );
-        $back_label = esc_html__( '← Volver', 'enterprise-moto' );
+        // #65: «Volver» unificado del contexto de región, para etapa Y viaje (sustituye «← Volver»).
+        $back_label = esc_html__( '← Volver a la región', 'enterprise-moto' );
         $active_context = 'region';
     } elseif ( $from_cat_slug ) {
         $from_cat_obj  = get_category_by_slug( $from_cat_slug );
@@ -349,6 +350,9 @@ if ( $has_data ) : ?>
   <?php
   $prev = null; $next = null;
   $nav_suffix = '';
+  /* #65: ¿la entrada actual es un VIAJE (Tipo D)? Se usa en el contexto de región para
+     bifurcar prev/next (viajes de la región vs. etapas) y las etiquetas «Viaje…»/«Ruta…». */
+  $cur_is_viaje = ( 'viaje' === get_post_meta( get_the_ID(), '_post_tipo', true ) );
 
   if ( $from_post_id ) {
       /* ── Contexto: venimos de un post tipo D ──────────────────────────
@@ -573,25 +577,45 @@ if ( $has_data ) : ?>
       }
 
   } elseif ( $from_region_id && '' !== $region_code ) {
-      /* ── Contexto: venimos de la página de destino por región (#46) ──
-         CONTRATO DE NAVEGACIÓN (§6): «anterior/siguiente» recorren la secuencia en el
-         MISMO orden que el carrusel de etapas de la región. La fuente es el término
-         `regiones` (NO cat/tag — diferencia clave con from_loc), vía la MISMA función que
-         usa la plantilla, enterprise_region_stage_query(), para que navegación y listado
-         no puedan divergir. */
+      /* ── Contexto: venimos de la página de destino por región (#46; viajes: #65) ──
+         CONTRATO DE NAVEGACIÓN (§6): «anterior/siguiente» recorren la secuencia en el MISMO
+         orden que el carrusel del que se vino, tomando la fuente que genera ese listado (NO
+         cat/tag — diferencia clave con from_loc). Bifurcado por tipo de entrada (#65): un
+         VIAJE (Tipo D) recorre los VIAJES de la región (enterprise_region_trip_ids, el mismo
+         origen y orden que el carrusel 2, filtrado a 'publish' para casar con lo que muestra,
+         que salta los no publicados); una ETAPA recorre las etapas del término
+         (enterprise_region_stage_query). Así navegación y listado no divergen en ninguno. */
       $nav_suffix = array( 'from_region' => $from_region_id, 'region_code' => $region_code );
       if ( $region_src > 0 ) { $nav_suffix['region_src'] = $region_src; }
 
-      $region_term_nav = function_exists( 'enterprise_region_term_by_code' ) ? enterprise_region_term_by_code( $region_code ) : null;
-      if ( $region_term_nav && function_exists( 'enterprise_region_stage_query' ) ) {
-          $reg_q       = enterprise_region_stage_query( $region_term_nav->term_id );
-          $reg_ids     = wp_list_pluck( $reg_q->posts, 'ID' );
-          $current_pos = array_search( get_the_ID(), $reg_ids, true );
+      if ( $cur_is_viaje ) {
+          /* #65: VIAJE → recorre los viajes PUBLICADOS de la región, en el orden del carrusel 2. */
+          $trip_ids_nav = function_exists( 'enterprise_region_trip_ids' )
+                            ? array_values( array_filter(
+                                array_map( 'intval', (array) enterprise_region_trip_ids( $region_code ) ),
+                                function ( $tid ) { return 'publish' === get_post_status( $tid ); }
+                              ) )
+                            : array();
+          $current_pos = array_search( get_the_ID(), $trip_ids_nav, true );
           if ( $current_pos !== false ) {
-              $prev_id = $current_pos > 0                     ? $reg_ids[ $current_pos - 1 ] : null;
-              $next_id = $current_pos < count( $reg_ids ) - 1 ? $reg_ids[ $current_pos + 1 ] : null;
+              $prev_id = $current_pos > 0                          ? $trip_ids_nav[ $current_pos - 1 ] : null;
+              $next_id = $current_pos < count( $trip_ids_nav ) - 1 ? $trip_ids_nav[ $current_pos + 1 ] : null;
               $prev    = $prev_id ? get_post( $prev_id ) : null;
               $next    = $next_id ? get_post( $next_id ) : null;
+          }
+      } else {
+          /* ETAPA → recorre las etapas del término `regiones` (sin cambio respecto a #46). */
+          $region_term_nav = function_exists( 'enterprise_region_term_by_code' ) ? enterprise_region_term_by_code( $region_code ) : null;
+          if ( $region_term_nav && function_exists( 'enterprise_region_stage_query' ) ) {
+              $reg_q       = enterprise_region_stage_query( $region_term_nav->term_id );
+              $reg_ids     = wp_list_pluck( $reg_q->posts, 'ID' );
+              $current_pos = array_search( get_the_ID(), $reg_ids, true );
+              if ( $current_pos !== false ) {
+                  $prev_id = $current_pos > 0                     ? $reg_ids[ $current_pos - 1 ] : null;
+                  $next_id = $current_pos < count( $reg_ids ) - 1 ? $reg_ids[ $current_pos + 1 ] : null;
+                  $prev    = $prev_id ? get_post( $prev_id ) : null;
+                  $next    = $next_id ? get_post( $next_id ) : null;
+              }
           }
       }
 
@@ -615,12 +639,15 @@ if ( $has_data ) : ?>
 
   /* #8 + #13: etiquetas conscientes del CONTEXTO ACTIVO (innermost), no de la
      mera presencia de from_col. Una etapa alcanzada vía colección→viaje→etapa
-     tiene contexto activo «post» (viaje) → «Ruta», aunque arrastre from_col. */
-  $in_col_context = ( 'col' === $active_context );
-  $nav_prev_label = $in_col_context ? esc_html__( 'Viaje anterior',  'enterprise-moto' )
-                                    : esc_html__( 'Ruta anterior',   'enterprise-moto' );
-  $nav_next_label = $in_col_context ? esc_html__( 'Siguiente viaje', 'enterprise-moto' )
-                                    : esc_html__( 'Siguiente ruta',  'enterprise-moto' );
+     tiene contexto activo «post» (viaje) → «Ruta», aunque arrastre from_col.
+     #65: en el contexto de región un VIAJE (Tipo D) usa «Viaje…» (recorre los viajes
+     de la región); una etapa mantiene «Ruta…». */
+  $viaje_labels   = ( 'col' === $active_context )
+                    || ( 'region' === $active_context && $cur_is_viaje );
+  $nav_prev_label = $viaje_labels ? esc_html__( 'Viaje anterior',  'enterprise-moto' )
+                                  : esc_html__( 'Ruta anterior',   'enterprise-moto' );
+  $nav_next_label = $viaje_labels ? esc_html__( 'Siguiente viaje', 'enterprise-moto' )
+                                  : esc_html__( 'Siguiente ruta',  'enterprise-moto' );
   ?>
   <div class="post-nav-item">
     <?php if ( $prev ) : ?>
