@@ -284,10 +284,13 @@
         state.balloon.style.pointerEvents = 'none';
         state.balloon.style.cursor        = '';
       } else {
-        /* TÁCTIL (sin cambios, #46): globo anclado y clicable; navega el clic del globo. */
-        state.balloonAnchored             = true;   // deja de seguir al toque
-        state.balloon.style.pointerEvents = 'auto'; // clicable
-        state.balloon.style.cursor        = 'pointer';
+        /* #66.3 (Commit 3) — TÁCTIL: el globo es ETIQUETA NO CLICABLE (pointer-events:none),
+           igual que en ratón. La navegación la hace SOLO el 2.º toque en la pieza (confirmArmed,
+           Commit 2), no el globo; así un click sintético sobre el globo no puede navegar. Queda
+           anclado en el punto tocado (en táctil pointermove se ignora, no seguiría igualmente). */
+        state.balloonAnchored             = true;
+        state.balloon.style.pointerEvents = 'none';
+        state.balloon.style.cursor        = '';
       }
     } else {
       state.balloonHref     = '';

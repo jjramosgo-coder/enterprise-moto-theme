@@ -6,6 +6,12 @@
  */
 .ent-region-map {
 	position: relative; /* ancla el control «volver» (#44/#51) */
+	/* #66.3 (Commit 3) — touch-action: manipulation → desactiva el zoom por DOBLE-TOQUE del
+	   navegador (y el retardo de click) para que el gesto de dos toques de #66.3 no se
+	   secuestre; mantiene el scroll de la página con un dedo y el pinch-zoom (NO es `none`).
+	   Se aplica al contenedor: la acción efectiva de un toque en las piezas del <svg> es la
+	   intersección con sus ancestros, así que hereda `manipulation`. */
+	touch-action: manipulation;
 }
 
 .ent-region-map > svg {
