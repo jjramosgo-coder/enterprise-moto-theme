@@ -104,15 +104,22 @@
 /* Acento al pasar el ratón (#54): configurable por --ent-hover-accent. Por defecto
    #c9a010 (dorado oscuro), NO el dorado #f2c118 anterior; se aplica también en modo
    «Los del propio mapa» (el fallback cubre ese caso, render.php no emite override).
-   En «Personalizar» lo emite render.php desde el atributo «Resalte al pasar el ratón». */
-.ent-region-map path.ent-active:hover,
-.ent-region-map path.ent-dimmed:hover {
-	fill: var(--ent-hover-accent, #c9a010);
-	fill-opacity: 0.85;
-}
+   En «Personalizar» lo emite render.php desde el atributo «Resalte al pasar el ratón».
+   #66.3 (fix) — ACOTADO a @media (hover: hover): el acento :hover solo existe en
+   dispositivos con hover REAL (ratón/lápiz). En táctil (hover:none, p. ej. iOS Safari)
+   NO aplica, porque iOS deja el :hover «pegado» en la última pieza tocada y se sumaba
+   a la clase .ent-touch-accent → DOS piezas acentuadas a la vez. En táctil el acento lo
+   da ahora en exclusiva .ent-touch-accent (más abajo). La rama de ratón NO cambia. */
+@media (hover: hover) {
+	.ent-region-map path.ent-active:hover,
+	.ent-region-map path.ent-dimmed:hover {
+		fill: var(--ent-hover-accent, #c9a010);
+		fill-opacity: 0.85;
+	}
 
-.ent-region-map path.ent-dimmed:hover {
-	opacity: 1;
+	.ent-region-map path.ent-dimmed:hover {
+		opacity: 1;
+	}
 }
 
 /* ── Realce por conteo (#47 · atenuar regiones sin entradas) ──
@@ -131,9 +138,11 @@
 /* El acento de hover de esas mismas regiones también se atenúa a la mitad (0.85 →
    0.425). Va DESPUÉS del bloque de interacción y con mayor especificidad que el
    acento base (dos elementos svg+path), para ganarle en el estado :hover. */
-.ent-region-map > svg path[data-count="0"]:hover,
-.ent-region-map > svg path:not([data-count]):hover {
-	fill-opacity: 0.425;
+@media (hover: hover) { /* #66.3 (fix): solo hover real; en táctil no aplica (ver arriba) */
+	.ent-region-map > svg path[data-count="0"]:hover,
+	.ent-region-map > svg path:not([data-count]):hover {
+		fill-opacity: 0.425;
+	}
 }
 
 /* ── Realce «levantar» al hover (#47 · regiones CON entradas, opción A = solo CSS) ──
@@ -145,7 +154,42 @@
    coordenadas del <path> SVG para el transform; la traslación va en unidades del
    viewBox. Motor intacto (opción A). Si el operador ve solape con vecinos, el
    requisito preautoriza la opción B (traer la pieza al frente desde el motor). */
-.ent-region-map > svg path[data-count]:not([data-count="0"]):hover {
+@media (hover: hover) { /* #66.3 (fix): solo hover real; en táctil no aplica (ver arriba) */
+	.ent-region-map > svg path[data-count]:not([data-count="0"]):hover {
+		transform: translateY(-2px);
+		transform-box: fill-box;
+		transform-origin: center;
+		filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+	}
+}
+
+/* ── #66.3 (Commit 1) · Acento TÁCTIL por clase (desacople de :hover) ──
+   Espejo de las reglas de hover-in de arriba (acento de #54, «levantar» de #47 y
+   opacidad plena del vecino), disparadas por la clase .ent-touch-accent que el
+   motor pone/quita en TÁCTIL (pointerType==='touch') en lugar de por :hover —poco
+   fiable con el dedo (pegajoso o ausente, §1.2 del requisito)—. Mismos valores y
+   MISMA especificidad que sus gemelas :hover (una clase ≡ una pseudoclase), así que
+   la cascada es idéntica; el acento persiste hasta el siguiente toque (lo gestiona
+   el motor). El color sigue siendo el token --ent-hover-accent (nunca un literal).
+   Las reglas :hover de arriba quedan acotadas a @media (hover: hover) (fix #66.3): en
+   táctil NO aplican (evita el doble acento por el :hover pegajoso de iOS), así que aquí
+   el acento lo da SOLO esta clase; con ratón el :hover sigue funcionando igual. */
+.ent-region-map path.ent-active.ent-touch-accent,
+.ent-region-map path.ent-dimmed.ent-touch-accent {
+	fill: var(--ent-hover-accent, #c9a010);
+	fill-opacity: 0.85;
+}
+
+.ent-region-map path.ent-dimmed.ent-touch-accent {
+	opacity: 1;
+}
+
+.ent-region-map > svg path[data-count="0"].ent-touch-accent,
+.ent-region-map > svg path:not([data-count]).ent-touch-accent {
+	fill-opacity: 0.425;
+}
+
+.ent-region-map > svg path[data-count]:not([data-count="0"]).ent-touch-accent {
 	transform: translateY(-2px);
 	transform-box: fill-box;
 	transform-origin: center;
