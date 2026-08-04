@@ -31,9 +31,57 @@ Conviene no confundir dos cosas:
 
 Suelen coincidir, pero no siempre (ver «profundidad variable»). Por eso las capas del SVG se nombran por su `tier`, mientras que el nivel real de cada lugar es su `admin`.
 
-### La navegación: entrar (drill-in) y volver (back)
+### La navegación: entrar (drill-in), volver (back) y actuar
 
-El usuario navega **entrando** por niveles (`0→1→2…`) y **volviendo**. Qué contiene qué —y cuál es el ascendiente al que se vuelve— está en el árbol del [modelo de datos de regiones](#modelo-de-datos-ficheros-de-regiones): `children` para entrar, el ascendiente para volver. Cada paso de zoom se corresponde con mostrar el `tier` siguiente. El comportamiento en pantalla (la animación del zoom, el icono de volver…) lo pone el motor del mapa (#51); aquí solo se documenta la estructura sobre la que se apoya.
+El usuario navega **entrando** por niveles (`0→1→2…`) y **volviendo**. Qué contiene qué —y cuál es el ascendiente al que se vuelve— está en el árbol del [modelo de datos de regiones](#modelo-de-datos-ficheros-de-regiones): `children` para entrar, el ascendiente para volver. Cada paso de zoom se corresponde con mostrar el `tier` siguiente. El **comportamiento en pantalla** (la animación del zoom, el globo, el control de volver) lo pone el **motor del mapa** (JS del tema en tiempo de ejecución); su mecanismo se documenta **aquí abajo, separado por tipo de dispositivo** (ratón y táctil), porque **no son iguales**.
+
+#### Estados de navegación: `Nivel-N`
+
+A `admin` (qué es un lugar) y `tier` (en qué capa se dibuja) se añade un concepto de **interacción**:
+
+- **`Nivel-N`** — *en qué punto del recorrido está el usuario*. `Nivel-0` es el **continente** (nada enfocado; se ven y se tocan los países). Al entrar en un país se pasa a `Nivel-1` (ese país queda enfocado y se ven/tocan sus regiones); al entrar en una región, `Nivel-2` (sus provincias).
+
+Regla que lo relaciona: en `Nivel-N` la **unidad enfocada** es un `admin-(N-1)` (en `Nivel-0` no hay foco: es el continente) y las **piezas navegables** son la capa `tier-N` (= `admin-N`). Por eso, en la tabla de la navegación táctil, la columna «Nivel» rotula la **unidad enfocada** —`1 (admin-0)` = país enfocado— mientras que la columna «Pieza» es **lo que se toca** —`admin-1`, sus regiones—. `Nivel-N` (estado de navegación) no es `tierN` (capa del SVG): la capa es *dónde se dibuja* una pieza; el nivel es *el estado* en el que está el usuario.
+
+#### Navegación con ratón (#66.2)
+
+El ratón tiene dos gestos separados, *hover* (pasar por encima sin pulsar) y clic:
+
+- **Hover** sobre una pieza navegable enciende el **globo** con su nombre y, si tiene rutas, «Rutas: N»; el globo sigue al cursor.
+- **Clic** en una pieza **drillable** (con hijos) **entra** (zoom al `tier` siguiente).
+- En el **último tier con rutas** (pieza terminal con `data-count>0` y Página-destino configurada): el globo sigue al cursor y añade la pista **«Ver las rutas»**; **el clic en cualquier punto de la región navega** a su página; el globo es **etiqueta no clicable**. Las regiones sin rutas no muestran pista y el clic conserva su significado (entrar o nada).
+- **Volver**: el control «volver» sube un `Nivel`.
+
+#### Navegación táctil (#66.3)
+
+La pantalla táctil **no tiene *hover***: el dedo no puede «mirar» sin actuar. Por eso el táctil usa un modelo de **dos toques** — el **primer toque revela** (sustituto del hover) y el **segundo toque confirma**. El globo (nombre + «Rutas: N» + la pista «Ver las rutas» en piezas terminales con rutas) es ese sustituto del hover, y **persiste hasta el siguiente toque**.
+
+Principio: **el comportamiento se decide por la pieza tocada (su `admin` y si es terminal), no por el `Nivel` desde el que se toca.** Un **vecino** atenuado se comporta como su tipo de pieza, y **toda pieza terminal** (hoja, sin hijos) se comporta igual, esté en el `tier` que esté.
+
+Tabla completa del gesto táctil:
+
+| Nivel | Pieza (ISO) | Toque | ¿terminal? | Acción |
+|---|---|---|---|---|
+| **0 · continente** | admin-0 | 1.º | — | Acento (hover-in del ratón, por clase; «levantar» si `data-count>0`), **persiste**; **revela el globo** anclado sobre la geometría de la pieza (no en el centro): nombre + «Rutas: N» **+ «Ver las rutas» si es terminal**. No entra. |
+|  |  | 2.º | No | Dentro de la pieza → **entra** a sus regiones admin-1 (zoom). *(Fuera: otra pieza tocable = nuevo 1.er toque; mar/vacío = cierra.)* |
+|  |  | 2.º | Sí | **Comportamiento terminal (ver `Nivel-2`).** |
+| **1 (admin-0)** | admin-1 | 1.º | — | Igual que `Nivel-0`. |
+|  |  | 2.º | No | Dentro → **entra** a sus provincias admin-2 (zoom). *(Fuera: ídem.)* |
+|  |  | 2.º | Sí | **Comportamiento terminal (ver `Nivel-2`).** |
+|  | admin-0 (vecino atenuado) | 1.º / 2.º | — | **Salto a vecino = comportamiento de país (fila `Nivel-0`).** |
+| **2 (admin-1)** | admin-2 (siempre terminal) | 1.º | Sí | Acento + **revela el globo**: nombre + «Rutas: N» **+ «Ver las rutas»** (si rutas + destino). No entra. |
+|  |  | 2.º · con rutas | Sí | Dentro → **navega** a la página de rutas. |
+|  |  | 2.º · sin rutas | Sí | **Nada** (sigue resaltada, globo visible). |
+|  | admin-1 (región vecina atenuada) | 1.º / 2.º | — | **Salto a vecino = comportamiento de región (fila `Nivel-1` admin-1).** |
+
+Notas de la tabla:
+
+- **Acento**: lo aplica una **clase** (no `:hover`, poco fiable en táctil), reutilizando el color de acento del mapa (`--ent-hover-accent`); persiste hasta el siguiente toque.
+- **Globo**: anclado **sobre la geometría de la pieza, no en su centro**.
+- **Terminal**: definido en `Nivel-2` (la provincia, siempre terminal) y al que remiten las piezas terminales de niveles superiores — con rutas → navega; sin rutas → nada.
+- **Salto a vecino**: tocar una pieza atenuada de fuera del foco salta directamente a ella (país en `Nivel-1`; región, incluso de otro país, en `Nivel-2`).
+- **Volver**: el control «volver» sube un `Nivel`; tras él —como tras cualquier zoom— se quitan acentos y desaparece el globo.
+- **Precondición**: la pista «Ver las rutas» y la navegación existen solo con una **Página-destino configurada**; sin ella, el globo muestra nombre + «Rutas: N» pero no invita ni navega.
 
 ### Quién se encarga de qué
 
