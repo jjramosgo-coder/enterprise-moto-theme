@@ -18,16 +18,17 @@
  *     carrusel compartido (carousel.js/carousel.css), SIN modificarlos.
  *   · Carrusel 2 — entradas TIPO D («viaje») que CONTIENEN alguna de esas etapas
  *     (por el filtro propio del viaje). NUNCA páginas «Colección de viajes»
- *     (modelo A+B/colecciones anulado, ver §0 del requisito y §13.19). Salto plano
- *     al relato del viaje, sin contexto de navegación (§3.5).
+ *     (modelo A+B/colecciones anulado, ver §0 del requisito y §13.19). Estampa el
+ *     contexto de navegación from_region, igual que el carrusel de etapas (#65
+ *     reabre el salto plano de §3.5).
  *
  * Estados vacíos (§3.4 del requisito): la taxonomía `regiones` es public=false, así
  * que el único estado alcanzable por navegación es etapas>0 (el globo con count=0
  * NO enlaza). El acceso por URL directa a un region_code inválido o a una región
  * con 0 etapas muestra el mensaje de fallback.
  *
- * El contexto de navegación from_region se estampa en las tarjetas de ETAPA en el
- * Commit 4 de #46 (aquí las tarjetas de etapa enlazan con permalink plano).
+ * El contexto de navegación from_region lo estampan AMBOS carruseles: las tarjetas de
+ * ETAPA desde #46 (Commit 4) y las de VIAJE desde #65 (que reabre el salto plano de §3.5).
  *
  * Copyright (C) 2026 Juanjo Ramos y María José Moreno
  *
@@ -224,10 +225,11 @@ if ( '' === $back_map_url ) {
 
           $bg_class = $bg[ $n % count( $bg ) ];
 
-          /* #46 Commit 4: contexto de navegación from_region en la card de ETAPA (no en las
-             de viaje del carrusel 2). from_region = esta página; region_code = código de la
-             región; region_src = origen del mapa (para «← Volver al mapa»). single.php
-             reconstruye prev/next desde la secuencia del término `regiones` y «Volver» aquí. */
+          /* #46 Commit 4: contexto de navegación from_region en la card de ETAPA (y, desde
+             #65, también en las de viaje del carrusel 2). from_region = esta página;
+             region_code = código de la región; region_src = origen del mapa (para «← Volver
+             al mapa»). single.php reconstruye prev/next desde la secuencia del término
+             `regiones` y «Volver» aquí. */
           $card_args = array(
               'from_region' => $dest_page_id,
               'region_code' => $region_code_stored,
@@ -291,7 +293,7 @@ if ( '' === $back_map_url ) {
 
     </div>
 
-    <!-- ── Carrusel 2: entradas TIPO D que contienen alguna etapa de la región (salto plano) ── -->
+    <!-- ── Carrusel 2: entradas TIPO D que contienen alguna etapa de la región (estampa contexto from_region, #65) ── -->
     <?php if ( $trip_count > 0 ) :
       $bg2      = array( 'bg1', 'bg2', 'bg3', 'bg4', 'bg5' );
       $uid2     = 'ent-region-trips-' . intval( $region_term->term_id ) . '-' . wp_rand( 1000, 9999 );
@@ -320,9 +322,12 @@ if ( '' === $back_map_url ) {
 
       <div class="ent-stages__track" role="list">
       <?php
-      /* Cada ítem es una entrada Tipo D («viaje»). Salto PLANO al relato del viaje (sin
-         contexto de navegación, §3.5: el from_region vive solo en las cards de etapa).
-         Tarjeta .trip-card poblada con enterprise_trip_card_data (branching «Viaje»). */
+      /* #65: cada ítem es una entrada Tipo D («viaje»). Se estampa el MISMO contexto de
+         navegación `from_region` que la card de etapa (l.231-236), reabriendo §3.5 de #46
+         (el carrusel de viajes deja de ser salto plano). Así el «Volver» del viaje resuelve
+         por la rama from_region de single.php a la página de región, en vez de caer al referer
+         (que producía el bucle viaje↔etapa). Tarjeta .trip-card poblada con
+         enterprise_trip_card_data (branching «Viaje»). */
       $m = 0;
       foreach ( $trip_ids as $viaje_id ) :
           $viaje_id = (int) $viaje_id;
@@ -332,7 +337,16 @@ if ( '' === $back_map_url ) {
           $t_title   = get_the_title( $viaje_id );
           $t_thumb   = get_the_post_thumbnail_url( $viaje_id, 'enterprise-card' );
           $t_excerpt = get_the_excerpt( $viaje_id );
-          $t_href    = get_permalink( $viaje_id );
+
+          /* #65: contexto from_region en la card de VIAJE, idéntico al de la card de etapa
+             (from_region = esta página; region_code = código de la región; region_src = origen
+             del mapa, si lo hay). single.php bifurca prev/next por tipo de entrada. */
+          $t_card_args = array(
+              'from_region' => $dest_page_id,
+              'region_code' => $region_code_stored,
+          );
+          if ( $region_src > 0 ) { $t_card_args['region_src'] = $region_src; }
+          $t_href    = add_query_arg( $t_card_args, get_permalink( $viaje_id ) );
 
           $t_km_str  = enterprise_km_display( $data['km'] );
           if ( '' !== $t_km_str && $data['km_inc'] ) { $t_km_str = '≈' . $t_km_str; }
